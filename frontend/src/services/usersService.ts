@@ -7,6 +7,13 @@ import type {
   GroupMember,
   UpdateGroupRequest,
 } from "../types/groups";
+import type {
+  AdminUser,
+  ChangeRolePayload,
+  CreateUserPayload,
+  UpdateUserPayload,
+  UserFilters,
+} from "../types/user";
 
 const BASE = "/v1/groups";
 
@@ -59,5 +66,45 @@ export const usersService = {
 
   async removeGroupMember(groupId: number, userId: number): Promise<void> {
     await api.delete(`${BASE}/${groupId}/members/${userId}/`);
+  },
+
+  // ---------------------------------------------------------------------------
+  // Users
+  // ---------------------------------------------------------------------------
+
+  async getUsers(filters?: UserFilters): Promise<PaginatedResponse<AdminUser>> {
+    const params: Record<string, string | number | boolean | undefined> = {};
+    if (filters?.role) params.role = filters.role;
+    if (filters?.is_active !== undefined) params.is_active = filters.is_active;
+    if (filters?.area) params.area = filters.area;
+    if (filters?.search) params.search = filters.search;
+    if (filters?.page) params.page = filters.page;
+    const res = await api.get<PaginatedResponse<AdminUser>>("/v1/users/", { params });
+    return res.data;
+  },
+
+  async getUser(id: number): Promise<AdminUser> {
+    const res = await api.get<AdminUser>(`/v1/users/${id}/`);
+    return res.data;
+  },
+
+  async createUser(payload: CreateUserPayload): Promise<AdminUser> {
+    const res = await api.post<AdminUser>("/v1/users/", payload);
+    return res.data;
+  },
+
+  async updateUser(id: number, payload: UpdateUserPayload): Promise<AdminUser> {
+    const res = await api.patch<AdminUser>(`/v1/users/${id}/`, payload);
+    return res.data;
+  },
+
+  async changeUserRole(id: number, payload: ChangeRolePayload): Promise<AdminUser> {
+    const res = await api.post<AdminUser>(`/v1/users/${id}/change-role/`, payload);
+    return res.data;
+  },
+
+  async deactivateUser(id: number): Promise<AdminUser> {
+    const res = await api.post<AdminUser>(`/v1/users/${id}/deactivate/`);
+    return res.data;
   },
 };
