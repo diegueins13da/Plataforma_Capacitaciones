@@ -62,3 +62,8 @@ coverage.xml
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Claude Code agent skills (dev tool, not app code)
+agent-skills/
+# Claude Code local settings
+.claude/

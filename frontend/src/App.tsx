@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAuthStore } from "./store/authStore";
 import { AppRouter } from "./router";
+import { SessionExpiredModal } from "./components/shared/SessionExpiredModal";
 
 function AppInner() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
@@ -23,6 +24,8 @@ export default function App() {
         <AppInner />
         {/* Global toast — available on every page including login */}
         <Toaster position="top-right" richColors closeButton />
+        {/* P05 — fires when Axios refresh interceptor can't renew tokens */}
+        <SessionExpiredModal />
       </BrowserRouter>
     </ErrorBoundary>
   );

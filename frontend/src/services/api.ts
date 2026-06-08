@@ -95,10 +95,14 @@ api.interceptors.response.use(
   }
 );
 
-/** Redirect to login without importing the store (avoids circular dep). */
+/**
+ * Signal session expiry without importing the store (avoids circular dep).
+ * SessionExpiredModal in App.tsx listens for this event, clears state, and
+ * shows the P05 dialog in place — preserving the current URL for redirect.
+ */
 function _forceLogout(): void {
   tokenManager.clearTokens();
-  window.location.href = "/login?session_expired=1";
+  window.dispatchEvent(new CustomEvent("session:expired"));
 }
 
 export default api;
