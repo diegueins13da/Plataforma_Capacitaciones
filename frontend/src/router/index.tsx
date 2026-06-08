@@ -11,6 +11,7 @@ const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePass
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const ProfilePage = lazy(() => import("../pages/dashboard/ProfilePage"));
 const AdminUsersPage = lazy(() => import("../pages/admin/users/AdminUsersPage"));
+const GroupManagementPage = lazy(() => import("../pages/admin/users/GroupManagementPage"));
 const AdminCoursesPage = lazy(() => import("../pages/admin/courses/AdminCoursesPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
@@ -46,6 +47,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
           <Route element={<AppLayout />}>
             <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/groups" element={<GroupManagementPage />} />
             <Route path="/admin/courses" element={<AdminCoursesPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
           </Route>

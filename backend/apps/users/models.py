@@ -31,6 +31,24 @@ class User(AbstractUser):
         return f"{self.get_full_name()} <{self.email}>"
 
 
+class Group(models.Model):
+    """Organizational group for users (e.g. "TI", "Ventas")."""
+
+    nombre = models.CharField(max_length=150, unique=True, verbose_name="nombre")
+    descripcion = models.TextField(blank=True, verbose_name="descripción")
+    activo = models.BooleanField(default=True, verbose_name="activo")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
+
+    class Meta:
+        db_table = "groups"
+        verbose_name = "grupo"
+        verbose_name_plural = "grupos"
+        ordering = ["nombre"]
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(
         User,
@@ -40,7 +58,14 @@ class UserProfile(models.Model):
     )
     area = models.CharField(max_length=150, blank=True, verbose_name="área")
     cargo = models.CharField(max_length=150, blank=True, verbose_name="cargo")
-    # grupo FK added in T09b when the Group model exists
+    grupo = models.ForeignKey(
+        Group,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="members",
+        verbose_name="grupo",
+    )
 
     class Meta:
         db_table = "user_profiles"

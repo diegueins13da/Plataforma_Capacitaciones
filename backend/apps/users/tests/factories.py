@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from apps.users.models import User, UserProfile
+from apps.users.models import Group, User, UserProfile
 
 
 class UserFactory(DjangoModelFactory):
@@ -25,6 +25,15 @@ class AdminUserFactory(UserFactory):
 
 class TrainerUserFactory(UserFactory):
     role = User.Role.TRAINER
+
+
+class GroupFactory(DjangoModelFactory):
+    class Meta:
+        model = Group
+
+    nombre = factory.Sequence(lambda n: f"Grupo {n}")
+    descripcion = factory.Faker("sentence", nb_words=6, locale="es_MX")
+    activo = True
 
 
 class UserProfileFactory(DjangoModelFactory):

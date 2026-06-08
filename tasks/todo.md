@@ -36,7 +36,7 @@
 ## Fase 3 — Gestión de Usuarios
 
 - [x] **T09** Modelos UserProfile + clases de permiso por rol (IsAdmin, IsAdminOrTrainer)
-- [ ] **T09b** Modelo Group + CRUD backend + P45 (gestión de grupos: crear, editar, asignar miembros) ← nueva pantalla
+- [x] **T09b** Modelo Group + CRUD backend + P45 (gestión de grupos: crear, editar, asignar miembros) ← nueva pantalla
 - [ ] **T10** User management backend: CRUD + cambio de rol + AuditLog
 - [ ] **T11** Admin users UI — P25 (panel), P26 (listado), P27 (modal crear usuario)
 - [ ] **T12** Carga masiva Excel — backend (validación por fila + previsualización) + P28 + P29 (historial + botón resetear intentos de examen)
@@ -164,4 +164,4 @@
 | 8 — Notificaciones/Dashboard | 4 | Pendiente |
 | 9 — Transversales | 3 | Pendiente |
 | 10 — Producción | 3 (T37, T38b, T38) | Pendiente |
-| **TOTAL** | **41** | **10 / 41** |
+| **TOTAL** | **41** | **11 / 41** |

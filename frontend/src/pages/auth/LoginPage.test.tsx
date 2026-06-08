@@ -91,7 +91,7 @@ describe("LoginPage — renderizado", () => {
   it("muestra los campos de correo y contraseña", () => {
     renderLoginPage();
     expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
   });
 
   it("muestra el botón de enviar", () => {
@@ -106,7 +106,7 @@ describe("LoginPage — renderizado", () => {
 
   it("el campo de contraseña está enmascarado por defecto", () => {
     renderLoginPage();
-    expect(screen.getByLabelText(/contraseña/i)).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText(/^contraseña$/i)).toHaveAttribute("type", "password");
   });
 });
 
@@ -114,7 +114,7 @@ describe("LoginPage — toggle de contraseña", () => {
   it("muestra la contraseña al hacer clic en el botón de mostrar", async () => {
     renderLoginPage();
     const user = userEvent.setup();
-    const input = screen.getByLabelText(/contraseña/i);
+    const input = screen.getByLabelText(/^contraseña$/i);
 
     await user.click(screen.getByRole("button", { name: /mostrar contraseña/i }));
     expect(input).toHaveAttribute("type", "text");
@@ -123,7 +123,7 @@ describe("LoginPage — toggle de contraseña", () => {
   it("vuelve a enmascarar al hacer clic nuevamente", async () => {
     renderLoginPage();
     const user = userEvent.setup();
-    const input = screen.getByLabelText(/contraseña/i);
+    const input = screen.getByLabelText(/^contraseña$/i);
 
     await user.click(screen.getByRole("button", { name: /mostrar contraseña/i }));
     await user.click(screen.getByRole("button", { name: /ocultar contraseña/i }));
@@ -173,7 +173,7 @@ describe("LoginPage — envío exitoso", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "Password123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "Password123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     await waitFor(() => {
@@ -191,7 +191,7 @@ describe("LoginPage — envío exitoso", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "Password123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "Password123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     expect(await screen.findByText("Página Dashboard")).toBeInTheDocument();
@@ -206,7 +206,7 @@ describe("LoginPage — envío exitoso", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "trainer@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "Password123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "Password123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     expect(await screen.findByText("Página Dashboard")).toBeInTheDocument();
@@ -220,7 +220,7 @@ describe("LoginPage — envío exitoso", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "admin@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "Password123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "Password123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     expect(await screen.findByText("Página Admin Usuarios")).toBeInTheDocument();
@@ -238,7 +238,7 @@ describe("LoginPage — envío exitoso", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "Password123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "Password123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     expect(screen.getByText(/ingresando/i)).toBeInTheDocument();
@@ -261,7 +261,7 @@ describe("LoginPage — manejo de errores del API", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "WrongPass123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "WrongPass123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     const alert = await screen.findByRole("alert");
@@ -277,7 +277,7 @@ describe("LoginPage — manejo de errores del API", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "WrongPass123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "WrongPass123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     const alert = await screen.findByRole("alert");
@@ -296,7 +296,7 @@ describe("LoginPage — manejo de errores del API", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "WrongPass123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "WrongPass123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     expect(await screen.findByText("Cuenta Bloqueada")).toBeInTheDocument();
@@ -315,7 +315,7 @@ describe("LoginPage — manejo de errores del API", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "WrongPass123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "WrongPass123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     expect(await screen.findByText("Cuenta Bloqueada")).toBeInTheDocument();
@@ -328,7 +328,7 @@ describe("LoginPage — manejo de errores del API", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "Password123!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "Password123!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     const alert = await screen.findByRole("alert");
@@ -342,7 +342,7 @@ describe("LoginPage — manejo de errores del API", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), "user@empresa.com");
-    await user.type(screen.getByLabelText(/contraseña/i), "WrongPass!");
+    await user.type(screen.getByLabelText(/^contraseña$/i), "WrongPass!");
     await user.click(screen.getByRole("button", { name: /ingresar/i }));
 
     await screen.findByRole("alert");

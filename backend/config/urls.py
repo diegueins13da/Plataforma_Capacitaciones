@@ -11,7 +11,8 @@ urlpatterns = [
         include(
             [
                 path("auth/", include("apps.authentication.urls")),
-                # Users, courses, assessments etc. added in subsequent tasks
+                path("", include("apps.users.urls")),
+                # courses, assessments etc. added in subsequent tasks
             ]
         ),
     ),

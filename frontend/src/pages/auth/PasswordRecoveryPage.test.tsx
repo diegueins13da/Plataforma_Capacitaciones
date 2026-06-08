@@ -119,7 +119,7 @@ describe("PasswordRecoveryPage — paso 2 (código)", () => {
     await user.type(screen.getByLabelText(/código/i), "123");
     await user.click(screen.getByRole("button", { name: /continuar/i }));
 
-    expect(await screen.findByText(/6 dígitos/i)).toBeInTheDocument();
+    expect(await screen.findByText(/El código debe tener 6 dígitos/i)).toBeInTheDocument();
   });
 
   it("avanza al paso 3 con código válido", async () => {
