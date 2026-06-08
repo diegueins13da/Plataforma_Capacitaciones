@@ -28,9 +28,24 @@ class TrainerUserFactory(UserFactory):
 
 
 class UserProfileFactory(DjangoModelFactory):
+    """
+    UserProfile is auto-created by a post_save signal on User.
+    This factory updates the already-existing profile rather than inserting a new row.
+    """
+
     class Meta:
         model = UserProfile
 
     user = factory.SubFactory(UserFactory)
     area = factory.Faker("job", locale="es_MX")
     cargo = factory.Faker("job", locale="es_MX")
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):  # type: ignore[override]
+        user = kwargs["user"]
+        profile, _ = model_class.objects.get_or_create(user=user)
+        for field, value in kwargs.items():
+            if field != "user":
+                setattr(profile, field, value)
+        profile.save()
+        return profile

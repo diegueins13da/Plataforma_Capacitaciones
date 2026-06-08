@@ -38,15 +38,30 @@ class TestUserModel:
 
 @pytest.mark.django_db
 class TestUserProfile:
+    def test_profile_auto_created_on_user_creation(self) -> None:
+        """Signal creates a UserProfile automatically when a User is saved."""
+        user = User.objects.create_user(
+            username="signal_user",
+            email="signal@test.com",
+            password="TestPass123!",
+        )
+        assert UserProfile.objects.filter(user=user).exists()
+        assert user.profile is not None
+
     def test_profile_links_to_user(self) -> None:
         user = User.objects.create_user(
             username="profile_user",
             email="profile@test.com",
             password="TestPass123!",
         )
-        profile = UserProfile.objects.create(user=user, area="TI", cargo="Desarrollador")
-        assert profile.user == user
-        assert user.profile == profile
+        # Profile already created by signal — fetch and update it
+        profile = user.profile
+        profile.area = "TI"
+        profile.cargo = "Desarrollador"
+        profile.save()
+        user.refresh_from_db()
+        assert user.profile.area == "TI"
+        assert user.profile.user == user
 
     def test_profile_area_cargo_optional(self) -> None:
         user = User.objects.create_user(
@@ -54,6 +69,7 @@ class TestUserProfile:
             email="minimal@test.com",
             password="TestPass123!",
         )
-        profile = UserProfile.objects.create(user=user)
+        # Signal creates the profile with blank defaults
+        profile = user.profile
         assert profile.area == ""
         assert profile.cargo == ""

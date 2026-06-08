@@ -35,7 +35,7 @@
 
 ## Fase 3 — Gestión de Usuarios
 
-- [ ] **T09** Modelos UserProfile + clases de permiso por rol (IsAdmin, IsAdminOrTrainer)
+- [x] **T09** Modelos UserProfile + clases de permiso por rol (IsAdmin, IsAdminOrTrainer)
 - [ ] **T09b** Modelo Group + CRUD backend + P45 (gestión de grupos: crear, editar, asignar miembros) ← nueva pantalla
 - [ ] **T10** User management backend: CRUD + cambio de rol + AuditLog
 - [ ] **T11** Admin users UI — P25 (panel), P26 (listado), P27 (modal crear usuario)
@@ -156,7 +156,7 @@
 | 0 — Infraestructura | 2 (T01, T01b) | ✅ Completo |
 | 1 — Auth Backend | 4 | ✅ Completo |
 | 2 — Auth Frontend | 3 | ✅ Completo |
-| 3 — Usuarios | 5 (T09, T09b, T10, T11, T12) | Pendiente |
+| 3 — Usuarios | 5 (T09, T09b, T10, T11, T12) | En progreso |
 | 4 — Cursos Backend | 3 | Pendiente |
 | 5 — Cursos Frontend | 4 | Pendiente |
 | 6 — Evaluaciones | 5 | Pendiente |
@@ -164,4 +164,4 @@
 | 8 — Notificaciones/Dashboard | 4 | Pendiente |
 | 9 — Transversales | 3 | Pendiente |
 | 10 — Producción | 3 (T37, T38b, T38) | Pendiente |
-| **TOTAL** | **41** | **9 / 41** |
+| **TOTAL** | **41** | **10 / 41** |

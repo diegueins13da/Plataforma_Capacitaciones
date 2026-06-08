@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class User(AbstractUser):
@@ -47,3 +49,15 @@ class UserProfile(models.Model):
 
     def __str__(self) -> str:
         return f"Perfil de {self.user}"
+
+
+# ---------------------------------------------------------------------------
+# Signals
+# ---------------------------------------------------------------------------
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender: type, instance: "User", created: bool, **kwargs: object) -> None:
+    """Automatically create a UserProfile when a new User is created."""
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
