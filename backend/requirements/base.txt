@@ -1,0 +1,50 @@
+# --- Web Framework ---
+Django>=5.0,<6.0
+djangorestframework>=3.15,<4.0
+djangorestframework-simplejwt>=5.3,<6.0
+
+# --- Database ---
+psycopg2-binary>=2.9,<3.0
+
+# --- Configuration ---
+django-environ>=0.11,<1.0
+
+# --- API utilities ---
+django-cors-headers>=4.3,<5.0
+django-filter>=24.0
+
+# --- Security ---
+django-axes>=6.4,<7.0
+django-ratelimit>=4.1,<5.0
+argon2-cffi>=23.1,<24.0
+
+# --- Async tasks ---
+celery>=5.4,<6.0
+django-celery-beat>=2.6,<3.0
+redis>=5.0,<6.0
+
+# --- Document parsing ---
+pdfplumber>=0.11,<1.0
+python-pptx>=1.0,<2.0
+
+# --- AI ---
+anthropic>=0.30,<1.0
+
+# --- Content sanitization ---
+bleach>=6.1,<7.0
+
+# --- File exports ---
+openpyxl>=3.1,<4.0
+
+# --- Image handling ---
+Pillow>=10.3,<11.0
+
+# --- QR codes (certificates) ---
+qrcode[pil]>=7.4,<8.0
+
+# --- PDF generation (Fase 2, requires system libs: cairo, pango) ---
+WeasyPrint>=62.0
+
+# --- Structured logging ---
+structlog>=24.0,<25.0
+django-structlog>=8.0,<9.0
