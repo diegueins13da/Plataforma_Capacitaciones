@@ -27,7 +27,7 @@
 
 - [x] **T06** Scaffold frontend: Zustand, Axios (interceptores JWT + refresh), React Router, AppLayout vacío
 - [x] **T07** Login UI — P01
-- [ ] **T08** Auth edge cases UI — P02 (recuperar), P03 (bloqueada), P04 (cambio obligatorio), P05 (sesión expirada)
+- [x] **T08** Auth edge cases UI — P02 (recuperar), P03 (bloqueada), P04 (cambio obligatorio), P05 (sesión expirada)
 
 ### ✅ CHECKPOINT B — Autenticación completa end-to-end (backend + frontend)
 
@@ -155,7 +155,7 @@
 |---|---|---|
 | 0 — Infraestructura | 2 (T01, T01b) | ✅ Completo |
 | 1 — Auth Backend | 4 | ✅ Completo |
-| 2 — Auth Frontend | 3 | 2 / 3 |
+| 2 — Auth Frontend | 3 | ✅ Completo |
 | 3 — Usuarios | 5 (T09, T09b, T10, T11, T12) | Pendiente |
 | 4 — Cursos Backend | 3 | Pendiente |
 | 5 — Cursos Frontend | 4 | Pendiente |
@@ -164,4 +164,4 @@
 | 8 — Notificaciones/Dashboard | 4 | Pendiente |
 | 9 — Transversales | 3 | Pendiente |
 | 10 — Producción | 3 (T37, T38b, T38) | Pendiente |
-| **TOTAL** | **41** | **8 / 41** |
+| **TOTAL** | **41** | **9 / 41** |
