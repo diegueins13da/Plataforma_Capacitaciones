@@ -50,7 +50,7 @@
 
 - [x] **T13** Modelos Course, Module, Enrollment + StorageBackend abstracto + LocalStorage
 - [x] **T14** Course CRUD backend: crear/editar curso + subida módulos (video URL, PDF, texto HTML)
-- [ ] **T15** Publicación de cursos + lógica de enrollment + notificación nuevo_curso_asignado
+- [x] **T15** Publicación de cursos + lógica de enrollment + notificación nuevo_curso_asignado
 
 ### ✅ CHECKPOINT D — ADMIN publica curso, usuarios del grupo reciben Enrollment automático
 
@@ -158,11 +158,11 @@
 | 1 — Auth Backend | 4 | ✅ Completo |
 | 2 — Auth Frontend | 3 | ✅ Completo |
 | 3 — Usuarios | 6 (T09, T09b, T10, T11, T12, T12b) | ✅ Completo |
-| 4 — Cursos Backend | 3 (T13 ✅, T14 ✅) | En progreso |
+| 4 — Cursos Backend | 3 | ✅ Completo |
 | 5 — Cursos Frontend | 4 | Pendiente |
 | 6 — Evaluaciones | 5 | Pendiente |
 | 7 — Generador IA | 5 | Pendiente |
 | 8 — Notificaciones/Dashboard | 4 | Pendiente |
 | 9 — Transversales | 3 | Pendiente |
 | 10 — Producción | 3 (T37, T38b, T38) | Pendiente |
-| **TOTAL** | **42** | **17 / 42** |
+| **TOTAL** | **42** | **18 / 42** |

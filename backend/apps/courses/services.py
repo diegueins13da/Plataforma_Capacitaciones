@@ -12,9 +12,10 @@ import bleach
 from django.db import models as django_models
 from django.db.models import QuerySet
 
+from apps.reports.models import AuditLog
 from storage.factory import get_storage
 
-from .models import Course, Module
+from .models import Course, Enrollment, Module
 
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
@@ -106,6 +107,10 @@ def list_courses(user: "User", *, estado: str | None = None, area_id: int | None
     )
     if user.role == "TRAINER":
         qs = qs.filter(created_by=user)
+    elif user.role == "USUARIO":
+        # Regular users only see courses they are enrolled in
+        enrolled_ids = Enrollment.objects.filter(user=user).values_list("course_id", flat=True)
+        qs = qs.filter(pk__in=enrolled_ids)
     if estado:
         qs = qs.filter(estado=estado)
     if area_id:
@@ -233,3 +238,60 @@ def delete_module(course_id: int, module_id: int, user: "User") -> None:
         get_storage().delete(module.archivo_pdf)
 
     module.delete()
+
+
+# ---------------------------------------------------------------------------
+# Publication + enrollment
+# ---------------------------------------------------------------------------
+
+
+def publish_course(course_id: int, user: "User", ip: str | None = None) -> "Course":
+    """
+    Publish a course and automatically enroll all users in the assigned groups.
+    Creates a Notification per new Enrollment and records an AuditLog entry.
+    """
+    from apps.notifications.models import Notification
+    from apps.notifications.services import create_notification
+
+    course = get_course(course_id, user)
+    _assert_owner(course, user)
+
+    if not course.modules.exists():
+        raise CourseValidationError(
+            "No se puede publicar un curso sin módulos. Agrega al menos un módulo."
+        )
+
+    course.publish()  # raises ValueError if already published/archived
+
+    enrollments_created = 0
+    for group in course.audiencia_grupos.prefetch_related("members__user").all():
+        for profile in group.members.select_related("user").filter(user__is_active=True):
+            enrollment, created = Enrollment.objects.get_or_create(
+                user=profile.user, course=course
+            )
+            if created:
+                enrollments_created += 1
+                create_notification(
+                    user=profile.user,
+                    tipo=Notification.Tipo.NUEVO_CURSO,
+                    titulo=f"Nuevo curso asignado: {course.titulo}",
+                    mensaje=(
+                        f"Se te ha inscrito en el curso '{course.titulo}'. "
+                        f"{'Fecha límite: ' + course.fecha_limite.strftime('%d/%m/%Y') if course.fecha_limite else 'Sin fecha límite.'}"
+                    ),
+                    referencia_id=course.pk,
+                    referencia_tipo="course",
+                )
+
+    AuditLog.objects.create(
+        user=user,
+        accion="CURSO_PUBLICADO",
+        ip=ip,
+        detalles_json={
+            "course_id": course.pk,
+            "titulo": course.titulo,
+            "enrollments_created": enrollments_created,
+        },
+    )
+
+    return course

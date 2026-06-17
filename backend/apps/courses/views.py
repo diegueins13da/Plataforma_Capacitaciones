@@ -100,6 +100,25 @@ class CourseViewSet(GenericViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ------------------------------------------------------------------
+    # Publication
+    # ------------------------------------------------------------------
+
+    @action(detail=True, methods=["post"], url_path="publish")
+    def publish(self, request: Request, pk: str | None = None) -> Response:
+        ip = request.META.get("REMOTE_ADDR")
+        try:
+            course = services.publish_course(int(pk), request.user, ip=ip)
+        except Course.DoesNotExist:
+            return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except services.CoursePermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except services.CourseValidationError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(CourseDetailSerializer(course).data)
+
+    # ------------------------------------------------------------------
     # Module sub-resource
     # ------------------------------------------------------------------
 
