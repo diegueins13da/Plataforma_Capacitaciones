@@ -101,6 +101,26 @@ class CourseViewSet(GenericViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ------------------------------------------------------------------
+    # Assessment (get-or-create for the course wizard)
+    # ------------------------------------------------------------------
+
+    @action(detail=True, methods=["get"], url_path="assessment")
+    def assessment(self, request: Request, pk: str | None = None) -> Response:
+        from apps.assessments.serializers import AssessmentSerializer
+        from apps.assessments.services import (
+            AssessmentPermissionDenied,
+            get_or_create_course_assessment,
+        )
+
+        try:
+            a = get_or_create_course_assessment(int(pk), request.user)
+        except Course.DoesNotExist:
+            return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except AssessmentPermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        return Response(AssessmentSerializer(a).data)
+
+    # ------------------------------------------------------------------
     # Publication
     # ------------------------------------------------------------------
 

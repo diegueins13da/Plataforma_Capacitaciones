@@ -70,7 +70,7 @@
 ## Fase 6 — Evaluaciones
 
 - [x] **T20** Modelos Assessment, Question, UserAnswer + migraciones
-- [ ] **T21** Assessment CRUD backend: banco de preguntas
+- [x] **T21** Assessment CRUD backend: banco de preguntas
 - [ ] **T22** Servicio de examen: grading, intentos, guardado automático cada 30s, tiempo límite
 - [ ] **T23** Assessment admin UI en wizard — P32 (banco de preguntas, crear/editar/borrar preguntas)
 - [ ] **T24** Examen frontend: intro (P17), pregunta en curso (P18), aprobado (P19), reprobado (P20), sin intentos (P21)
