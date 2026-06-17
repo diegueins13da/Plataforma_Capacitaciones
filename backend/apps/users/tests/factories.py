@@ -55,7 +55,7 @@ class UserProfileFactory(DjangoModelFactory):
         model = UserProfile
 
     user = factory.SubFactory(UserFactory)
-    area = factory.Faker("job", locale="es_MX")
+    area = None  # Area is a FK — pass an Area instance or leave null
     cargo = factory.Faker("job", locale="es_MX")
 
     @classmethod
