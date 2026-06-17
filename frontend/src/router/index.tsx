@@ -22,6 +22,8 @@ const CourseWizardPage = lazy(() => import("../pages/admin/courses/CourseWizardP
 const CourseCatalogPage = lazy(() => import("../pages/courses/CourseCatalogPage"));
 const CourseDetailPage = lazy(() => import("../pages/courses/CourseDetailPage"));
 const MyCourseListPage = lazy(() => import("../pages/courses/MyCourseListPage"));
+const ModulePlayerPage = lazy(() => import("../pages/courses/ModulePlayerPage"));
+const CourseCompletedPage = lazy(() => import("../pages/courses/CourseCompletedPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
 const ForbiddenPage = lazy(() => import("../pages/errors/ForbiddenPage"));
@@ -51,6 +53,8 @@ export function AppRouter() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/courses" element={<CourseCatalogPage />} />
             <Route path="/courses/:id" element={<CourseDetailPage />} />
+            <Route path="/courses/:courseId/modules/:moduleId" element={<ModulePlayerPage />} />
+            <Route path="/courses/:courseId/completed" element={<CourseCompletedPage />} />
             <Route path="/my-courses" element={<MyCourseListPage />} />
           </Route>
         </Route>

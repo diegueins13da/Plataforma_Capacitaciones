@@ -8,7 +8,7 @@ from rest_framework.viewsets import GenericViewSet
 from apps.users.permissions import IsAdmin, IsAdminOrTrainer
 
 from . import services
-from .models import Course, Module
+from .models import Course, Enrollment, Module, ModuleProgress
 from .serializers import (
     CourseCreateSerializer,
     CourseDetailSerializer,
@@ -196,3 +196,101 @@ class CourseViewSet(GenericViewSet):
         except services.CoursePermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EnrollmentViewSet(GenericViewSet):
+    """
+    Enrollment sub-resource endpoints.
+
+    Allows a user to:
+    - Mark a module as completed (POST .../complete/)
+    - Read and update their position within a module (GET/PATCH .../progress/)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"modules/(?P<module_id>\d+)/complete",
+    )
+    def complete_module(
+        self, request: Request, pk: str | None = None, module_id: str | None = None
+    ) -> Response:
+        try:
+            enrollment = services.complete_module(int(pk), int(module_id), request.user)
+        except (Enrollment.DoesNotExist, Module.DoesNotExist):
+            return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except services.CoursePermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except services.CourseValidationError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {
+                "id": enrollment.pk,
+                "estado": enrollment.estado,
+                "progreso_porcentaje": enrollment.progreso_porcentaje,
+                "fecha_completado": (
+                    enrollment.fecha_completado.isoformat()
+                    if enrollment.fecha_completado
+                    else None
+                ),
+            }
+        )
+
+    @action(
+        detail=True,
+        methods=["get", "patch"],
+        url_path=r"modules/(?P<module_id>\d+)/progress",
+    )
+    def module_progress(
+        self, request: Request, pk: str | None = None, module_id: str | None = None
+    ) -> Response:
+        if request.method == "GET":
+            return self._get_progress(request, pk, module_id)
+        return self._patch_progress(request, pk, module_id)
+
+    def _get_progress(
+        self, request: Request, pk: str | None, module_id: str | None
+    ) -> Response:
+        try:
+            mp = services.get_module_progress(int(pk), int(module_id), request.user)
+        except (Enrollment.DoesNotExist, Module.DoesNotExist):
+            return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except services.CoursePermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {
+                "module_id": mp.module_id,
+                "is_completed": mp.is_completed,
+                "last_position_json": mp.last_position_json,
+                "fecha_completado": (
+                    mp.fecha_completado.isoformat() if mp.fecha_completado else None
+                ),
+            }
+        )
+
+    def _patch_progress(
+        self, request: Request, pk: str | None, module_id: str | None
+    ) -> Response:
+        position_json = request.data.get("last_position_json")
+        if position_json is None or not isinstance(position_json, dict):
+            return Response(
+                {"error": "Se requiere last_position_json como objeto JSON."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            mp = services.update_module_position(
+                int(pk), int(module_id), position_json, request.user
+            )
+        except (Enrollment.DoesNotExist, Module.DoesNotExist):
+            return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except services.CoursePermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {
+                "module_id": mp.module_id,
+                "is_completed": mp.is_completed,
+                "last_position_json": mp.last_position_json,
+            }
+        )

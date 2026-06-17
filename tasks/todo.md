@@ -60,7 +60,7 @@
 
 - [x] **T16** Wizard pasos 1-2: info general (P30) + módulos con upload PDF (P31)
 - [x] **T17** Wizard pasos 3-4: evaluación config (P32) + publicación/audiencia (P33) + listado cursos (P35)
-- [ ] **T18** Catálogo (P10), detalle de curso (P11), mis cursos (P12) — con semáforo de urgencia
+- [x] **T18** Catálogo (P10), detalle de curso (P11), mis cursos (P12) — con semáforo de urgencia
 - [ ] **T19** Reproductores: video (P13), PDF (P14), texto (P15) con completion tracking + curso completado (P16)
 
 ### ✅ CHECKPOINT E — Flujo completo: admin crea curso → usuario lo consume → llega a P16

@@ -15,7 +15,7 @@ from django.db.models import QuerySet
 from apps.reports.models import AuditLog
 from storage.factory import get_storage
 
-from .models import Course, Enrollment, Module
+from .models import Course, Enrollment, Module, ModuleProgress
 
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
@@ -295,3 +295,104 @@ def publish_course(course_id: int, user: "User", ip: str | None = None) -> "Cour
     )
 
     return course
+
+
+# ---------------------------------------------------------------------------
+# Completion tracking + resume position
+# ---------------------------------------------------------------------------
+
+
+def complete_module(enrollment_id: int, module_id: int, user: "User") -> "Enrollment":
+    """
+    Mark a module as completed for a user's enrollment.
+
+    Validates enrollment ownership and sequential unlock rules.
+    Recalculates enrollment progress after marking complete.
+    Idempotent: calling twice has no additional effect.
+    """
+    from django.utils import timezone
+
+    try:
+        enrollment = Enrollment.objects.select_related("course", "user").get(pk=enrollment_id)
+    except Enrollment.DoesNotExist:
+        raise Enrollment.DoesNotExist(enrollment_id)
+
+    if enrollment.user_id != user.pk:
+        raise CoursePermissionDenied()
+
+    try:
+        module = enrollment.course.modules.get(pk=module_id)
+    except Module.DoesNotExist:
+        raise Module.DoesNotExist(module_id)
+
+    # Sequential lock: all prior modules must be completed first
+    if module.es_secuencial and module.orden > 1:
+        prev_modules = list(enrollment.course.modules.filter(orden__lt=module.orden))
+        completed_ids = set(
+            enrollment.module_progress.filter(is_completed=True).values_list("module_id", flat=True)
+        )
+        if not all(m.pk in completed_ids for m in prev_modules):
+            raise CourseValidationError(
+                "Debes completar los módulos anteriores antes de continuar."
+            )
+
+    progress, _ = ModuleProgress.objects.get_or_create(
+        enrollment=enrollment,
+        module=module,
+    )
+    if not progress.is_completed:
+        progress.is_completed = True
+        progress.fecha_completado = timezone.now()
+        progress.save(update_fields=["is_completed", "fecha_completado"])
+
+    enrollment.update_progress()
+    enrollment.refresh_from_db()
+    return enrollment
+
+
+def update_module_position(
+    enrollment_id: int, module_id: int, position_json: dict, user: "User"
+) -> "ModuleProgress":
+    """Save the user's current position in a module (video second, PDF page, text scroll)."""
+    try:
+        enrollment = Enrollment.objects.select_related("course").get(pk=enrollment_id)
+    except Enrollment.DoesNotExist:
+        raise Enrollment.DoesNotExist(enrollment_id)
+
+    if enrollment.user_id != user.pk:
+        raise CoursePermissionDenied()
+
+    try:
+        module = enrollment.course.modules.get(pk=module_id)
+    except Module.DoesNotExist:
+        raise Module.DoesNotExist(module_id)
+
+    progress, _ = ModuleProgress.objects.get_or_create(
+        enrollment=enrollment,
+        module=module,
+    )
+    progress.last_position_json = position_json
+    progress.save(update_fields=["last_position_json"])
+    return progress
+
+
+def get_module_progress(enrollment_id: int, module_id: int, user: "User") -> "ModuleProgress":
+    """Return the user's progress record for a module; creates an empty one if missing."""
+    try:
+        enrollment = Enrollment.objects.select_related("course").get(pk=enrollment_id)
+    except Enrollment.DoesNotExist:
+        raise Enrollment.DoesNotExist(enrollment_id)
+
+    if enrollment.user_id != user.pk:
+        raise CoursePermissionDenied()
+
+    try:
+        module = enrollment.course.modules.get(pk=module_id)
+    except Module.DoesNotExist:
+        raise Module.DoesNotExist(module_id)
+
+    progress, _ = ModuleProgress.objects.get_or_create(
+        enrollment=enrollment,
+        module=module,
+    )
+    return progress
