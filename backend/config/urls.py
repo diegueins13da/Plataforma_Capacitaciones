@@ -13,7 +13,7 @@ urlpatterns = [
                 path("auth/", include("apps.authentication.urls")),
                 path("", include("apps.users.urls")),
                 path("", include("apps.config.urls")),
-                # courses, assessments etc. added in subsequent tasks
+                path("", include("apps.courses.urls")),
             ]
         ),
     ),
