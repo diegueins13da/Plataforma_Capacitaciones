@@ -37,11 +37,20 @@ export interface Course {
   instructor_nombre: string;
   instructor: number | null;
   module_count: number;
-  modules: CourseModule[];
+  modules_with_status: CourseModuleWithStatus[];
   audiencia_grupos: CourseGroup[];
   cert_expira_meses: number | null;
+  enrollment: CourseEnrollment | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CourseEnrollment {
+  id: number;
+  estado: "EN_PROGRESO" | "COMPLETADO" | "VENCIDO";
+  progreso_porcentaje: number;
+  fecha_inscripcion: string;
+  fecha_completado: string | null;
 }
 
 export interface CourseListItem {
@@ -57,8 +66,15 @@ export interface CourseListItem {
   area_nombre: string;
   instructor_nombre: string;
   module_count: number;
+  enrollment: CourseEnrollment | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CourseModuleWithStatus extends CourseModule {
+  is_completed: boolean;
+  is_unlocked: boolean;
+  last_position_json: Record<string, number>;
 }
 
 export interface CreateCoursePayload {

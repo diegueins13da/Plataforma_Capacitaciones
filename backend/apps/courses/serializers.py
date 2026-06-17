@@ -3,6 +3,16 @@ from rest_framework import serializers
 from .models import Certificate, Course, Enrollment, Module, ModuleProgress
 
 
+class UserEnrollmentSerializer(serializers.Serializer):
+    """Enrollment data scoped to the requesting user — embedded in course responses."""
+
+    id = serializers.IntegerField()
+    estado = serializers.CharField()
+    progreso_porcentaje = serializers.IntegerField()
+    fecha_inscripcion = serializers.DateTimeField()
+    fecha_completado = serializers.DateTimeField(allow_null=True)
+
+
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
@@ -49,6 +59,7 @@ class CourseListSerializer(serializers.ModelSerializer):
     instructor_nombre = serializers.SerializerMethodField()
     area_nombre = serializers.SerializerMethodField()
     module_count = serializers.SerializerMethodField()
+    enrollment = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -65,6 +76,7 @@ class CourseListSerializer(serializers.ModelSerializer):
             "area_nombre",
             "instructor_nombre",
             "module_count",
+            "enrollment",
             "created_at",
             "updated_at",
         ]
@@ -80,16 +92,59 @@ class CourseListSerializer(serializers.ModelSerializer):
     def get_module_count(self, obj: Course) -> int:
         return obj.modules.count()
 
+    def get_enrollment(self, obj: Course) -> dict | None:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return None
+        enrollment = obj.enrollments.filter(user=request.user).first()
+        if not enrollment:
+            return None
+        return UserEnrollmentSerializer(enrollment).data
+
 
 class CourseDetailSerializer(CourseListSerializer):
-    modules = ModuleSerializer(many=True, read_only=True)
+    modules_with_status = serializers.SerializerMethodField()
     audiencia_grupos = serializers.SerializerMethodField()
 
     class Meta(CourseListSerializer.Meta):
-        fields = CourseListSerializer.Meta.fields + ["modules", "audiencia_grupos", "cert_expira_meses"]
+        fields = CourseListSerializer.Meta.fields + [
+            "modules_with_status",
+            "audiencia_grupos",
+            "cert_expira_meses",
+        ]
 
     def get_audiencia_grupos(self, obj: Course) -> list[dict]:
         return [{"id": g.id, "nombre": g.nombre} for g in obj.audiencia_grupos.all()]
+
+    def get_modules_with_status(self, obj: Course) -> list[dict]:
+        request = self.context.get("request")
+        enrollment = None
+        if request and request.user.is_authenticated:
+            enrollment = obj.enrollments.filter(user=request.user).first()
+
+        completed_ids: set[int] = set()
+        position_map: dict[int, dict] = {}
+        if enrollment:
+            for mp in enrollment.module_progress.all():
+                if mp.is_completed:
+                    completed_ids.add(mp.module_id)
+                position_map[mp.module_id] = mp.last_position_json
+
+        result = []
+        modules_ordered = list(obj.modules.order_by("orden"))
+        for module in modules_ordered:
+            is_completed = module.pk in completed_ids
+            is_unlocked = True
+            if module.es_secuencial and module.orden > 1:
+                prev = [m for m in modules_ordered if m.orden < module.orden]
+                is_unlocked = all(m.pk in completed_ids for m in prev)
+            result.append({
+                **ModuleSerializer(module).data,
+                "is_completed": is_completed,
+                "is_unlocked": is_unlocked,
+                "last_position_json": position_map.get(module.pk, {}),
+            })
+        return result
 
 
 class CourseCreateSerializer(serializers.ModelSerializer):

@@ -46,12 +46,13 @@ class CourseViewSet(GenericViewSet):
             estado=estado,
             area_id=int(area_id) if area_id else None,
         )
+        ctx = {"request": request}
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(
-                CourseListSerializer(page, many=True).data
+                CourseListSerializer(page, many=True, context=ctx).data
             )
-        return Response(CourseListSerializer(qs, many=True).data)
+        return Response(CourseListSerializer(qs, many=True, context=ctx).data)
 
     def retrieve(self, request: Request, pk: str | None = None) -> Response:
         try:
@@ -60,7 +61,7 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except services.CoursePermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
-        return Response(CourseDetailSerializer(course).data)
+        return Response(CourseDetailSerializer(course, context={"request": request}).data)
 
     def create(self, request: Request) -> Response:
         serializer = CourseCreateSerializer(data=request.data)
@@ -70,7 +71,7 @@ class CourseViewSet(GenericViewSet):
             course = services.create_course(dict(serializer.validated_data), request.user)
         except services.CourseValidationError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(CourseDetailSerializer(course).data, status=status.HTTP_201_CREATED)
+        return Response(CourseDetailSerializer(course, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request: Request, pk: str | None = None) -> Response:
         serializer = CourseCreateSerializer(data=request.data, partial=True)
@@ -82,7 +83,7 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except services.CoursePermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
-        return Response(CourseDetailSerializer(course).data)
+        return Response(CourseDetailSerializer(course, context={"request": request}).data)
 
     def destroy(self, request: Request, pk: str | None = None) -> Response:
         try:
@@ -116,7 +117,7 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except ValueError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(CourseDetailSerializer(course).data)
+        return Response(CourseDetailSerializer(course, context={"request": request}).data)
 
     # ------------------------------------------------------------------
     # Module sub-resource
