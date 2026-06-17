@@ -9,6 +9,9 @@ import type {
 } from "../types/groups";
 import type {
   AdminUser,
+  BulkImportCommitResult,
+  BulkImportPreviewResult,
+  BulkImportValidRow,
   ChangeRolePayload,
   CreateUserPayload,
   UpdateUserPayload,
@@ -105,6 +108,28 @@ export const usersService = {
 
   async deactivateUser(id: number): Promise<AdminUser> {
     const res = await api.post<AdminUser>(`/v1/users/${id}/deactivate/`);
+    return res.data;
+  },
+
+  // ---------------------------------------------------------------------------
+  // Bulk import
+  // ---------------------------------------------------------------------------
+
+  async bulkImportPreview(file: File): Promise<BulkImportPreviewResult> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await api.post<BulkImportPreviewResult>(
+      "/v1/users/bulk-import/preview/",
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    return res.data;
+  },
+
+  async bulkImportConfirm(rows: BulkImportValidRow[]): Promise<BulkImportCommitResult> {
+    const res = await api.post<BulkImportCommitResult>("/v1/users/bulk-import/confirm/", {
+      rows,
+    });
     return res.data;
   },
 };

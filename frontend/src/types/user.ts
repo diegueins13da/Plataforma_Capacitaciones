@@ -46,3 +46,37 @@ export interface UserFilters {
   search?: string;
   page?: number;
 }
+
+// ---------------------------------------------------------------------------
+// Bulk import
+// ---------------------------------------------------------------------------
+
+export interface BulkImportValidRow {
+  row: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  area?: string;
+  cargo?: string;
+  grupo_id?: number | null;
+}
+
+export interface BulkImportErrorRow {
+  row: number;
+  email: string;
+  errors: string[];
+}
+
+export interface BulkImportPreviewResult {
+  valid_count: number;
+  error_count: number;
+  valid_rows: BulkImportValidRow[];
+  error_rows: BulkImportErrorRow[];
+}
+
+export interface BulkImportCommitResult {
+  created: number;
+  failed: number;
+  errors: BulkImportErrorRow[];
+}

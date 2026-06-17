@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -13,6 +14,9 @@ from .models import Group, User, UserProfile
 from .permissions import IsAdmin
 from .serializers import (
     AddMembersSerializer,
+    BulkImportConfirmRequestSerializer,
+    BulkImportPreviewResponseSerializer,
+    BulkImportCommitResponseSerializer,
     ChangeRoleSerializer,
     GroupMemberSerializer,
     GroupSerializer,
@@ -216,6 +220,60 @@ class UserViewSet(viewsets.GenericViewSet):
             ip=_get_client_ip(request),
         )
         return Response(UserListSerializer(updated).data)
+
+    # ------------------------------------------------------------------
+    # Bulk import
+    # ------------------------------------------------------------------
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="bulk-import/preview",
+        parser_classes=[MultiPartParser],
+    )
+    def bulk_import_preview(self, request):
+        """
+        POST /users/bulk-import/preview/
+        Accepts multipart/form-data with a single 'file' field (.xlsx).
+        Returns a preview: valid rows and rows with errors.
+        """
+        file = request.FILES.get("file")
+        if not file:
+            return Response(
+                {"file": ["Se requiere adjuntar un archivo."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            result = services.bulk_import_preview(file)
+        except DjangoValidationError as exc:
+            return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            BulkImportPreviewResponseSerializer(result).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="bulk-import/confirm",
+    )
+    def bulk_import_confirm(self, request):
+        """
+        POST /users/bulk-import/confirm/
+        Accepts JSON {"rows": [...]} — the valid_rows returned by preview.
+        Creates the users and returns a summary.
+        """
+        serializer = BulkImportConfirmRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = services.bulk_import_commit(
+            rows=serializer.validated_data["rows"],
+            admin_user=request.user,
+            ip=_get_client_ip(request),
+        )
+        return Response(
+            BulkImportCommitResponseSerializer(result).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 def _get_client_ip(request) -> str:

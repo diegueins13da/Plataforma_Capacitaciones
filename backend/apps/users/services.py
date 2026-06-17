@@ -1,24 +1,74 @@
 """
-User app service layer — Group management + User CRUD.
+User app service layer — Group management + User CRUD + bulk import.
 
 All business logic lives here; views only handle HTTP serialisation.
 """
 from __future__ import annotations
 
+import io
 import secrets
 import string
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
+from django.core.validators import validate_email as _validate_email_format
 
 from apps.reports.models import AuditLog
 
 from .models import Group, User, UserProfile
 
 if TYPE_CHECKING:
-    pass
+    from django.core.files.uploadedfile import UploadedFile
+
+
+# ---------------------------------------------------------------------------
+# Bulk-import types
+# ---------------------------------------------------------------------------
+
+MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+XLSX_MAGIC = b"PK\x03\x04"  # All .xlsx / OpenXML files are ZIP archives
+
+# Maps Spanish labels (and English codes) to internal role codes
+_ROLE_MAP: dict[str, str] = {
+    "administrador": User.Role.ADMIN,
+    "admin": User.Role.ADMIN,
+    "capacitador": User.Role.TRAINER,
+    "trainer": User.Role.TRAINER,
+    "usuario": User.Role.USUARIO,
+}
+
+
+class ValidRow(TypedDict):
+    row: int
+    email: str
+    first_name: str
+    last_name: str
+    role: str
+    area: str
+    cargo: str
+    grupo_id: int | None
+
+
+class ErrorRow(TypedDict):
+    row: int
+    email: str
+    errors: list[str]
+
+
+class BulkImportPreviewResult(TypedDict):
+    valid_count: int
+    error_count: int
+    valid_rows: list[ValidRow]
+    error_rows: list[ErrorRow]
+
+
+class BulkImportCommitResult(TypedDict):
+    created: int
+    failed: int
+    errors: list[ErrorRow]
 
 
 # ---------------------------------------------------------------------------
@@ -275,3 +325,250 @@ def remove_member(group: Group, user_id: int) -> None:
         )
     profile.grupo = None
     profile.save()
+
+
+# ---------------------------------------------------------------------------
+# Bulk import
+# ---------------------------------------------------------------------------
+
+
+def bulk_import_preview(
+    file: "UploadedFile",
+) -> BulkImportPreviewResult:
+    """
+    Parse an uploaded .xlsx file and return a preview of valid/invalid rows.
+
+    Does NOT create any users. Validates:
+    - Magic bytes (must be XLSX / ZIP format)
+    - File size (≤ 5 MB)
+    - Required columns: email, nombre, apellido, rol
+    - Per-row: email format, email uniqueness, role value, non-empty name fields
+    - Optional: area, cargo, grupo (looked up by name)
+    """
+    try:
+        from openpyxl import load_workbook  # type: ignore[import-untyped]
+    except ImportError as exc:
+        raise ValidationError({"file": ["El servidor no tiene soporte para archivos Excel."]}) from exc
+
+    # ── File size guard ──────────────────────────────────────────────────────
+    file.seek(0, 2)  # seek to end
+    size = file.tell()
+    file.seek(0)
+    if size > MAX_IMPORT_FILE_BYTES:
+        raise ValidationError(
+            {"file": [f"El archivo supera el límite de {MAX_IMPORT_FILE_BYTES // 1024 // 1024} MB."]}
+        )
+
+    # ── Magic bytes ─────────────────────────────────────────────────────────
+    magic = file.read(4)
+    file.seek(0)
+    if magic[:4] != XLSX_MAGIC:
+        raise ValidationError(
+            {"file": ["El archivo debe estar en formato Excel (.xlsx)."]}
+        )
+
+    # ── Parse workbook ──────────────────────────────────────────────────────
+    try:
+        wb = load_workbook(
+            filename=io.BytesIO(file.read()),
+            read_only=True,
+            data_only=True,
+        )
+    except Exception as exc:
+        raise ValidationError({"file": ["No se pudo leer el archivo Excel. Verifica que no esté corrupto."]}) from exc
+
+    ws = wb.active
+    if ws is None:
+        raise ValidationError({"file": ["El archivo Excel no contiene hojas de cálculo."]})
+
+    all_rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    if not all_rows:
+        raise ValidationError({"file": ["El archivo está vacío."]})
+
+    # ── Build column index from header row ──────────────────────────────────
+    header = [str(c).strip().lower() if c else "" for c in all_rows[0]]
+    REQUIRED_COLS = ["email", "nombre", "apellido", "rol"]
+    col_idx: dict[str, int] = {}
+    missing: list[str] = []
+    for col in REQUIRED_COLS:
+        try:
+            col_idx[col] = header.index(col)
+        except ValueError:
+            missing.append(col)
+    if missing:
+        raise ValidationError(
+            {"file": [f"Faltan columnas obligatorias en el encabezado: {', '.join(missing)}"]}
+        )
+
+    # Optional columns
+    for col in ["area", "cargo", "grupo"]:
+        try:
+            col_idx[col] = header.index(col)
+        except ValueError:
+            col_idx[col] = -1  # not present
+
+    # Pre-load group names for fast lookup
+    group_by_name: dict[str, int] = {
+        name.lower(): gid
+        for gid, name in Group.objects.values_list("id", "nombre")
+    }
+
+    # Track emails seen so far in *this file* to catch intra-file duplicates
+    seen_emails: set[str] = set()
+
+    valid_rows: list[ValidRow] = []
+    error_rows: list[ErrorRow] = []
+
+    def _cell(row_values: tuple, col: str) -> str:
+        idx = col_idx.get(col, -1)
+        if idx < 0 or idx >= len(row_values):
+            return ""
+        return str(row_values[idx]).strip() if row_values[idx] is not None else ""
+
+    for row_number, row_values in enumerate(all_rows[1:], start=2):
+        # Skip completely empty rows
+        if all(v is None or str(v).strip() == "" for v in row_values):
+            continue
+
+        email_raw = _cell(row_values, "email")
+        errors: list[str] = []
+
+        # ── Email ────────────────────────────────────────────────────────────
+        email = email_raw.lower().strip()
+        if not email:
+            errors.append("El correo electrónico es obligatorio.")
+        else:
+            try:
+                _validate_email_format(email)
+            except Exception:
+                errors.append("El correo electrónico no tiene un formato válido.")
+            else:
+                if email in seen_emails:
+                    errors.append("Correo electrónico duplicado dentro del archivo.")
+                elif User.objects.filter(email=email).exists():
+                    errors.append("Ya existe un usuario con este correo.")
+                else:
+                    seen_emails.add(email)
+
+        # ── First / last name ────────────────────────────────────────────────
+        first_name = _cell(row_values, "nombre")
+        last_name = _cell(row_values, "apellido")
+        if not first_name:
+            errors.append("El nombre es obligatorio.")
+        elif len(first_name) > 150:
+            errors.append("El nombre no puede superar 150 caracteres.")
+        if not last_name:
+            errors.append("El apellido es obligatorio.")
+        elif len(last_name) > 150:
+            errors.append("El apellido no puede superar 150 caracteres.")
+
+        # ── Role ─────────────────────────────────────────────────────────────
+        role_raw = _cell(row_values, "rol")
+        role = _ROLE_MAP.get(role_raw.lower(), None) if role_raw else None
+        if not role_raw:
+            errors.append("El rol es obligatorio.")
+        elif role is None:
+            errors.append(
+                f"Rol '{role_raw}' no reconocido. Valores aceptados: Administrador, Capacitador, Usuario."
+            )
+
+        # ── Optional fields ──────────────────────────────────────────────────
+        area = _cell(row_values, "area")
+        cargo = _cell(row_values, "cargo")
+        grupo_name = _cell(row_values, "grupo")
+        grupo_id: int | None = None
+        if grupo_name:
+            grupo_id = group_by_name.get(grupo_name.lower())
+            if grupo_id is None:
+                errors.append(f"El grupo '{grupo_name}' no existe.")
+
+        # ── Result ───────────────────────────────────────────────────────────
+        if errors:
+            error_rows.append(ErrorRow(row=row_number, email=email_raw, errors=errors))
+        else:
+            assert role is not None  # validated above
+            valid_rows.append(
+                ValidRow(
+                    row=row_number,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=role,
+                    area=area,
+                    cargo=cargo,
+                    grupo_id=grupo_id,
+                )
+            )
+
+    return BulkImportPreviewResult(
+        valid_count=len(valid_rows),
+        error_count=len(error_rows),
+        valid_rows=valid_rows,
+        error_rows=error_rows,
+    )
+
+
+def bulk_import_commit(
+    rows: list[ValidRow],
+    *,
+    admin_user: User,
+    ip: str,
+) -> BulkImportCommitResult:
+    """
+    Create users from the previously-previewed valid rows.
+
+    Re-validates email uniqueness to handle race conditions between
+    preview and commit. Records a single AuditLog entry.
+    """
+    created = 0
+    commit_errors: list[ErrorRow] = []
+
+    for row_data in rows:
+        row_num = row_data["row"]
+        email = row_data["email"]
+        # Lightweight race-condition guard
+        if User.objects.filter(email=email).exists():
+            commit_errors.append(
+                ErrorRow(
+                    row=row_num,
+                    email=email,
+                    errors=["Ya existe un usuario con este correo (registrado antes de confirmar)."],
+                )
+            )
+            continue
+        try:
+            create_user(
+                email=email,
+                first_name=row_data["first_name"],
+                last_name=row_data["last_name"],
+                role=row_data["role"],
+                area=row_data.get("area", ""),
+                cargo=row_data.get("cargo", ""),
+                grupo_id=row_data.get("grupo_id"),
+                admin_user=admin_user,
+                ip=ip,
+            )
+            created += 1
+        except Exception:  # noqa: BLE001
+            commit_errors.append(
+                ErrorRow(row=row_num, email=email, errors=["Error interno al crear el usuario."])
+            )
+
+    AuditLog.objects.create(
+        user=admin_user,
+        accion="BULK_USER_IMPORT",
+        ip=ip,
+        detalles_json={
+            "created": created,
+            "failed": len(commit_errors),
+            "total_rows": len(rows),
+        },
+    )
+
+    return BulkImportCommitResult(
+        created=created,
+        failed=len(commit_errors),
+        errors=commit_errors,
+    )

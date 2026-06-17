@@ -118,3 +118,44 @@ class UserUpdateSerializer(serializers.Serializer):
 
 class ChangeRoleSerializer(serializers.Serializer):
     new_role = serializers.ChoiceField(choices=User.Role.choices)
+
+
+# ---------------------------------------------------------------------------
+# Bulk import serializers
+# ---------------------------------------------------------------------------
+
+
+class BulkImportValidRowSerializer(serializers.Serializer):
+    """One valid row returned from the preview endpoint, or sent to confirm."""
+
+    row = serializers.IntegerField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    role = serializers.ChoiceField(choices=User.Role.choices)
+    area = serializers.CharField(max_length=150, default="", allow_blank=True, required=False)
+    cargo = serializers.CharField(max_length=150, default="", allow_blank=True, required=False)
+    grupo_id = serializers.IntegerField(allow_null=True, required=False)
+
+
+class BulkImportErrorRowSerializer(serializers.Serializer):
+    row = serializers.IntegerField()
+    email = serializers.CharField()
+    errors = serializers.ListField(child=serializers.CharField())
+
+
+class BulkImportPreviewResponseSerializer(serializers.Serializer):
+    valid_count = serializers.IntegerField()
+    error_count = serializers.IntegerField()
+    valid_rows = BulkImportValidRowSerializer(many=True)
+    error_rows = BulkImportErrorRowSerializer(many=True)
+
+
+class BulkImportConfirmRequestSerializer(serializers.Serializer):
+    rows = BulkImportValidRowSerializer(many=True, min_length=1)
+
+
+class BulkImportCommitResponseSerializer(serializers.Serializer):
+    created = serializers.IntegerField()
+    failed = serializers.IntegerField()
+    errors = BulkImportErrorRowSerializer(many=True)

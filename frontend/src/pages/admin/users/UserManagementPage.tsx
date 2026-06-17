@@ -6,6 +6,7 @@
  * FAB "Nuevo Usuario" opens P27 (CreateUserModal).
  */
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { usersService } from "../../../services/usersService";
@@ -136,12 +137,20 @@ export default function UserManagementPage() {
             {totalCount} usuario{totalCount !== 1 ? "s" : ""} en total
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium"
-        >
-          + Nuevo Usuario
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin/users/import"
+            className="border border-gray-200 text-gray-700 rounded px-4 py-2 text-sm font-medium hover:bg-gray-50"
+          >
+            Importación masiva
+          </Link>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium"
+          >
+            + Nuevo Usuario
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
