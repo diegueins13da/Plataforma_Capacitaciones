@@ -61,7 +61,7 @@
 - [x] **T16** Wizard pasos 1-2: info general (P30) + módulos con upload PDF (P31)
 - [x] **T17** Wizard pasos 3-4: evaluación config (P32) + publicación/audiencia (P33) + listado cursos (P35)
 - [x] **T18** Catálogo (P10), detalle de curso (P11), mis cursos (P12) — con semáforo de urgencia
-- [ ] **T19** Reproductores: video (P13), PDF (P14), texto (P15) con completion tracking + curso completado (P16)
+- [x] **T19** Reproductores: video (P13), PDF (P14), texto (P15) con completion tracking + curso completado (P16)
 
 ### ✅ CHECKPOINT E — Flujo completo: admin crea curso → usuario lo consume → llega a P16
 
@@ -69,7 +69,7 @@
 
 ## Fase 6 — Evaluaciones
 
-- [ ] **T20** Modelos Assessment, Question, UserAnswer + migraciones
+- [x] **T20** Modelos Assessment, Question, UserAnswer + migraciones
 - [ ] **T21** Assessment CRUD backend: banco de preguntas
 - [ ] **T22** Servicio de examen: grading, intentos, guardado automático cada 30s, tiempo límite
 - [ ] **T23** Assessment admin UI en wizard — P32 (banco de preguntas, crear/editar/borrar preguntas)
