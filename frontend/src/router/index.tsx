@@ -17,6 +17,8 @@ const BulkImportPage = lazy(() => import("../pages/admin/users/BulkImportPage"))
 const ImportHistoryPage = lazy(() => import("../pages/admin/users/ImportHistoryPage"));
 const SystemConfigPage = lazy(() => import("../pages/admin/config/SystemConfigPage"));
 const AdminCoursesPage = lazy(() => import("../pages/admin/courses/AdminCoursesPage"));
+const CourseListPage = lazy(() => import("../pages/admin/courses/CourseListPage"));
+const CourseWizardPage = lazy(() => import("../pages/admin/courses/CourseWizardPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
 const ForbiddenPage = lazy(() => import("../pages/errors/ForbiddenPage"));
@@ -56,7 +58,9 @@ export function AppRouter() {
             <Route path="/admin/users/import" element={<BulkImportPage />} />
             <Route path="/admin/users/import-history" element={<ImportHistoryPage />} />
             <Route path="/admin/config" element={<SystemConfigPage />} />
-            <Route path="/admin/courses" element={<AdminCoursesPage />} />
+            <Route path="/admin/courses" element={<CourseListPage />} />
+            <Route path="/admin/courses/new" element={<CourseWizardPage />} />
+            <Route path="/admin/courses/:id/edit" element={<CourseWizardPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
           </Route>
         </Route>

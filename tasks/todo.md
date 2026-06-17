@@ -58,8 +58,8 @@
 
 ## Fase 5 — Gestión de Cursos (Frontend)
 
-- [ ] **T16** Wizard pasos 1-2: info general (P30) + módulos con upload PDF (P31)
-- [ ] **T17** Wizard pasos 3-4: evaluación config (P32) + publicación/audiencia (P33) + listado cursos (P35)
+- [x] **T16** Wizard pasos 1-2: info general (P30) + módulos con upload PDF (P31)
+- [x] **T17** Wizard pasos 3-4: evaluación config (P32) + publicación/audiencia (P33) + listado cursos (P35)
 - [ ] **T18** Catálogo (P10), detalle de curso (P11), mis cursos (P12) — con semáforo de urgencia
 - [ ] **T19** Reproductores: video (P13), PDF (P14), texto (P15) con completion tracking + curso completado (P16)
 
@@ -159,10 +159,10 @@
 | 2 — Auth Frontend | 3 | ✅ Completo |
 | 3 — Usuarios | 6 (T09, T09b, T10, T11, T12, T12b) | ✅ Completo |
 | 4 — Cursos Backend | 3 | ✅ Completo |
-| 5 — Cursos Frontend | 4 | Pendiente |
+| 5 — Cursos Frontend | 4 (T16 ✅, T17 ✅) | En progreso |
 | 6 — Evaluaciones | 5 | Pendiente |
 | 7 — Generador IA | 5 | Pendiente |
 | 8 — Notificaciones/Dashboard | 4 | Pendiente |
 | 9 — Transversales | 3 | Pendiente |
 | 10 — Producción | 3 (T37, T38b, T38) | Pendiente |
-| **TOTAL** | **42** | **18 / 42** |
+| **TOTAL** | **42** | **20 / 42** |
