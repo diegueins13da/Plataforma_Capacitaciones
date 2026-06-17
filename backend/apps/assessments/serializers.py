@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Assessment, Question
+from .models import Assessment, Question, UserAnswer
 
 
 class AssessmentSerializer(serializers.ModelSerializer):
@@ -59,3 +59,25 @@ class QuestionCreateSerializer(serializers.Serializer):
     opciones = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     respuesta_correcta = serializers.JSONField()
     orden = serializers.IntegerField(required=False, min_value=1, default=1)
+
+
+class QuestionPublicSerializer(serializers.ModelSerializer):
+    """Question data sent to the user during an exam — without the correct answer."""
+
+    class Meta:
+        model = Question
+        fields = ["id", "texto", "tipo", "opciones", "orden"]
+
+
+class UserAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAnswer
+        fields = [
+            "id",
+            "intento_numero",
+            "calificacion",
+            "aprobado",
+            "fecha_inicio",
+            "fecha_fin",
+        ]
+        read_only_fields = fields
