@@ -10,10 +10,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import services
-from .models import Group, User, UserProfile
+from .models import Area, Group, User, UserProfile
 from .permissions import IsAdmin
 from .serializers import (
     AddMembersSerializer,
+    AreaSerializer,
     BulkImportConfirmRequestSerializer,
     BulkImportPreviewResponseSerializer,
     BulkImportCommitResponseSerializer,
@@ -24,6 +25,30 @@ from .serializers import (
     UserListSerializer,
     UserUpdateSerializer,
 )
+
+
+class AreaViewSet(viewsets.ModelViewSet):
+    """
+    CRUD endpoints for the Area catalog.
+    List/retrieve: any authenticated user. Create/update/delete: ADMIN only.
+    """
+
+    queryset = Area.objects.all().order_by("nombre")
+    serializer_class = AreaSerializer
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def destroy(self, request, *args, **kwargs):
+        area = self.get_object()
+        if area.user_profiles.exists():
+            return Response(
+                {"errors": ["No se puede eliminar un área que tiene usuarios asignados."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -135,7 +160,7 @@ class UserViewSet(viewsets.GenericViewSet):
     search_fields = ["first_name", "last_name", "email"]
 
     def get_queryset(self):
-        qs = User.objects.select_related("profile__grupo").order_by("last_name", "first_name")
+        qs = User.objects.select_related("profile__grupo", "profile__area").order_by("last_name", "first_name")
         # Manual filtering (django-filter not configured here; use query params)
         role = self.request.query_params.get("role")
         is_active = self.request.query_params.get("is_active")
@@ -145,7 +170,7 @@ class UserViewSet(viewsets.GenericViewSet):
         if is_active is not None:
             qs = qs.filter(is_active=is_active.lower() in ("true", "1", "yes"))
         if area:
-            qs = qs.filter(profile__area__icontains=area)
+            qs = qs.filter(profile__area__nombre__icontains=area)
         return qs
 
     def list(self, request):

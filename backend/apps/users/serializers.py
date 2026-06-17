@@ -3,7 +3,19 @@ User app serializers.
 """
 from rest_framework import serializers
 
-from .models import Group, User, UserProfile
+from .models import Area, Group, User, UserProfile
+
+
+class AreaSerializer(serializers.ModelSerializer):
+    user_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Area
+        fields = ["id", "nombre", "descripcion", "activo", "created_at", "user_count"]
+        read_only_fields = ["id", "created_at"]
+
+    def get_user_count(self, obj: Area) -> int:
+        return obj.user_profiles.count()
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -34,8 +46,11 @@ class GroupMemberSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     role = serializers.CharField(source="user.role")
     is_active = serializers.BooleanField(source="user.is_active")
-    area = serializers.CharField()
+    area = serializers.SerializerMethodField()
     cargo = serializers.CharField()
+
+    def get_area(self, obj: UserProfile) -> str:
+        return obj.area.nombre if obj.area else ""
 
     class Meta:
         model = UserProfile
@@ -77,7 +92,10 @@ class UserListSerializer(serializers.ModelSerializer):
         return obj.get_full_name()
 
     def get_area(self, obj: User) -> str:
-        return getattr(obj, "profile", None) and obj.profile.area or ""
+        profile = getattr(obj, "profile", None)
+        if profile and profile.area:
+            return profile.area.nombre
+        return ""
 
     def get_cargo(self, obj: User) -> str:
         return getattr(obj, "profile", None) and obj.profile.cargo or ""
@@ -133,7 +151,7 @@ class BulkImportValidRowSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     role = serializers.ChoiceField(choices=User.Role.choices)
-    area = serializers.CharField(max_length=150, default="", allow_blank=True, required=False)
+    area_id = serializers.IntegerField(allow_null=True, required=False)
     cargo = serializers.CharField(max_length=150, default="", allow_blank=True, required=False)
     grupo_id = serializers.IntegerField(allow_null=True, required=False)
 

@@ -8,9 +8,9 @@ import pytest
 from django.core import mail
 
 from apps.reports.models import AuditLog
-from apps.users.models import User, UserProfile
+from apps.users.models import Area, User, UserProfile
 from apps.users import services
-from apps.users.tests.factories import AdminUserFactory, UserFactory
+from apps.users.tests.factories import AdminUserFactory, AreaFactory, UserFactory
 
 
 # ---------------------------------------------------------------------------
@@ -47,9 +47,11 @@ class TestCreateUser:
         assert user.role == User.Role.TRAINER
 
     def test_profile_created_with_area_cargo(self) -> None:
+        AreaFactory(nombre="TI")
         user = self._create(area="TI", cargo="Desarrollador")
         profile = user.profile
-        assert profile.area == "TI"
+        assert profile.area is not None
+        assert profile.area.nombre == "TI"
         assert profile.cargo == "Desarrollador"
 
     def test_sends_welcome_email(self) -> None:
@@ -84,10 +86,12 @@ class TestUpdateUser:
         assert updated.last_name == "López"
 
     def test_updates_area_cargo(self) -> None:
+        AreaFactory(nombre="Finanzas")
         user = UserFactory()
         services.update_user(user, area="Finanzas", cargo="Contador")
         user.profile.refresh_from_db()
-        assert user.profile.area == "Finanzas"
+        assert user.profile.area is not None
+        assert user.profile.area.nombre == "Finanzas"
         assert user.profile.cargo == "Contador"
 
     def test_updates_grupo(self) -> None:
@@ -99,14 +103,15 @@ class TestUpdateUser:
         assert user.profile.grupo_id == g.pk
 
     def test_partial_update_only_provided_fields(self) -> None:
+        marketing = Area.objects.create(nombre="Marketing")
         user = UserFactory(first_name="Original")
-        user.profile.area = "Marketing"
+        user.profile.area = marketing
         user.profile.save()
         services.update_user(user, cargo="Gerente")
         user.refresh_from_db()
         user.profile.refresh_from_db()
         assert user.first_name == "Original"  # unchanged
-        assert user.profile.area == "Marketing"  # unchanged
+        assert user.profile.area.nombre == "Marketing"  # unchanged
         assert user.profile.cargo == "Gerente"
 
 

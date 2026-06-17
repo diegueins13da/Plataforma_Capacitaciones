@@ -4,6 +4,24 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
+class Area(models.Model):
+    """Organizational area catalog (TI, Riesgos, Cumplimiento, etc.)."""
+
+    nombre = models.CharField(max_length=150, unique=True, verbose_name="nombre")
+    descripcion = models.TextField(blank=True, verbose_name="descripción")
+    activo = models.BooleanField(default=True, verbose_name="activo")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
+
+    class Meta:
+        db_table = "areas"
+        verbose_name = "área"
+        verbose_name_plural = "áreas"
+        ordering = ["nombre"]
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Administrador"
@@ -56,7 +74,14 @@ class UserProfile(models.Model):
         related_name="profile",
         verbose_name="usuario",
     )
-    area = models.CharField(max_length=150, blank=True, verbose_name="área")
+    area = models.ForeignKey(
+        Area,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="user_profiles",
+        verbose_name="área",
+    )
     cargo = models.CharField(max_length=150, blank=True, verbose_name="cargo")
     grupo = models.ForeignKey(
         Group,

@@ -17,6 +17,7 @@ import type {
   UpdateUserPayload,
   UserFilters,
 } from "../types/user";
+import type { Area } from "../types/area";
 
 const BASE = "/v1/groups";
 
@@ -131,5 +132,15 @@ export const usersService = {
       rows,
     });
     return res.data;
+  },
+
+  // ---------------------------------------------------------------------------
+  // Area catalog (read — write via configService)
+  // ---------------------------------------------------------------------------
+
+  async getAreas(): Promise<Area[]> {
+    const res = await api.get<{ results?: Area[] } | Area[]>("/v1/areas/");
+    const data = res.data;
+    return Array.isArray(data) ? data : (data.results ?? []);
   },
 };

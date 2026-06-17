@@ -15,6 +15,7 @@ const UserManagementPage = lazy(() => import("../pages/admin/users/UserManagemen
 const GroupManagementPage = lazy(() => import("../pages/admin/users/GroupManagementPage"));
 const BulkImportPage = lazy(() => import("../pages/admin/users/BulkImportPage"));
 const ImportHistoryPage = lazy(() => import("../pages/admin/users/ImportHistoryPage"));
+const SystemConfigPage = lazy(() => import("../pages/admin/config/SystemConfigPage"));
 const AdminCoursesPage = lazy(() => import("../pages/admin/courses/AdminCoursesPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
@@ -54,6 +55,7 @@ export function AppRouter() {
             <Route path="/admin/groups" element={<GroupManagementPage />} />
             <Route path="/admin/users/import" element={<BulkImportPage />} />
             <Route path="/admin/users/import-history" element={<ImportHistoryPage />} />
+            <Route path="/admin/config" element={<SystemConfigPage />} />
             <Route path="/admin/courses" element={<AdminCoursesPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
           </Route>

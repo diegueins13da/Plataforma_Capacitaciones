@@ -1,7 +1,7 @@
 import pytest
 from django.db import IntegrityError
 
-from apps.users.models import User, UserProfile
+from apps.users.models import Area, User, UserProfile
 
 
 @pytest.mark.django_db
@@ -55,12 +55,13 @@ class TestUserProfile:
             password="TestPass123!",
         )
         # Profile already created by signal — fetch and update it
+        area = Area.objects.create(nombre="TI")
         profile = user.profile
-        profile.area = "TI"
+        profile.area = area
         profile.cargo = "Desarrollador"
         profile.save()
         user.refresh_from_db()
-        assert user.profile.area == "TI"
+        assert user.profile.area.nombre == "TI"
         assert user.profile.user == user
 
     def test_profile_area_cargo_optional(self) -> None:
@@ -71,5 +72,5 @@ class TestUserProfile:
         )
         # Signal creates the profile with blank defaults
         profile = user.profile
-        assert profile.area == ""
+        assert profile.area is None
         assert profile.cargo == ""

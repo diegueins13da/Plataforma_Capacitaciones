@@ -8,8 +8,8 @@ All endpoints require ADMIN.
 import pytest
 from rest_framework import status
 
-from apps.users.models import User
-from apps.users.tests.factories import AdminUserFactory, TrainerUserFactory, UserFactory
+from apps.users.models import Area, User
+from apps.users.tests.factories import AdminUserFactory, AreaFactory, TrainerUserFactory, UserFactory
 
 USERS_URL = "/api/v1/users/"
 
@@ -124,6 +124,7 @@ class TestCreateUserAPI:
 @pytest.mark.django_db
 class TestUpdateUserAPI:
     def test_patch_profile_fields(self, api_client, admin_user):
+        AreaFactory(nombre="Ventas")
         user = UserFactory()
         api_client.force_authenticate(user=admin_user)
         resp = api_client.patch(users_url(user.pk), {"area": "Ventas", "cargo": "Ejecutivo"})

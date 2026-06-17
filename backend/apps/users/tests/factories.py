@@ -1,7 +1,16 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from apps.users.models import Group, User, UserProfile
+from apps.users.models import Area, Group, User, UserProfile
+
+
+class AreaFactory(DjangoModelFactory):
+    class Meta:
+        model = Area
+
+    nombre = factory.Sequence(lambda n: f"Área {n}")
+    descripcion = ""
+    activo = True
 
 
 class UserFactory(DjangoModelFactory):

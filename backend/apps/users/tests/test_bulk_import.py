@@ -18,7 +18,7 @@ from rest_framework import status
 from apps.reports.models import AuditLog
 from apps.users import services
 from apps.users.models import User
-from apps.users.tests.factories import AdminUserFactory, GroupFactory, UserFactory
+from apps.users.tests.factories import AdminUserFactory, AreaFactory, GroupFactory, UserFactory
 
 PREVIEW_URL = "/api/v1/users/bulk-import/preview/"
 CONFIRM_URL = "/api/v1/users/bulk-import/confirm/"
@@ -71,6 +71,7 @@ class TestBulkImportPreviewService:
         assert result["error_count"] == 0
 
     def test_valid_row_data_mapped_correctly(self) -> None:
+        ti = AreaFactory(nombre="TI")
         f = _preview_file([HEADER, ["ana@empresa.com", "Ana", "Torres", "capacitador", "TI", "Dev"]])
         result = services.bulk_import_preview(f)
         row = result["valid_rows"][0]
@@ -78,7 +79,7 @@ class TestBulkImportPreviewService:
         assert row["first_name"] == "Ana"
         assert row["last_name"] == "Torres"
         assert row["role"] == User.Role.TRAINER
-        assert row["area"] == "TI"
+        assert row["area_id"] == ti.pk
         assert row["cargo"] == "Dev"
         assert row["row"] == 2
 
@@ -232,7 +233,7 @@ class TestBulkImportCommitService:
                 "first_name": "Ana",
                 "last_name": "Torres",
                 "role": User.Role.USUARIO,
-                "area": "",
+                "area_id": None,
                 "cargo": "",
                 "grupo_id": None,
             },
@@ -242,7 +243,7 @@ class TestBulkImportCommitService:
                 "first_name": "Luis",
                 "last_name": "García",
                 "role": User.Role.TRAINER,
-                "area": "TI",
+                "area_id": None,
                 "cargo": "Dev",
                 "grupo_id": None,
             },
@@ -262,7 +263,7 @@ class TestBulkImportCommitService:
                 "first_name": "A",
                 "last_name": "B",
                 "role": User.Role.USUARIO,
-                "area": "",
+                "area_id": None,
                 "cargo": "",
                 "grupo_id": None,
             },
@@ -283,7 +284,7 @@ class TestBulkImportCommitService:
                 "first_name": "A",
                 "last_name": "B",
                 "role": User.Role.USUARIO,
-                "area": "",
+                "area_id": None,
                 "cargo": "",
                 "grupo_id": None,
             },
@@ -303,7 +304,7 @@ class TestBulkImportCommitService:
                 "first_name": "G",
                 "last_name": "G",
                 "role": User.Role.USUARIO,
-                "area": "",
+                "area_id": None,
                 "cargo": "",
                 "grupo_id": None,
             },
@@ -313,7 +314,7 @@ class TestBulkImportCommitService:
                 "first_name": "E",
                 "last_name": "E",
                 "role": User.Role.USUARIO,
-                "area": "",
+                "area_id": None,
                 "cargo": "",
                 "grupo_id": None,
             },
@@ -401,7 +402,7 @@ class TestBulkImportConfirmView:
                     "first_name": "C",
                     "last_name": "C",
                     "role": "USUARIO",
-                    "area": "",
+                    "area_id": None,
                     "cargo": "",
                     "grupo_id": None,
                 }

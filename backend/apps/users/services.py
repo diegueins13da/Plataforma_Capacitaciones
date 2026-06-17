@@ -17,7 +17,7 @@ from django.core.validators import validate_email as _validate_email_format
 
 from apps.reports.models import AuditLog
 
-from .models import Group, User, UserProfile
+from .models import Area, Group, User, UserProfile
 
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import UploadedFile
@@ -47,7 +47,7 @@ class ValidRow(TypedDict):
     first_name: str
     last_name: str
     role: str
-    area: str
+    area_id: int | None
     cargo: str
     grupo_id: int | None
 
@@ -118,6 +118,13 @@ def _username_from_email(email: str) -> str:
     return candidate
 
 
+def _resolve_area(area_name: str) -> "Area | None":
+    """Look up an active Area by name (case-insensitive). Returns None if not found."""
+    if not area_name:
+        return None
+    return Area.objects.filter(nombre__iexact=area_name, activo=True).first()
+
+
 # ---------------------------------------------------------------------------
 # User CRUD
 # ---------------------------------------------------------------------------
@@ -130,6 +137,7 @@ def create_user(
     last_name: str,
     role: str = User.Role.USUARIO,
     area: str = "",
+    area_id: int | None = None,
     cargo: str = "",
     grupo_id: int | None = None,
     admin_user: User,
@@ -157,7 +165,10 @@ def create_user(
 
     # Update the auto-created profile (signal created it with blank fields)
     profile = user.profile
-    profile.area = area
+    if area_id is not None:
+        profile.area_id = area_id
+    else:
+        profile.area = _resolve_area(area)
     profile.cargo = cargo
     if grupo_id is not None:
         profile.grupo_id = grupo_id
@@ -198,6 +209,7 @@ def update_user(
     first_name: str | None = None,
     last_name: str | None = None,
     area: str | None = None,
+    area_id: int | None = None,
     cargo: str | None = None,
     grupo_id: int | None = None,
 ) -> User:
@@ -214,8 +226,11 @@ def update_user(
 
     profile = user.profile
     profile_changed = False
-    if area is not None:
-        profile.area = area
+    if area_id is not None:
+        profile.area_id = area_id
+        profile_changed = True
+    elif area is not None:
+        profile.area = _resolve_area(area)
         profile_changed = True
     if cargo is not None:
         profile.cargo = cargo
@@ -415,6 +430,12 @@ def bulk_import_preview(
         for gid, name in Group.objects.values_list("id", "nombre")
     }
 
+    # Pre-load active area names for fast lookup
+    area_by_name: dict[str, int] = {
+        name.lower(): aid
+        for aid, name in Area.objects.filter(activo=True).values_list("id", "nombre")
+    }
+
     # Track emails seen so far in *this file* to catch intra-file duplicates
     seen_emails: set[str] = set()
 
@@ -475,7 +496,15 @@ def bulk_import_preview(
             )
 
         # ── Optional fields ──────────────────────────────────────────────────
-        area = _cell(row_values, "area")
+        area_name = _cell(row_values, "area")
+        area_id: int | None = None
+        if area_name:
+            area_id = area_by_name.get(area_name.lower())
+            if area_id is None:
+                errors.append(
+                    f"El área '{area_name}' no existe en el catálogo. "
+                    "Créala primero en Configuración → Áreas."
+                )
         cargo = _cell(row_values, "cargo")
         grupo_name = _cell(row_values, "grupo")
         grupo_id: int | None = None
@@ -496,7 +525,7 @@ def bulk_import_preview(
                     first_name=first_name,
                     last_name=last_name,
                     role=role,
-                    area=area,
+                    area_id=area_id,
                     cargo=cargo,
                     grupo_id=grupo_id,
                 )
@@ -544,7 +573,7 @@ def bulk_import_commit(
                 first_name=row_data["first_name"],
                 last_name=row_data["last_name"],
                 role=row_data["role"],
-                area=row_data.get("area", ""),
+                area_id=row_data.get("area_id"),
                 cargo=row_data.get("cargo", ""),
                 grupo_id=row_data.get("grupo_id"),
                 admin_user=admin_user,
