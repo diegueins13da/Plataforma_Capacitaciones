@@ -15,6 +15,9 @@ urlpatterns = [
                 path("", include("apps.config.urls")),
                 path("", include("apps.courses.urls")),
                 path("", include("apps.assessments.urls")),
+                path("", include("apps.ai_generator.urls")),
+                path("", include("apps.notifications.urls")),
+                path("", include("apps.reports.urls")),
             ]
         ),
     ),

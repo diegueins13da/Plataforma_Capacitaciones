@@ -81,9 +81,9 @@
 
 ## Fase 7 — Generador IA (Funcionalidad Central)
 
-- [ ] **T25** Celery + Redis: setup infraestructura + tarea health_check + docker-compose.dev.yml actualizado
-- [ ] **T26** Parser documentos: pdfplumber (PDF) + python-pptx (PPT) con tests de fixtures reales
-- [ ] **T27** AI Service: Claude API (claude-sonnet-4-6), generate_course_modules + generate_questions, tareas Celery, endpoint de status del task
+- [x] **T25** Celery + Redis: setup infraestructura + tarea health_check + docker-compose.dev.yml actualizado
+- [x] **T26** Parser documentos: pdfplumber (PDF) + python-pptx (PPT) con tests de fixtures reales
+- [x] **T27** AI Service: Claude API (claude-sonnet-4-6), generate_course_modules + generate_questions, tareas Celery, endpoint de status del task
 - [ ] **T28** AI Generator UI sección A — P34: upload archivo, polling status, revisión módulos (Aprobar/Editar/Descartar)
 - [ ] **T29** AI Generator UI sección B — P34: configuración, generación de preguntas, revisión (Aprobar/Editar/Descartar/Regenerar)
 
