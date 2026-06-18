@@ -1,0 +1,250 @@
+/**
+ * Inline form for creating or editing a Question.
+ * Handles MULTIPLE_CHOICE, MULTIPLE_SELECT, and TRUE_FALSE types.
+ */
+import { useEffect, useState } from "react";
+import type { CreateQuestionPayload, Question, QuestionTipo } from "../../types/assessment";
+
+interface QuestionFormProps {
+  initial?: Question;
+  defaultOrden?: number;
+  onSave: (payload: CreateQuestionPayload) => Promise<void>;
+  onCancel: () => void;
+}
+
+const TIPO_LABELS: Record<QuestionTipo, string> = {
+  MULTIPLE_CHOICE: "Selección única",
+  MULTIPLE_SELECT: "Selección múltiple",
+  TRUE_FALSE: "Verdadero / Falso",
+};
+
+export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: QuestionFormProps) {
+  const [tipo, setTipo] = useState<QuestionTipo>(initial?.tipo ?? "MULTIPLE_CHOICE");
+  const [texto, setTexto] = useState(initial?.texto ?? "");
+  const [opciones, setOpciones] = useState<string[]>(
+    initial?.opciones.length ? initial.opciones : ["", "", "", ""]
+  );
+  const [correctaIdx, setCorrectaIdx] = useState<number>(
+    tipo === "MULTIPLE_CHOICE" && typeof initial?.respuesta_correcta === "number"
+      ? initial.respuesta_correcta
+      : 0
+  );
+  const [multiSelect, setMultiSelect] = useState<boolean[]>(
+    tipo === "MULTIPLE_SELECT" && Array.isArray(initial?.respuesta_correcta)
+      ? Array.from({ length: 4 }, (_, i) =>
+          (initial!.respuesta_correcta as number[]).includes(i)
+        )
+      : [false, false, false, false]
+  );
+  const [trueFalseVal, setTrueFalseVal] = useState<boolean>(
+    tipo === "TRUE_FALSE" && typeof initial?.respuesta_correcta === "boolean"
+      ? initial.respuesta_correcta
+      : true
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (tipo !== "MULTIPLE_CHOICE") setCorrectaIdx(0);
+    if (tipo !== "MULTIPLE_SELECT") setMultiSelect([false, false, false, false]);
+  }, [tipo]);
+
+  function buildPayload(): CreateQuestionPayload | null {
+    if (!texto.trim()) { setError("El enunciado es obligatorio."); return null; }
+
+    if (tipo === "MULTIPLE_CHOICE") {
+      const filled = opciones.filter((o) => o.trim());
+      if (filled.length < 2) { setError("Ingresa al menos 2 opciones."); return null; }
+      return {
+        texto: texto.trim(),
+        tipo,
+        opciones: filled,
+        respuesta_correcta: correctaIdx,
+        orden: initial?.orden ?? defaultOrden,
+      };
+    }
+
+    if (tipo === "MULTIPLE_SELECT") {
+      const filled = opciones.filter((o) => o.trim());
+      if (filled.length < 2) { setError("Ingresa al menos 2 opciones."); return null; }
+      const selected = multiSelect.map((v, i) => (v && opciones[i]?.trim() ? i : -1)).filter((i) => i >= 0);
+      if (selected.length === 0) { setError("Marca al menos una respuesta correcta."); return null; }
+      return {
+        texto: texto.trim(),
+        tipo,
+        opciones: filled,
+        respuesta_correcta: selected,
+        orden: initial?.orden ?? defaultOrden,
+      };
+    }
+
+    // TRUE_FALSE
+    return {
+      texto: texto.trim(),
+      tipo,
+      opciones: [],
+      respuesta_correcta: trueFalseVal,
+      orden: initial?.orden ?? defaultOrden,
+    };
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    const payload = buildPayload();
+    if (!payload) return;
+    setSaving(true);
+    try {
+      await onSave(payload);
+    } catch {
+      setError("Error al guardar la pregunta. Intenta de nuevo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4">
+      {/* Type selector */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de pregunta</label>
+        <div className="flex gap-2">
+          {(Object.keys(TIPO_LABELS) as QuestionTipo[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTipo(t)}
+              className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                tipo === t
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {TIPO_LABELS[t]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Question text */}
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Enunciado</label>
+        <textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          rows={2}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          placeholder="Escribe la pregunta aquí..."
+        />
+      </div>
+
+      {/* Options — MULTIPLE_CHOICE */}
+      {tipo === "MULTIPLE_CHOICE" && (
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-gray-500">
+            Opciones <span className="text-gray-400">(selecciona la correcta)</span>
+          </label>
+          {opciones.map((op, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="correct"
+                checked={correctaIdx === i}
+                onChange={() => setCorrectaIdx(i)}
+                className="accent-indigo-600"
+              />
+              <input
+                type="text"
+                value={op}
+                onChange={(e) => {
+                  const n = [...opciones];
+                  n[i] = e.target.value;
+                  setOpciones(n);
+                }}
+                placeholder={`Opción ${i + 1}`}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Options — MULTIPLE_SELECT */}
+      {tipo === "MULTIPLE_SELECT" && (
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-gray-500">
+            Opciones <span className="text-gray-400">(marca todas las correctas)</span>
+          </label>
+          {opciones.map((op, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={multiSelect[i]}
+                onChange={(e) => {
+                  const n = [...multiSelect];
+                  n[i] = e.target.checked;
+                  setMultiSelect(n);
+                }}
+                className="accent-indigo-600"
+              />
+              <input
+                type="text"
+                value={op}
+                onChange={(e) => {
+                  const n = [...opciones];
+                  n[i] = e.target.value;
+                  setOpciones(n);
+                }}
+                placeholder={`Opción ${i + 1}`}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TRUE_FALSE */}
+      {tipo === "TRUE_FALSE" && (
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Respuesta correcta</label>
+          <div className="flex gap-3">
+            {[true, false].map((val) => (
+              <button
+                key={String(val)}
+                type="button"
+                onClick={() => setTrueFalseVal(val)}
+                className={`px-5 py-2 text-sm rounded-lg border transition-colors ${
+                  trueFalseVal === val
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {val ? "Verdadero" : "Falso"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      {/* Actions */}
+      <div className="flex justify-end gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {saving ? "Guardando…" : initial ? "Actualizar" : "Agregar pregunta"}
+        </button>
+      </div>
+    </form>
+  );
+}
