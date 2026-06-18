@@ -24,6 +24,9 @@ const CourseDetailPage = lazy(() => import("../pages/courses/CourseDetailPage"))
 const MyCourseListPage = lazy(() => import("../pages/courses/MyCourseListPage"));
 const ModulePlayerPage = lazy(() => import("../pages/courses/ModulePlayerPage"));
 const CourseCompletedPage = lazy(() => import("../pages/courses/CourseCompletedPage"));
+const ExamIntroPage = lazy(() => import("../pages/assessments/ExamIntroPage"));
+const ExamQuestionPage = lazy(() => import("../pages/assessments/ExamQuestionPage"));
+const ExamResultPage = lazy(() => import("../pages/assessments/ExamResultPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
 const ForbiddenPage = lazy(() => import("../pages/errors/ForbiddenPage"));
@@ -56,6 +59,9 @@ export function AppRouter() {
             <Route path="/courses/:courseId/modules/:moduleId" element={<ModulePlayerPage />} />
             <Route path="/courses/:courseId/completed" element={<CourseCompletedPage />} />
             <Route path="/my-courses" element={<MyCourseListPage />} />
+            <Route path="/courses/:courseId/exam" element={<ExamIntroPage />} />
+            <Route path="/courses/:courseId/exam/in-progress" element={<ExamQuestionPage />} />
+            <Route path="/courses/:courseId/exam/result" element={<ExamResultPage />} />
           </Route>
         </Route>
 

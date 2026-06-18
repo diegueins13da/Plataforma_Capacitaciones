@@ -6,6 +6,7 @@ from .models import Assessment, Question, UserAnswer
 class AssessmentSerializer(serializers.ModelSerializer):
     question_count_approved = serializers.SerializerMethodField()
     question_count_total = serializers.SerializerMethodField()
+    user_attempts_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Assessment
@@ -17,6 +18,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
             "tiempo_limite_minutos",
             "question_count_approved",
             "question_count_total",
+            "user_attempts_count",
             "created_at",
             "updated_at",
         ]
@@ -27,6 +29,20 @@ class AssessmentSerializer(serializers.ModelSerializer):
 
     def get_question_count_total(self, obj: Assessment) -> int:
         return obj.questions.count()
+
+    def get_user_attempts_count(self, obj: Assessment) -> int:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return 0
+        from apps.courses.models import Enrollment  # noqa: PLC0415
+
+        try:
+            enrollment = Enrollment.objects.get(user=request.user, course=obj.course)
+        except Enrollment.DoesNotExist:
+            return 0
+        return UserAnswer.objects.filter(
+            enrollment=enrollment, assessment=obj, fecha_fin__isnull=False
+        ).count()
 
 
 class AssessmentUpdateSerializer(serializers.Serializer):

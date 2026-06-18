@@ -8,6 +8,7 @@ export interface Assessment {
   tiempo_limite_minutos: number | null;
   question_count_approved: number;
   question_count_total: number;
+  user_attempts_count: number;
   created_at: string;
   updated_at: string;
 }

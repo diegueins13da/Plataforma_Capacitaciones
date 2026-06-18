@@ -34,24 +34,28 @@ export default function CourseCompletedPage() {
           Has completado todos los módulos del curso. ¡Excelente trabajo!
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col gap-3">
           <Link
-            to={`/courses/${courseId}`}
-            className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            to={`/courses/${courseId}/exam`}
+            className="px-5 py-2.5 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Ver detalle del curso
+            Ir a la evaluación →
           </Link>
-          <Link
-            to="/courses"
-            className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Mis cursos
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to={`/courses/${courseId}`}
+              className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Ver detalle del curso
+            </Link>
+            <Link
+              to="/my-courses"
+              className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Mis cursos
+            </Link>
+          </div>
         </div>
-
-        <p className="text-xs text-gray-400 mt-8">
-          Si el curso tiene evaluación, el administrador te notificará cuando esté disponible.
-        </p>
       </div>
     </div>
   );

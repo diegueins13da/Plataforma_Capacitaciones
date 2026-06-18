@@ -72,8 +72,8 @@
 - [x] **T20** Modelos Assessment, Question, UserAnswer + migraciones
 - [x] **T21** Assessment CRUD backend: banco de preguntas
 - [x] **T22** Servicio de examen: grading, intentos, guardado automático cada 30s, tiempo límite
-- [ ] **T23** Assessment admin UI en wizard — P32 (banco de preguntas, crear/editar/borrar preguntas)
-- [ ] **T24** Examen frontend: intro (P17), pregunta en curso (P18), aprobado (P19), reprobado (P20), sin intentos (P21)
+- [x] **T23** Assessment admin UI en wizard — P32 (banco de preguntas, crear/editar/borrar preguntas)
+- [x] **T24** Examen frontend: intro (P17), pregunta en curso (P18), aprobado (P19), reprobado (P20), sin intentos (P21)
 
 ### ✅ CHECKPOINT F — Flujo completo: completar módulos → examen → resultado correcto en BD
 

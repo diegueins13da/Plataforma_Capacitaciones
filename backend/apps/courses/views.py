@@ -118,7 +118,7 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except AssessmentPermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
-        return Response(AssessmentSerializer(a).data)
+        return Response(AssessmentSerializer(a, context={"request": request}).data)
 
     # ------------------------------------------------------------------
     # Publication

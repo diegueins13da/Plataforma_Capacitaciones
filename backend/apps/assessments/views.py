@@ -45,7 +45,7 @@ class AssessmentViewSet(GenericViewSet):
             return Response({"error": "Evaluación no encontrada."}, status=status.HTTP_404_NOT_FOUND)
         except services.AssessmentPermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
-        return Response(AssessmentSerializer(assessment).data)
+        return Response(AssessmentSerializer(assessment, context={"request": request}).data)
 
     def partial_update(self, request: Request, pk: str | None = None) -> Response:
         serializer = AssessmentUpdateSerializer(data=request.data)
@@ -57,7 +57,7 @@ class AssessmentViewSet(GenericViewSet):
             return Response({"error": "Evaluación no encontrada."}, status=status.HTTP_404_NOT_FOUND)
         except services.AssessmentPermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
-        return Response(AssessmentSerializer(assessment).data)
+        return Response(AssessmentSerializer(assessment, context={"request": request}).data)
 
     @action(detail=True, methods=["get", "post"], url_path="questions")
     def questions(self, request: Request, pk: str | None = None) -> Response:
