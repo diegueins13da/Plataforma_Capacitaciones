@@ -1,5 +1,4 @@
 import api from "./api";
-import { tokenManager } from "./tokenManager";
 import type {
   ChangePasswordRequest,
   LoginRequest,

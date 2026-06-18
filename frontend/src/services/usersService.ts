@@ -1,5 +1,34 @@
 import api from "./api";
 import type { PaginatedResponse } from "../types";
+
+// ---------------------------------------------------------------------------
+// Dashboard types
+// ---------------------------------------------------------------------------
+
+export interface DashboardCourse {
+  enrollment_id: number;
+  course_id: number;
+  titulo: string;
+  progreso: number;
+  fecha_limite: string | null;
+  days_left: number | null;
+  urgency: "verde" | "amarillo" | "rojo";
+  estado: string;
+}
+
+export interface DashboardActivity {
+  accion: string;
+  timestamp: string;
+  ip: string | null;
+}
+
+export interface DashboardData {
+  resumen: { en_progreso: number; completados: number; vencidos: number };
+  cursos_activos: DashboardCourse[];
+  proximos_vencimientos: DashboardCourse[];
+  actividad_reciente: DashboardActivity[];
+}
+
 import type {
   AddMembersRequest,
   CreateGroupRequest,
@@ -22,6 +51,15 @@ import type { Area } from "../types/area";
 const BASE = "/v1/groups";
 
 export const usersService = {
+  // ---------------------------------------------------------------------------
+  // Dashboard
+  // ---------------------------------------------------------------------------
+
+  async getDashboard(): Promise<DashboardData> {
+    const res = await api.get<DashboardData>("/v1/users/me/dashboard/");
+    return res.data;
+  },
+
   // ---------------------------------------------------------------------------
   // Groups
   // ---------------------------------------------------------------------------

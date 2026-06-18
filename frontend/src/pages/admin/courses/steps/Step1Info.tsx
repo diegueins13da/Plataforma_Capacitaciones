@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,7 +8,6 @@ import { coursesService } from "../../../../services/coursesService";
 import { configService } from "../../../../services/configService";
 import { useCourseWizardStore, type Step1Data } from "../../../../store/courseWizardStore";
 import type { Area } from "../../../../types/area";
-import { useEffect as _useEffect, useState } from "react";
 
 const schema = z.object({
   titulo: z.string().min(3, "El título debe tener al menos 3 caracteres"),
@@ -36,7 +35,7 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 export function Step1Info({ onNext }: Props) {
-  const { step1, courseId, mode, setCourseId, setStep1, setStep } = useCourseWizardStore();
+  const { step1, courseId, setCourseId, setStep1, setStep } = useCourseWizardStore();
   const [areas, setAreas] = useState<Area[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -44,8 +43,6 @@ export function Step1Info({ onNext }: Props) {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
-    watch,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {

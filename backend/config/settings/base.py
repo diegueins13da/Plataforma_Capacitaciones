@@ -224,18 +224,62 @@ USE_I18N = True
 USE_TZ = True
 
 # ---------------------------------------------------------------------------
-# Logging (basic; extended to structured JSON in T38b)
+# Logging — structured JSON via structlog (falls back to plain if not installed)
 # ---------------------------------------------------------------------------
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
+try:
+    import structlog as _structlog
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "json": {
+                "()": _structlog.stdlib.ProcessorFormatter,
+                "processor": _structlog.processors.JSONRenderer(),
+            },
+            "plain": {
+                "()": _structlog.stdlib.ProcessorFormatter,
+                "processor": _structlog.dev.ConsoleRenderer(),
+            },
         },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO",
-    },
-}
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": env("LOG_FORMAT", default="plain"),
+            },
+        },
+        "root": {
+            "handlers": ["console"],
+            "level": env("LOG_LEVEL", default="INFO"),
+        },
+        "loggers": {
+            "django.security": {"level": "WARNING"},
+            "django.request": {"level": "WARNING"},
+        },
+    }
+
+    _structlog.configure(
+        processors=[
+            _structlog.contextvars.merge_contextvars,
+            _structlog.stdlib.filter_by_level,
+            _structlog.stdlib.add_logger_name,
+            _structlog.stdlib.add_log_level,
+            _structlog.stdlib.PositionalArgumentsFormatter(),
+            _structlog.processors.TimeStamper(fmt="iso"),
+            _structlog.processors.StackInfoRenderer(),
+            _structlog.processors.format_exc_info,
+            _structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=_structlog.stdlib.LoggerFactory(),
+        wrapper_class=_structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+except ImportError:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "root": {"handlers": ["console"], "level": "INFO"},
+    }

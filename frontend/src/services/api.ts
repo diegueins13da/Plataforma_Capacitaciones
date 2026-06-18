@@ -105,4 +105,20 @@ function _forceLogout(): void {
   window.dispatchEvent(new CustomEvent("session:expired"));
 }
 
+// ---------------------------------------------------------------------------
+// 403 / 500 global redirect
+// ---------------------------------------------------------------------------
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    if (status === 403) {
+      window.location.href = "/403";
+    } else if (status === 500) {
+      window.location.href = "/500";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

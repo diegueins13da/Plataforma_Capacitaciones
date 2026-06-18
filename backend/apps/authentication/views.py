@@ -13,6 +13,7 @@ from .serializers import (
     MeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    UpdateMeSerializer,
 )
 
 
@@ -65,10 +66,26 @@ def logout(request):
     return Response({"detail": "Sesión cerrada correctamente."})
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def me(request):
-    return Response(MeSerializer(request.user).data)
+    if request.method == "GET":
+        return Response(MeSerializer(request.user).data)
+
+    serializer = UpdateMeSerializer(data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    user = request.user
+    user_fields = [f for f in ("first_name", "last_name") if f in data]
+    for field in user_fields:
+        setattr(user, field, data[field])
+    if user_fields:
+        user.save(update_fields=user_fields)
+    if "cargo" in data:
+        profile, _ = user.profile.__class__.objects.get_or_create(user=user)
+        profile.cargo = data["cargo"]
+        profile.save(update_fields=["cargo"])
+    return Response(MeSerializer(user).data)
 
 
 @ratelimit(key="ip", rate="5/m", method="POST", block=False)

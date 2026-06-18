@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { coursesService } from "../../../services/coursesService";
@@ -23,7 +23,7 @@ const TIPO_LABELS: Record<string, string> = {
 
 export default function CourseListPage() {
   const navigate = useNavigate();
-  const { reset, setMode, setCourseId, setStep1, setModules, setStep } = useCourseWizardStore();
+  const { reset } = useCourseWizardStore();
 
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);

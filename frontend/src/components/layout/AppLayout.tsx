@@ -1,16 +1,17 @@
 import { Outlet } from "react-router-dom";
+import { Header } from "./Header";
+import { Sidebar } from "./Sidebar";
 
-/**
- * Authenticated-area shell layout.
- * Sidebar and header implemented in T35.
- */
 export function AppLayout() {
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar — T35 */}
-      <main className="flex-1 overflow-y-auto p-4">
-        <Outlet />
-      </main>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

@@ -16,7 +16,6 @@ const GroupManagementPage = lazy(() => import("../pages/admin/users/GroupManagem
 const BulkImportPage = lazy(() => import("../pages/admin/users/BulkImportPage"));
 const ImportHistoryPage = lazy(() => import("../pages/admin/users/ImportHistoryPage"));
 const SystemConfigPage = lazy(() => import("../pages/admin/config/SystemConfigPage"));
-const AdminCoursesPage = lazy(() => import("../pages/admin/courses/AdminCoursesPage"));
 const CourseListPage = lazy(() => import("../pages/admin/courses/CourseListPage"));
 const CourseWizardPage = lazy(() => import("../pages/admin/courses/CourseWizardPage"));
 const CourseCatalogPage = lazy(() => import("../pages/courses/CourseCatalogPage"));
@@ -27,6 +26,8 @@ const CourseCompletedPage = lazy(() => import("../pages/courses/CourseCompletedP
 const ExamIntroPage = lazy(() => import("../pages/assessments/ExamIntroPage"));
 const ExamQuestionPage = lazy(() => import("../pages/assessments/ExamQuestionPage"));
 const ExamResultPage = lazy(() => import("../pages/assessments/ExamResultPage"));
+const AIGeneratorPage = lazy(() => import("../pages/admin/courses/AIGeneratorPage"));
+const NotificationsPage = lazy(() => import("../pages/dashboard/NotificationsPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
 const ForbiddenPage = lazy(() => import("../pages/errors/ForbiddenPage"));
@@ -59,6 +60,7 @@ export function AppRouter() {
             <Route path="/courses/:courseId/modules/:moduleId" element={<ModulePlayerPage />} />
             <Route path="/courses/:courseId/completed" element={<CourseCompletedPage />} />
             <Route path="/my-courses" element={<MyCourseListPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/courses/:courseId/exam" element={<ExamIntroPage />} />
             <Route path="/courses/:courseId/exam/in-progress" element={<ExamQuestionPage />} />
             <Route path="/courses/:courseId/exam/result" element={<ExamResultPage />} />
@@ -77,6 +79,7 @@ export function AppRouter() {
             <Route path="/admin/courses" element={<CourseListPage />} />
             <Route path="/admin/courses/new" element={<CourseWizardPage />} />
             <Route path="/admin/courses/:id/edit" element={<CourseWizardPage />} />
+            <Route path="/admin/courses/:id/ai-generator" element={<AIGeneratorPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
           </Route>
         </Route>

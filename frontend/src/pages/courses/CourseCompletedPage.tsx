@@ -3,12 +3,11 @@
  * Celebration screen shown when all modules are finished.
  */
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { coursesService } from "../../services/coursesService";
 
 export default function CourseCompletedPage() {
   const { courseId } = useParams<{ courseId: string }>();
-  const navigate = useNavigate();
   const [courseTitle, setCourseTitle] = useState("");
 
   useEffect(() => {

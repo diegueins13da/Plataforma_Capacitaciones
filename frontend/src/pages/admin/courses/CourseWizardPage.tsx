@@ -44,7 +44,7 @@ export default function CourseWizardPage() {
             duracion_horas: course.duracion_horas ? String(course.duracion_horas) : "",
             cert_expira_meses: course.cert_expira_meses ? String(course.cert_expira_meses) : "",
           });
-          setModules(course.modules);
+          setModules(course.modules_with_status);
           setStep(1);
         })
         .catch(() => {

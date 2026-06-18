@@ -7,7 +7,9 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from . import services
 from .models import Area, Group, User, UserProfile
@@ -306,3 +308,64 @@ def _get_client_ip(request) -> str:
     if x_forwarded:
         return x_forwarded.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR", "")
+
+
+class UserDashboardView(APIView):
+    """GET /v1/users/me/dashboard/ — all data needed for P06 dashboard."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        from apps.courses.models import Enrollment  # noqa: PLC0415
+        from apps.reports.models import AuditLog  # noqa: PLC0415
+
+        enrollments = (
+            Enrollment.objects.select_related("course")
+            .filter(user=request.user)
+            .order_by("course__fecha_limite")
+        )
+
+        en_progreso = [e for e in enrollments if e.estado == Enrollment.Estado.EN_PROGRESO]
+        completados = [e for e in enrollments if e.estado == Enrollment.Estado.COMPLETADO]
+        vencidos = [e for e in enrollments if e.estado == Enrollment.Estado.VENCIDO]
+
+        def enrollment_summary(e: Enrollment) -> dict:
+            from datetime import date as _date  # noqa: PLC0415
+            fl = e.course.fecha_limite
+            days_left = (fl - _date.today()).days if fl else None
+            urgency = "verde"
+            if days_left is not None:
+                if days_left <= 1:
+                    urgency = "rojo"
+                elif days_left <= 7:
+                    urgency = "amarillo"
+            return {
+                "enrollment_id": e.pk,
+                "course_id": e.course_id,
+                "titulo": e.course.titulo,
+                "progreso": e.progreso_porcentaje,
+                "fecha_limite": fl,
+                "days_left": days_left,
+                "urgency": urgency,
+                "estado": e.estado,
+            }
+
+        recent_log = (
+            AuditLog.objects.filter(user=request.user)
+            .order_by("-timestamp")
+            .values("accion", "timestamp", "ip")[:5]
+        )
+
+        return Response({
+            "resumen": {
+                "en_progreso": len(en_progreso),
+                "completados": len(completados),
+                "vencidos": len(vencidos),
+            },
+            "cursos_activos": [enrollment_summary(e) for e in en_progreso],
+            "proximos_vencimientos": [
+                enrollment_summary(e)
+                for e in en_progreso
+                if e.course.fecha_limite is not None
+            ][:5],
+            "actividad_reciente": list(recent_log),
+        })

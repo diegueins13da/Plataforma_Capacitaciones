@@ -294,6 +294,22 @@ def submit_exam(assessment_id: int, user: "User", answers: dict) -> dict:
             defaults={"enrollment": enrollment},
         )
 
+    # Fire exam result notifications
+    from apps.notifications.services import (  # noqa: PLC0415
+        notify_examen_aprobado,
+        notify_examen_reprobado,
+    )
+
+    completed_count = UserAnswer.objects.filter(
+        enrollment=enrollment, assessment=assessment, fecha_fin__isnull=False
+    ).count()
+    remaining = max(0, assessment.max_intentos - completed_count)
+
+    if aprobado:
+        notify_examen_aprobado(user, enrollment, float(calificacion))
+    else:
+        notify_examen_reprobado(user, enrollment, float(calificacion), remaining)
+
     # Build correct_answers map for the review screen
     questions = list(assessment.questions.filter(aprobada_por_humano=True))
     correct_answers = {str(q.pk): q.respuesta_correcta for q in questions}

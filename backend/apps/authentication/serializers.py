@@ -99,3 +99,9 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(
         write_only=True, style={"input_type": "password"}, min_length=8
     )
+
+
+class UpdateMeSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+    cargo = serializers.CharField(max_length=150, required=False, allow_blank=True)
