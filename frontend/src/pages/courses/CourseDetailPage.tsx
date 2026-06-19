@@ -30,13 +30,13 @@ function ModuleRow({ mod, index }: { mod: CourseModuleWithStatus; index: number 
   const locked = !mod.is_unlocked;
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 ${
-        locked ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 cursor-pointer"
+      className={`flex items-center gap-3 px-4 py-3 border-b border-border last:border-0 ${
+        locked ? "opacity-50 cursor-not-allowed" : "hover:bg-background cursor-pointer"
       }`}
     >
-      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gray-100 text-gray-500 shrink-0">
+      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-muted/40 text-muted-foreground shrink-0">
         {mod.is_completed ? (
-          <span className="text-green-600 text-base">✓</span>
+          <span className="text-emerald-500 text-base">✓</span>
         ) : (
           <span>{index + 1}</span>
         )}
@@ -45,16 +45,16 @@ function ModuleRow({ mod, index }: { mod: CourseModuleWithStatus; index: number 
       <span className="text-base">{MODULE_TIPO_ICON[mod.tipo_contenido] ?? "📋"}</span>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 truncate">{mod.titulo}</p>
+        <p className="text-sm font-medium text-foreground truncate">{mod.titulo}</p>
         {mod.duracion_minutos && (
-          <p className="text-xs text-gray-400">{mod.duracion_minutos} min</p>
+          <p className="text-xs text-muted-foreground">{mod.duracion_minutos} min</p>
         )}
       </div>
 
       {locked ? (
-        <span className="text-gray-300 text-sm">🔒</span>
+        <span className="text-muted-foreground text-sm">🔒</span>
       ) : mod.is_completed ? (
-        <span className="text-xs text-green-600 font-medium">Completado</span>
+        <span className="text-xs text-emerald-500 font-medium">Completado</span>
       ) : (
         <span className="text-xs text-indigo-500 font-medium">Iniciar →</span>
       )}
@@ -109,41 +109,41 @@ export default function CourseDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 px-6 py-10 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">{course.titulo}</h1>
+      <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
+        <div className="bg-gradient-to-br from-indigo-500/10 to-indigo-500/20 px-6 py-10 text-center">
+          <h1 className="text-2xl font-bold text-foreground">{course.titulo}</h1>
           {course.descripcion && (
-            <p className="mt-2 text-sm text-gray-600 max-w-xl mx-auto">{course.descripcion}</p>
+            <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">{course.descripcion}</p>
           )}
         </div>
 
         {/* Meta */}
-        <div className="px-6 py-4 flex flex-wrap gap-3 items-center border-b border-gray-100">
+        <div className="px-6 py-4 flex flex-wrap gap-3 items-center border-b border-border">
           {course.area_nombre && (
-            <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full">
               {course.area_nombre}
             </span>
           )}
-          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-muted/40 text-muted-foreground px-2 py-0.5 rounded-full">
             {TIPO_LABEL[course.tipo] ?? course.tipo}
           </span>
           {course.duracion_horas && (
-            <span className="text-xs text-gray-500">{course.duracion_horas}h estimadas</span>
+            <span className="text-xs text-muted-foreground">{course.duracion_horas}h estimadas</span>
           )}
           <UrgencyBadge fechaLimite={course.fecha_limite} />
           {course.instructor_nombre && (
-            <span className="text-xs text-gray-500">Instructor: {course.instructor_nombre}</span>
+            <span className="text-xs text-muted-foreground">Instructor: {course.instructor_nombre}</span>
           )}
         </div>
 
         {/* Enrollment progress */}
         {enrollment && (
-          <div className="px-6 py-4 border-b border-gray-100">
-            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+          <div className="px-6 py-4 border-b border-border">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
               <span>Progreso del curso</span>
               <span className="font-medium">{progreso}%</span>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
               <div
                 className="h-full bg-indigo-500 rounded-full transition-all"
                 style={{ width: `${progreso}%` }}
@@ -163,7 +163,7 @@ export default function CourseDetailPage() {
                 }
               }}
               disabled={!nextModule && progreso < 100}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 px-4 rounded-lg shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
             >
               {ctaLabel}
             </button>
@@ -180,16 +180,16 @@ export default function CourseDetailPage() {
       </div>
 
       {/* Module list */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">
             Contenido del curso ({course.modules_with_status.length} módulo
             {course.modules_with_status.length !== 1 ? "s" : ""})
           </h2>
         </div>
 
         {course.modules_with_status.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-gray-400">
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
             Este curso no tiene módulos aún.
           </div>
         ) : (

@@ -85,7 +85,7 @@ export default function ExamIntroPage() {
   if (!assessment && error) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-400">{error}</p>
         <Link
           to={`/courses/${courseId}`}
           className="text-sm text-indigo-600 underline"
@@ -104,14 +104,14 @@ export default function ExamIntroPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
-      <div className="bg-white border border-gray-200 rounded-2xl p-8 space-y-6 shadow-sm">
+      <div className="bg-card border border-border rounded-2xl p-8 space-y-6 shadow-sm">
         {/* Header */}
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center text-3xl">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-500/20 flex items-center justify-center text-3xl">
             📝
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Evaluación final</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Evaluación final</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Lee las instrucciones antes de comenzar
           </p>
         </div>
@@ -120,41 +120,41 @@ export default function ExamIntroPage() {
           <>
             {/* Stats grid */}
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-gray-50 rounded-xl p-3">
+              <div className="bg-background rounded-xl p-3">
                 <p className="text-2xl font-bold text-indigo-600">
                   {assessment.question_count_approved}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   pregunta{assessment.question_count_approved !== 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3">
+              <div className="bg-background rounded-xl p-3">
                 <p className="text-2xl font-bold text-indigo-600">
                   {assessment.puntaje_minimo}%
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">nota mínima</p>
+                <p className="text-xs text-muted-foreground mt-0.5">nota mínima</p>
               </div>
               <div
                 className={`rounded-xl p-3 ${
                   remainingAttempts <= 1 && remainingAttempts > 0
-                    ? "bg-amber-50"
+                    ? "bg-amber-500/10"
                     : remainingAttempts === 0
-                    ? "bg-red-50"
-                    : "bg-gray-50"
+                    ? "bg-red-500/10"
+                    : "bg-background"
                 }`}
               >
                 <p
                   className={`text-2xl font-bold ${
                     remainingAttempts <= 1 && remainingAttempts > 0
-                      ? "text-amber-600"
+                      ? "text-amber-400"
                       : remainingAttempts === 0
-                      ? "text-red-600"
+                      ? "text-red-400"
                       : "text-indigo-600"
                   }`}
                 >
                   {remainingAttempts}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   intento{remainingAttempts !== 1 ? "s" : ""} restante
                   {remainingAttempts !== 1 ? "s" : ""}
                 </p>
@@ -163,7 +163,7 @@ export default function ExamIntroPage() {
 
             {/* Time limit badge */}
             {assessment.tiempo_limite_minutos && (
-              <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-4 py-2.5">
+              <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2.5">
                 <span>⏱</span>
                 <span>
                   Tiempo límite:{" "}
@@ -173,16 +173,16 @@ export default function ExamIntroPage() {
             )}
 
             {/* Instructions */}
-            <ul className="text-sm text-gray-600 space-y-2.5">
+            <ul className="text-sm text-muted-foreground space-y-2.5">
               <li className="flex items-start gap-2">
-                <span className="text-green-500 shrink-0 mt-0.5">✓</span>
+                <span className="text-emerald-400 shrink-0 mt-0.5">✓</span>
                 <span>
                   Responde cada pregunta con cuidado. Puedes navegar entre ellas
                   antes de enviar.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-500 shrink-0 mt-0.5">✓</span>
+                <span className="text-emerald-400 shrink-0 mt-0.5">✓</span>
                 <span>
                   Tus respuestas se guardan automáticamente cada 30 segundos.
                 </span>
@@ -208,7 +208,7 @@ export default function ExamIntroPage() {
 
             {/* No approved questions warning */}
             {assessment.question_count_approved === 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700">
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-400">
                 Este examen aún no tiene preguntas aprobadas. Contacta a tu
                 instructor.
               </div>
@@ -217,7 +217,7 @@ export default function ExamIntroPage() {
         )}
 
         {error && (
-          <p className="text-sm text-red-600 text-center bg-red-50 border border-red-100 rounded-lg px-4 py-2">
+          <p className="text-sm text-red-400 text-center bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
             {error}
           </p>
         )}
@@ -228,13 +228,13 @@ export default function ExamIntroPage() {
             type="button"
             onClick={() => void handleStart()}
             disabled={!canStart || starting}
-            className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
           >
             {starting ? "Iniciando…" : "Comenzar examen"}
           </button>
           <Link
             to={`/courses/${courseId}`}
-            className="w-full py-2.5 text-sm text-center text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="w-full py-2.5 text-sm text-center text-muted-foreground border border-border rounded-xl hover:bg-background transition-colors"
           >
             Volver al curso
           </Link>

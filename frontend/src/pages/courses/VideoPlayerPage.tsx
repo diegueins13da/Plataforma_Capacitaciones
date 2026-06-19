@@ -104,23 +104,23 @@ export function VideoPlayerPage({
       </div>
 
       {/* Progress and completion */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <div className="bg-card border border-border rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-600">Tiempo visualizado</span>
+          <span className="text-sm text-muted-foreground">Tiempo visualizado</span>
           <span className="text-sm font-medium text-indigo-600">{percent}%</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
           <div
             className="h-full bg-indigo-400 rounded-full transition-all"
             style={{ width: `${percent}%` }}
           />
         </div>
         {completed ? (
-          <p className="text-sm text-green-600 font-medium mt-2">
+          <p className="text-sm text-emerald-400 font-medium mt-2">
             ✓ Módulo completado
           </p>
         ) : (
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             El módulo se completará automáticamente al ver el 90% del video
           </p>
         )}

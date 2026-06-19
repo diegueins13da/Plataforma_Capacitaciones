@@ -117,12 +117,12 @@ export function Step3Assessment({ onNext, onBack }: Props) {
   return (
     <div className="space-y-6">
       {/* Config form */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700">Política de evaluación</h3>
+      <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-foreground">Política de evaluación</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
               Puntaje mínimo (%)
             </label>
             <input
@@ -131,11 +131,11 @@ export function Step3Assessment({ onNext, onBack }: Props) {
               onChange={(e) => handleConfigChange("puntaje_minimo", e.target.value)}
               min={1}
               max={100}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
               Intentos máximos
             </label>
             <input
@@ -143,13 +143,13 @@ export function Step3Assessment({ onNext, onBack }: Props) {
               value={step3.max_intentos}
               onChange={(e) => handleConfigChange("max_intentos", e.target.value)}
               min={1}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
               Tiempo límite (min){" "}
-              <span className="text-gray-400 font-normal">opcional</span>
+              <span className="text-muted-foreground font-normal">opcional</span>
             </label>
             <input
               type="number"
@@ -157,19 +157,19 @@ export function Step3Assessment({ onNext, onBack }: Props) {
               onChange={(e) => handleConfigChange("tiempo_limite_minutos", e.target.value)}
               min={1}
               placeholder="Sin límite"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
             />
           </div>
         </div>
       </div>
 
       {/* Question bank */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="text-sm font-semibold text-gray-700">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="text-sm font-semibold text-foreground">
             Banco de preguntas
             {assessment && (
-              <span className="ml-2 text-xs font-normal text-gray-400">
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
                 {assessment.question_count_approved} aprobada
                 {assessment.question_count_approved !== 1 ? "s" : ""} / {assessment.question_count_total} total
               </span>
@@ -193,7 +193,7 @@ export function Step3Assessment({ onNext, onBack }: Props) {
         ) : (
           <>
             {showForm && (
-              <div className="p-4 border-b border-gray-100">
+              <div className="p-4 border-b border-border">
                 <QuestionForm
                   initial={editingQuestion ?? undefined}
                   defaultOrden={questions.length + 1}
@@ -204,26 +204,26 @@ export function Step3Assessment({ onNext, onBack }: Props) {
             )}
 
             {questions.length === 0 && !showForm ? (
-              <div className="px-4 py-8 text-center text-sm text-gray-400">
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 No hay preguntas aún. Agrega tu primera pregunta.
               </div>
             ) : (
               questions.map((q, i) => (
                 <div
                   key={q.id}
-                  className="flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50"
+                  className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-background"
                 >
-                  <span className="w-6 h-6 shrink-0 flex items-center justify-center text-xs font-bold text-gray-400 bg-gray-100 rounded-full">
+                  <span className="w-6 h-6 shrink-0 flex items-center justify-center text-xs font-bold text-muted-foreground bg-muted/40 rounded-full">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 leading-snug line-clamp-2">{q.texto}</p>
+                    <p className="text-sm text-foreground leading-snug line-clamp-2">{q.texto}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-muted-foreground">
                         {TIPO_ICONS[q.tipo]} {TIPO_LABELS[q.tipo]}
                       </span>
                       {q.aprobada_por_humano ? (
-                        <span className="text-xs text-green-600">✓ Aprobada</span>
+                        <span className="text-xs text-emerald-500">✓ Aprobada</span>
                       ) : (
                         <span className="text-xs text-amber-500">Pendiente</span>
                       )}
@@ -253,7 +253,7 @@ export function Step3Assessment({ onNext, onBack }: Props) {
       </div>
 
       {!courseId && (
-        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+        <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
           Guarda primero los datos del curso (Paso 1) para poder agregar preguntas.
         </p>
       )}
@@ -263,14 +263,14 @@ export function Step3Assessment({ onNext, onBack }: Props) {
         <button
           type="button"
           onClick={() => { setStep(2); onBack(); }}
-          className="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50"
+          className="px-4 py-2 border border-border text-muted-foreground text-sm rounded-lg hover:bg-background"
         >
           ← Anterior
         </button>
         <button
           type="button"
           onClick={() => { setStep(4); onNext(); }}
-          className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+          className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           Siguiente →
         </button>

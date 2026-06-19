@@ -124,36 +124,36 @@ export function Step1Info({ onNext }: Props) {
     <form className="space-y-5" onSubmit={handleSubmit(handleNext)}>
       {/* Título */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           Título del curso <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           {...register("titulo")}
           placeholder="Ej: Introducción a Riesgos Operativos"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
         />
         {errors.titulo && <p className="text-xs text-red-500 mt-1">{errors.titulo.message}</p>}
       </div>
 
       {/* Descripción */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Descripción / objetivo</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Descripción / objetivo</label>
         <textarea
           {...register("descripcion")}
           rows={3}
           placeholder="¿Qué aprenderá el participante?"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none transition-all duration-300"
         />
       </div>
 
       {/* Tipo + Área */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Tipo</label>
           <select
             {...register("tipo")}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           >
             {Object.entries(TIPO_LABELS).map(([v, l]) => (
               <option key={v} value={v}>{l}</option>
@@ -161,10 +161,10 @@ export function Step1Info({ onNext }: Props) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Área</label>
           <select
             {...register("area", { valueAsNumber: true })}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           >
             <option value="">Sin área específica</option>
             {areas.filter((a) => a.activo).map((a) => (
@@ -177,24 +177,24 @@ export function Step1Info({ onNext }: Props) {
       {/* Fecha límite + Duración */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Fecha límite{" "}
-            <span className="text-xs text-gray-400">(opcional)</span>
+            <span className="text-xs text-muted-foreground">(opcional)</span>
           </label>
           <input
             type="date"
             {...register("fecha_limite")}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duración estimada (horas)</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Duración estimada (horas)</label>
           <input
             type="number"
             {...register("duracion_horas")}
             placeholder="Ej: 4"
             min={1}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           />
         </div>
       </div>
@@ -202,26 +202,26 @@ export function Step1Info({ onNext }: Props) {
       {/* Versión + Cert expira */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Versión</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Versión</label>
           <input
             type="text"
             {...register("version")}
             placeholder="1.0"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           />
           {errors.version && <p className="text-xs text-red-500 mt-1">{errors.version.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             El certificado expira en{" "}
-            <span className="text-xs text-gray-400">(meses, opcional)</span>
+            <span className="text-xs text-muted-foreground">(meses, opcional)</span>
           </label>
           <input
             type="number"
             {...register("cert_expira_meses")}
             placeholder="Ej: 12"
             min={1}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           />
         </div>
       </div>
@@ -232,14 +232,14 @@ export function Step1Info({ onNext }: Props) {
           type="button"
           onClick={handleSubmit(handleSaveDraft)}
           disabled={saving}
-          className="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          className="px-4 py-2 border border-border text-muted-foreground text-sm rounded-lg hover:bg-background disabled:opacity-50"
         >
           {saving ? "Guardando..." : "Guardar borrador"}
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           Siguiente →
         </button>

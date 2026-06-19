@@ -104,10 +104,10 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-4 space-y-4">
       {/* Type selector */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de pregunta</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo de pregunta</label>
         <div className="flex gap-2">
           {(Object.keys(TIPO_LABELS) as QuestionTipo[]).map((t) => (
             <button
@@ -117,7 +117,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
               className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                 tipo === t
                   ? "bg-indigo-600 text-white border-indigo-600"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
+                  : "border-border text-muted-foreground hover:bg-muted/40"
               }`}
             >
               {TIPO_LABELS[t]}
@@ -128,12 +128,12 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
 
       {/* Question text */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Enunciado</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">Enunciado</label>
         <textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           rows={2}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           placeholder="Escribe la pregunta aquí..."
         />
       </div>
@@ -141,8 +141,8 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
       {/* Options — MULTIPLE_CHOICE */}
       {tipo === "MULTIPLE_CHOICE" && (
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-gray-500">
-            Opciones <span className="text-gray-400">(selecciona la correcta)</span>
+          <label className="block text-xs font-medium text-muted-foreground">
+            Opciones <span className="text-muted-foreground">(selecciona la correcta)</span>
           </label>
           {opciones.map((op, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                   setOpciones(n);
                 }}
                 placeholder={`Opción ${i + 1}`}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
             </div>
           ))}
@@ -172,8 +172,8 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
       {/* Options — MULTIPLE_SELECT */}
       {tipo === "MULTIPLE_SELECT" && (
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-gray-500">
-            Opciones <span className="text-gray-400">(marca todas las correctas)</span>
+          <label className="block text-xs font-medium text-muted-foreground">
+            Opciones <span className="text-muted-foreground">(marca todas las correctas)</span>
           </label>
           {opciones.map((op, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                   setOpciones(n);
                 }}
                 placeholder={`Opción ${i + 1}`}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
             </div>
           ))}
@@ -206,7 +206,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
       {/* TRUE_FALSE */}
       {tipo === "TRUE_FALSE" && (
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Respuesta correcta</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Respuesta correcta</label>
           <div className="flex gap-3">
             {[true, false].map((val) => (
               <button
@@ -216,7 +216,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                 className={`px-5 py-2 text-sm rounded-lg border transition-colors ${
                   trueFalseVal === val
                     ? "bg-indigo-600 text-white border-indigo-600"
-                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                    : "border-border text-muted-foreground hover:bg-background"
                 }`}
               >
                 {val ? "Verdadero" : "Falso"}
@@ -233,14 +233,14 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+          className="px-4 py-2 text-sm text-muted-foreground border border-border rounded-lg hover:bg-background"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           {saving ? "Guardando…" : initial ? "Actualizar" : "Agregar pregunta"}
         </button>

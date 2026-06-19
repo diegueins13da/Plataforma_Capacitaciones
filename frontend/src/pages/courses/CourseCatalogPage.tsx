@@ -1,39 +1,140 @@
 /**
- * P10 — Course Catalog
- * Shows the current user's enrolled courses with urgency semaphore and progress.
+ * Course Catalog — shows all published courses.
+ * ADMIN and course instructor see edit/delete actions per card.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { coursesService } from "../../services/coursesService";
+import { CourseEditModal } from "../../components/shared/CourseEditModal";
 import { UrgencyBadge } from "../../components/shared/UrgencyBadge";
 import type { CourseListItem } from "../../types/course";
 
 const TIPO_ICONS: Record<string, string> = {
-  ONLINE: "💻",
-  PRESENCIAL: "🏢",
-  HIBRIDO: "🔀",
-  AUTOAPRENDIZAJE: "📚",
+  ONLINE: "ti-monitor",
+  PRESENCIAL: "ti-building",
+  HIBRIDO: "ti-arrows-exchange",
+  AUTOAPRENDIZAJE: "ti-books",
 };
 
-const ENROLLMENT_ESTADO_FILTER = [
+const ESTADO_LABELS = [
   { value: "", label: "Todos" },
   { value: "EN_PROGRESO", label: "En progreso" },
   { value: "COMPLETADO", label: "Completados" },
   { value: "VENCIDO", label: "Vencidos" },
 ];
 
+// ---------------------------------------------------------------------------
+// Course card
+// ---------------------------------------------------------------------------
+
+function CourseCard({
+  course,
+  onEdit,
+}: {
+  course: CourseListItem;
+  onEdit: (c: CourseListItem) => void;
+}) {
+  const enrollment = course.enrollment;
+  const progreso = enrollment?.progreso_porcentaje ?? 0;
+  const icon = TIPO_ICONS[course.tipo] ?? "ti-book";
+
+  return (
+    <div className="relative group bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-500/30 transition-all">
+      {/* Edit/Delete overlay — only visible when can_edit */}
+      {course.can_edit && (
+        <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <button
+            type="button"
+            title="Editar curso"
+            onClick={(e) => { e.preventDefault(); onEdit(course); }}
+            className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-md hover:bg-indigo-700 transition-colors"
+          >
+            <i className="ti ti-edit text-xs" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {/* Card link area */}
+      <Link to={`/courses/${course.id}`} className="block">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-800/10 px-4 py-7 flex items-center justify-center">
+          <i className={`ti ${icon} text-4xl text-indigo-400/70`} aria-hidden="true" />
+        </div>
+
+        {/* Body */}
+        <div className="p-4 space-y-2.5">
+          <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+            {course.titulo}
+          </h3>
+
+          {course.instructor_nombre && (
+            <p className="text-xs text-muted-foreground truncate">
+              <i className="ti ti-user mr-1" aria-hidden="true" />
+              {course.instructor_nombre}
+            </p>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            <UrgencyBadge fechaLimite={course.fecha_limite} />
+            {enrollment?.estado === "COMPLETADO" && (
+              <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                Completado
+              </span>
+            )}
+            {enrollment?.estado === "VENCIDO" && (
+              <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-medium">
+                Vencido
+              </span>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          {enrollment && enrollment.estado !== "COMPLETADO" && (
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Progreso</span>
+                <span>{progreso}%</span>
+              </div>
+              <div className="h-1.5 bg-muted/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-500 rounded-full transition-all"
+                  style={{ width: `${progreso}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-0.5">
+            <span>{course.module_count} módulo{course.module_count !== 1 ? "s" : ""}</span>
+            {course.duracion_horas && <span>· {course.duracion_horas}h</span>}
+            {course.area_nombre && (
+              <span className="truncate">· {course.area_nombre}</span>
+            )}
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function CourseCatalogPage() {
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterEstado, setFilterEstado] = useState("");
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [filterEstado, setFilterEstado] = useState("");
+  const [editCourse, setEditCourse] = useState<CourseListItem | null>(null);
 
-  async function load(p = 1) {
+  const load = useCallback(async (p: number) => {
     setLoading(true);
     try {
+      // Show ALL published courses — not filtered to enrolled only
       const res = await coursesService.getCourses({ estado: "PUBLICADO", page: p });
       setCourses(res.results);
       setTotal(res.count);
@@ -42,35 +143,43 @@ export default function CourseCatalogPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { void load(1); setPage(1); }, []);
+  useEffect(() => { void load(1); setPage(1); }, [load]);
 
+  // Client-side filter by enrollment estado
   const filtered = filterEstado
     ? courses.filter((c) => c.enrollment?.estado === filterEstado)
     : courses;
 
   const totalPages = Math.ceil(total / 20);
 
+  function handleSaved(updated: CourseListItem) {
+    setCourses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    setEditCourse(null);
+  }
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Mis cursos</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {total} curso{total !== 1 ? "s" : ""} asignado{total !== 1 ? "s" : ""}
+        <h1 className="text-2xl font-bold text-foreground">Catálogo de cursos</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {total} curso{total !== 1 ? "s" : ""} disponible{total !== 1 ? "s" : ""}
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-5 overflow-x-auto">
-        {ENROLLMENT_ESTADO_FILTER.map((f) => (
+      {/* Enrollment status filter (client-side) */}
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+        {ESTADO_LABELS.map((f) => (
           <button
             key={f.value}
+            type="button"
             onClick={() => setFilterEstado(f.value)}
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap ${
               filterEstado === f.value
                 ? "bg-indigo-600 text-white border-indigo-600"
-                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                : "border-border text-muted-foreground hover:bg-accent/50"
             }`}
           >
             {f.label}
@@ -83,70 +192,19 @@ export default function CourseCatalogPage() {
           <div className="w-8 h-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 text-sm">
-          No tienes cursos asignados aún.
+        <div className="text-center py-16">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
+            <i className="ti ti-books text-3xl text-indigo-500" aria-hidden="true" />
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {filterEstado ? "No hay cursos con ese filtro." : "No hay cursos publicados aún."}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => {
-            const enrollment = course.enrollment;
-            const progreso = enrollment?.progreso_porcentaje ?? 0;
-            return (
-              <Link
-                key={course.id}
-                to={`/courses/${course.id}`}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow"
-              >
-                {/* Card header */}
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 px-4 py-6 flex items-center justify-center text-4xl">
-                  {TIPO_ICONS[course.tipo] ?? "📋"}
-                </div>
-
-                {/* Card body */}
-                <div className="p-4 space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">
-                    {course.titulo}
-                  </h3>
-
-                  <div className="flex items-center justify-between">
-                    <UrgencyBadge fechaLimite={course.fecha_limite} />
-                    {enrollment?.estado === "COMPLETADO" && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                        Completado
-                      </span>
-                    )}
-                    {enrollment?.estado === "VENCIDO" && (
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                        Vencido
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Progress bar */}
-                  {enrollment && enrollment.estado !== "COMPLETADO" && (
-                    <div>
-                      <div className="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Progreso</span>
-                        <span>{progreso}%</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-indigo-500 rounded-full transition-all"
-                          style={{ width: `${progreso}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-xs text-gray-400 pt-1">
-                    <span>{course.module_count} módulo{course.module_count !== 1 ? "s" : ""}</span>
-                    {course.duracion_horas && <span>· {course.duracion_horas}h</span>}
-                    {course.area_nombre && <span>· {course.area_nombre}</span>}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((course) => (
+            <CourseCard key={course.id} course={course} onEdit={setEditCourse} />
+          ))}
         </div>
       )}
 
@@ -154,23 +212,32 @@ export default function CourseCatalogPage() {
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-6">
           <button
+            type="button"
             onClick={() => { const p = page - 1; setPage(p); void load(p); }}
             disabled={page === 1}
-            className="px-3 py-1.5 border border-gray-200 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-40"
+            className="px-3 py-1.5 border border-border text-sm rounded-lg hover:bg-accent/50 disabled:opacity-40"
           >
             ← Anterior
           </button>
-          <span className="px-3 py-1.5 text-sm text-gray-600">
-            {page} / {totalPages}
-          </span>
+          <span className="px-3 py-1.5 text-sm text-muted-foreground">{page} / {totalPages}</span>
           <button
+            type="button"
             onClick={() => { const p = page + 1; setPage(p); void load(p); }}
             disabled={page === totalPages}
-            className="px-3 py-1.5 border border-gray-200 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-40"
+            className="px-3 py-1.5 border border-border text-sm rounded-lg hover:bg-accent/50 disabled:opacity-40"
           >
             Siguiente →
           </button>
         </div>
+      )}
+
+      {/* Edit modal */}
+      {editCourse && (
+        <CourseEditModal
+          course={editCourse}
+          onClose={() => setEditCourse(null)}
+          onSaved={handleSaved}
+        />
       )}
     </div>
   );

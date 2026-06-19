@@ -56,13 +56,13 @@ export function RichTextEditor({
   }
 
   return (
-    <div className={`border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+    <div className={`border border-border rounded-lg overflow-hidden ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-gray-200 bg-gray-50 flex-wrap">
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-background flex-wrap">
         <select
           onChange={(e) => formatBlock(e.target.value)}
           defaultValue="p"
-          className="text-xs border border-gray-200 rounded px-1.5 py-1 bg-white"
+          className="text-xs border border-border rounded px-1.5 py-1 bg-card"
           onMouseDown={(e) => e.preventDefault()}
         >
           {HEADING_OPTIONS.map((h) => (
@@ -76,7 +76,7 @@ export function RichTextEditor({
             key={btn.cmd}
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCmd(btn.cmd); }}
-            className={`px-2 py-1 text-xs rounded hover:bg-gray-200 transition-colors border border-transparent hover:border-gray-300 ${btn.style}`}
+            className={`px-2 py-1 text-xs rounded hover:bg-muted/40 transition-colors border border-transparent hover:border-border ${btn.style}`}
           >
             {btn.label}
           </button>
@@ -92,7 +92,7 @@ export function RichTextEditor({
         data-placeholder={placeholder}
         suppressContentEditableWarning
         className="min-h-[160px] px-3 py-2 text-sm focus:outline-none prose prose-sm max-w-none
-          [&:empty:before]:content-[attr(data-placeholder)] [&:empty:before]:text-gray-400
+          [&:empty:before]:content-[attr(data-placeholder)] [&:empty:before]:text-muted-foreground
           [&:empty:before]:pointer-events-none"
         dangerouslySetInnerHTML={lastValue.current !== value ? { __html: value } : undefined}
       />

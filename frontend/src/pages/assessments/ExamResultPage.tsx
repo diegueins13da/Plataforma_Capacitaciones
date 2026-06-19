@@ -32,35 +32,35 @@ function PassedView({
 }) {
   return (
     <div className="text-center space-y-6">
-      <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center text-4xl">
+      <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/15 flex items-center justify-center text-4xl">
         🏆
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-foreground">
           ¡Felicidades, aprobaste!
         </h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-1">
           Has superado la evaluación exitosamente.
         </p>
       </div>
 
       <div className="flex justify-center gap-6">
         <div className="text-center">
-          <p className="text-4xl font-bold text-green-600">
+          <p className="text-4xl font-bold text-emerald-400">
             {calificacion.toFixed(0)}%
           </p>
-          <p className="text-xs text-gray-500 mt-1">Tu calificación</p>
+          <p className="text-xs text-muted-foreground mt-1">Tu calificación</p>
         </div>
-        <div className="w-px bg-gray-200" />
+        <div className="w-px bg-muted" />
         <div className="text-center">
-          <p className="text-4xl font-bold text-gray-300">
+          <p className="text-4xl font-bold text-muted-foreground">
             {puntajeMinimo}%
           </p>
-          <p className="text-xs text-gray-500 mt-1">Nota mínima</p>
+          <p className="text-xs text-muted-foreground mt-1">Nota mínima</p>
         </div>
       </div>
 
-      <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
+      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 text-sm text-emerald-400">
         Tu certificado de finalización está siendo generado y estará disponible
         próximamente.
       </div>
@@ -68,13 +68,13 @@ function PassedView({
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           to={`/courses/${courseId}`}
-          className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium border border-border rounded-xl text-foreground hover:bg-background transition-colors"
         >
           Ver curso
         </Link>
         <Link
           to="/my-courses"
-          className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           Mis cursos
         </Link>
@@ -100,14 +100,14 @@ function FailedView({
 }) {
   return (
     <div className="text-center space-y-6">
-      <div className="w-20 h-20 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-4xl">
+      <div className="w-20 h-20 mx-auto rounded-full bg-amber-500/15 flex items-center justify-center text-4xl">
         📋
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-foreground">
           {timeExpired ? "Tiempo agotado" : "No aprobaste esta vez"}
         </h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-1">
           {timeExpired
             ? "El examen se envió automáticamente al agotarse el tiempo."
             : "No alcanzaste la calificación mínima. ¡Puedes volver a intentarlo!"}
@@ -116,19 +116,19 @@ function FailedView({
 
       <div className="flex justify-center gap-6">
         <div className="text-center">
-          <p className="text-4xl font-bold text-amber-600">
+          <p className="text-4xl font-bold text-amber-400">
             {calificacion.toFixed(0)}%
           </p>
-          <p className="text-xs text-gray-500 mt-1">Tu calificación</p>
+          <p className="text-xs text-muted-foreground mt-1">Tu calificación</p>
         </div>
-        <div className="w-px bg-gray-200" />
+        <div className="w-px bg-muted" />
         <div className="text-center">
-          <p className="text-4xl font-bold text-gray-400">{puntajeMinimo}%</p>
-          <p className="text-xs text-gray-500 mt-1">Nota mínima</p>
+          <p className="text-4xl font-bold text-muted-foreground">{puntajeMinimo}%</p>
+          <p className="text-xs text-muted-foreground mt-1">Nota mínima</p>
         </div>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-400">
         Te quedan{" "}
         <strong>
           {remainingAttempts} intento{remainingAttempts !== 1 ? "s" : ""}
@@ -137,12 +137,12 @@ function FailedView({
       </div>
 
       <div>
-        <p className="text-sm text-gray-600 mb-3 font-medium">
+        <p className="text-sm text-muted-foreground mb-3 font-medium">
           Sugerimos repasar los módulos del curso antes de reintentar:
         </p>
         <Link
           to={`/courses/${courseId}`}
-          className="text-sm text-indigo-600 underline hover:text-indigo-700"
+          className="text-sm text-indigo-400 underline hover:text-indigo-300"
         >
           Ver módulos del curso →
         </Link>
@@ -151,13 +151,13 @@ function FailedView({
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           to={`/courses/${courseId}`}
-          className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium border border-border rounded-xl text-foreground hover:bg-background transition-colors"
         >
           Repasar curso
         </Link>
         <Link
           to={`/courses/${courseId}/exam`}
-          className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           Intentar nuevamente
         </Link>
@@ -187,34 +187,34 @@ function NoAttemptsView({
 
   return (
     <div className="text-center space-y-6">
-      <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center text-4xl">
+      <div className="w-20 h-20 mx-auto rounded-full bg-red-500/15 flex items-center justify-center text-4xl">
         ⛔
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-foreground">
           Sin intentos disponibles
         </h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-1">
           Has agotado todos los intentos permitidos para esta evaluación.
         </p>
       </div>
 
       <div className="flex justify-center gap-6">
         <div className="text-center">
-          <p className="text-4xl font-bold text-red-500">
+          <p className="text-4xl font-bold text-red-400">
             {calificacion.toFixed(0)}%
           </p>
-          <p className="text-xs text-gray-500 mt-1">Última calificación</p>
+          <p className="text-xs text-muted-foreground mt-1">Última calificación</p>
         </div>
-        <div className="w-px bg-gray-200" />
+        <div className="w-px bg-muted" />
         <div className="text-center">
-          <p className="text-4xl font-bold text-gray-400">{puntajeMinimo}%</p>
-          <p className="text-xs text-gray-500 mt-1">Nota mínima</p>
+          <p className="text-4xl font-bold text-muted-foreground">{puntajeMinimo}%</p>
+          <p className="text-xs text-muted-foreground mt-1">Nota mínima</p>
         </div>
       </div>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-sm text-gray-600 space-y-2">
-        <p className="font-medium text-gray-700">¿Necesitas otra oportunidad?</p>
+      <div className="bg-background border border-border rounded-xl px-4 py-4 text-sm text-muted-foreground space-y-2">
+        <p className="font-medium text-foreground">¿Necesitas otra oportunidad?</p>
         <p>
           Puedes solicitar al administrador que restablezca tus intentos.
           Se enviará una notificación para su revisión.
@@ -224,20 +224,20 @@ function NoAttemptsView({
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           to={`/courses/${courseId}`}
-          className="px-5 py-2.5 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium border border-border rounded-xl text-foreground hover:bg-background transition-colors"
         >
           Volver al curso
         </Link>
         <button
           type="button"
           onClick={handleRequestReview}
-          className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+          className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           Solicitar revisión manual
         </button>
       </div>
 
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-muted-foreground">
         También puedes contactar directamente a tu instructor o administrador.
       </p>
     </div>
@@ -264,7 +264,7 @@ export default function ExamResultPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-10">
-      <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+      <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
         {aprobado ? (
           <PassedView
             courseId={courseId}

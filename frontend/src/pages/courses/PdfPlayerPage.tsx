@@ -54,7 +54,7 @@ export function PdfPlayerPage({ module, onComplete, onPositionUpdate }: PdfPlaye
   return (
     <div className="space-y-4">
       {/* PDF embed */}
-      <div className="w-full bg-gray-100 rounded-xl overflow-hidden border border-gray-200" style={{ height: "70vh" }}>
+      <div className="w-full bg-background rounded-xl overflow-hidden border border-border" style={{ height: "70vh" }}>
         {module.archivo_pdf ? (
           <iframe
             src={module.archivo_pdf}
@@ -62,19 +62,19 @@ export function PdfPlayerPage({ module, onComplete, onPositionUpdate }: PdfPlaye
             title={module.titulo}
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             Archivo PDF no disponible
           </div>
         )}
       </div>
 
       {/* Completion control */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4">
+      <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
         {completed ? (
-          <p className="text-sm text-green-600 font-medium">✓ Módulo completado</p>
+          <p className="text-sm text-emerald-400 font-medium">✓ Módulo completado</p>
         ) : (
           <>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {ready
                 ? "Cuando termines de revisar el documento, marca el módulo como completado."
                 : `Revisa el documento (${MIN_SECONDS - elapsed}s restantes)…`}

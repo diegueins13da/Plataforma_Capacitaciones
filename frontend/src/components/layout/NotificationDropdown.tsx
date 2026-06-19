@@ -71,7 +71,7 @@ export function NotificationDropdown() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-muted/40 transition-colors"
         aria-label="Notificaciones"
       >
         <span className="text-xl">🔔</span>
@@ -83,20 +83,20 @@ export function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-2xl shadow-lg z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <span className="text-sm font-semibold text-gray-800">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <span className="text-sm font-semibold text-foreground">
               Notificaciones
               {unreadCount > 0 && (
-                <span className="ml-1.5 text-xs text-indigo-600 font-normal">{unreadCount} nueva{unreadCount !== 1 ? "s" : ""}</span>
+                <span className="ml-1.5 text-xs text-indigo-400 font-normal">{unreadCount} nueva{unreadCount !== 1 ? "s" : ""}</span>
               )}
             </span>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={() => void markRead()}
-                className="text-xs text-gray-400 hover:text-gray-600"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Marcar todas como leídas
               </button>
@@ -106,32 +106,32 @@ export function NotificationDropdown() {
           {/* List */}
           <div className="max-h-72 overflow-y-auto">
             {recent.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">Sin notificaciones</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Sin notificaciones</p>
             ) : (
               recent.map((n) => (
                 <button
                   key={n.id}
                   type="button"
                   onClick={() => void handleClickNotification(n.id, n.tipo, n.referencia_id, n.referencia_tipo)}
-                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 text-left transition-colors ${
-                    !n.leida ? "bg-indigo-50/40" : ""
+                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-background text-left transition-colors ${
+                    !n.leida ? "bg-indigo-500/10" : ""
                   }`}
                 >
                   <span className="text-lg shrink-0 mt-0.5">{TIPO_ICONS[n.tipo] ?? "📌"}</span>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${n.leida ? "text-gray-700" : "text-gray-900"}`}>
+                    <p className="text-xs font-medium text-foreground">
                       {n.titulo}
                     </p>
-                    <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{n.mensaje}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.mensaje}</p>
                   </div>
-                  <span className="text-[10px] text-gray-400 shrink-0">{timeAgo(n.created_at)}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(n.created_at)}</span>
                 </button>
               ))
             )}
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-100 px-4 py-2">
+          <div className="border-t border-border px-4 py-2">
             <button
               type="button"
               onClick={() => { setOpen(false); navigate("/notifications"); }}

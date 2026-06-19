@@ -65,16 +65,16 @@ export default function NotificationsPage() {
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Notificaciones</h1>
+          <h1 className="text-xl font-bold text-foreground">Notificaciones</h1>
           {unreadCount > 0 && (
-            <p className="text-sm text-gray-500 mt-0.5">{unreadCount} sin leer</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{unreadCount} sin leer</p>
           )}
         </div>
         {unreadCount > 0 && (
           <button
             type="button"
             onClick={() => void markRead()}
-            className="text-sm text-indigo-600 hover:underline"
+            className="text-sm text-indigo-400 hover:underline"
           >
             Marcar todas como leídas
           </button>
@@ -91,7 +91,7 @@ export default function NotificationsPage() {
             className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
               filter === opt.value
                 ? "bg-indigo-600 text-white border-indigo-600"
-                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                : "border-border text-muted-foreground hover:bg-background"
             }`}
           >
             {opt.label}
@@ -100,13 +100,13 @@ export default function NotificationsPage() {
       </div>
 
       {/* List */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading && filtered.length === 0 ? (
           <div className="flex justify-center py-12">
             <div className="w-6 h-6 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-12">
+          <p className="text-sm text-muted-foreground text-center py-12">
             No hay notificaciones en esta categoría.
           </p>
         ) : (
@@ -119,25 +119,25 @@ export default function NotificationsPage() {
                 const path = getNavPath(n);
                 if (path !== "#") navigate(path);
               }}
-              className={`w-full flex items-start gap-3 px-4 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 text-left transition-colors ${
-                !n.leida ? "bg-indigo-50/30" : ""
+              className={`w-full flex items-start gap-3 px-4 py-4 border-b border-border last:border-0 hover:bg-background text-left transition-colors ${
+                !n.leida ? "bg-indigo-500/10" : ""
               }`}
             >
               <span className="text-xl shrink-0">{TIPO_ICONS[n.tipo] ?? "📌"}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className={`text-sm font-medium ${n.leida ? "text-gray-700" : "text-gray-900"}`}>
+                  <p className="text-sm font-medium text-foreground">
                     {n.titulo}
                   </p>
-                  <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded-full">
                     {TIPO_LABELS[n.tipo] ?? n.tipo}
                   </span>
                   {!n.leida && (
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-0.5">{n.mensaje}</p>
-                <p className="text-xs text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{n.mensaje}</p>
+                <p className="text-xs text-muted-foreground mt-1">{timeAgo(n.created_at)}</p>
               </div>
             </button>
           ))

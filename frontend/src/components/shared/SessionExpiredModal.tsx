@@ -52,8 +52,8 @@ export function SessionExpiredModal() {
     >
       <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-xl">
         <div className="mb-4 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-            <AlertCircle className="h-6 w-6 text-amber-600" aria-hidden="true" />
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15">
+            <AlertCircle className="h-6 w-6 text-amber-400" aria-hidden="true" />
           </div>
           <h2 id="session-expired-title" className="text-lg font-semibold">
             Sesión expirada

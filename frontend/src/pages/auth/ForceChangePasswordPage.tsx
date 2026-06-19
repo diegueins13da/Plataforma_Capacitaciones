@@ -68,8 +68,8 @@ export default function ForceChangePasswordPage() {
       <div className="w-full max-w-md rounded-lg border bg-card p-8 shadow-sm">
         {/* Header */}
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
-            <ShieldAlert className="h-7 w-7 text-amber-600" aria-hidden="true" />
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15">
+            <ShieldAlert className="h-7 w-7 text-amber-400" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-bold">Cambio de contraseña obligatorio</h1>
           <p className="mt-1 text-sm text-muted-foreground">

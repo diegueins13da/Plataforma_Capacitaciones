@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 export default function ServerErrorPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 text-center">
-      <p className="text-8xl font-bold text-gray-200 select-none">500</p>
-      <h1 className="mt-4 text-xl font-semibold text-gray-800">Error del servidor</h1>
-      <p className="mt-2 text-sm text-gray-500">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
+      <p className="text-8xl font-bold text-foreground/10 select-none">500</p>
+      <h1 className="mt-4 text-xl font-semibold text-foreground">Error del servidor</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
         Algo salió mal. Intenta de nuevo en unos momentos.
       </p>
       <Link

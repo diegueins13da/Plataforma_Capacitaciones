@@ -78,9 +78,9 @@ function GroupFormModal({ group, onClose, onSaved }: GroupFormModalProps) {
       role="dialog"
       aria-modal="true"
       aria-label={isEdit ? "Editar grupo" : "Nuevo grupo"}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
     >
-      <div className="bg-card w-full max-w-md rounded-lg p-6 shadow-xl">
+      <div className="bg-slate-900 w-full max-w-md rounded-xl p-6 shadow-xl border border-slate-800">
         <h2 className="mb-4 text-lg font-semibold">
           {isEdit ? "Editar grupo" : "Nuevo grupo"}
         </h2>
@@ -92,7 +92,7 @@ function GroupFormModal({ group, onClose, onSaved }: GroupFormModalProps) {
             <input
               id="nombre"
               type="text"
-              className="border-input bg-background w-full rounded border px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-700 bg-background px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               {...register("nombre")}
             />
             {errors.nombre && (
@@ -107,7 +107,7 @@ function GroupFormModal({ group, onClose, onSaved }: GroupFormModalProps) {
             <textarea
               id="descripcion"
               rows={3}
-              className="border-input bg-background w-full rounded border px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-700 bg-background px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               {...register("descripcion")}
             />
           </div>
@@ -123,14 +123,14 @@ function GroupFormModal({ group, onClose, onSaved }: GroupFormModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded border px-4 py-2 text-sm"
+              className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-accent/50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-primary text-primary-foreground rounded px-4 py-2 text-sm disabled:opacity-50"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
             >
               {isSubmitting ? "Guardando..." : "Guardar"}
             </button>
@@ -209,9 +209,9 @@ function GroupMembersModal({ group, onClose, onMembersChanged }: GroupMembersMod
       role="dialog"
       aria-modal="true"
       aria-label={`Miembros de ${group.nombre}`}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
     >
-      <div className="bg-card w-full max-w-lg rounded-lg p-6 shadow-xl">
+      <div className="bg-slate-900 w-full max-w-lg rounded-xl p-6 shadow-xl border border-slate-800">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Miembros — {group.nombre}</h2>
           <button onClick={onClose} className="text-muted-foreground text-sm">
@@ -225,7 +225,7 @@ function GroupMembersModal({ group, onClose, onMembersChanged }: GroupMembersMod
             <input
               type="text"
               placeholder="IDs de usuario separados por coma (ej: 1,2,3)"
-              className="border-input bg-background w-full rounded border px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-700 bg-background px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               {...register("user_ids_raw")}
             />
             {errors.user_ids_raw && (
@@ -235,7 +235,7 @@ function GroupMembersModal({ group, onClose, onMembersChanged }: GroupMembersMod
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-primary text-primary-foreground rounded px-3 py-2 text-sm disabled:opacity-50"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-2 text-sm disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
           >
             Agregar
           </button>
@@ -341,7 +341,7 @@ export default function GroupManagementPage() {
         </div>
         <button
           onClick={() => setFormModal({ open: true })}
-          className="bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-sm font-medium shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           + Nuevo Grupo
         </button>
@@ -392,8 +392,8 @@ export default function GroupManagementPage() {
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                         group.activo
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-muted/40 text-muted-foreground"
                       }`}
                     >
                       {group.activo ? "Activo" : "Inactivo"}
@@ -403,13 +403,13 @@ export default function GroupManagementPage() {
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setMembersModal({ open: true, group })}
-                        className="text-primary text-xs hover:underline"
+                        className="text-indigo-400 text-xs hover:underline"
                       >
                         Miembros
                       </button>
                       <button
                         onClick={() => setFormModal({ open: true, group })}
-                        className="text-primary text-xs hover:underline"
+                        className="text-indigo-400 text-xs hover:underline"
                       >
                         Editar
                       </button>

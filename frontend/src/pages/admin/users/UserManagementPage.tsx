@@ -1,10 +1,3 @@
-/**
- * P26 — User Management Page
- *
- * Paginated user table with server-side filtering (role, area, search).
- * Row actions: change role (inline select), deactivate/activate.
- * FAB "Nuevo Usuario" opens P27 (CreateUserModal).
- */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,14 +8,57 @@ import type { AdminUser, UserRole } from "../../../types/user";
 import type { Group } from "../../../types/groups";
 
 // ---------------------------------------------------------------------------
-// Role label helpers
+// Helpers
 // ---------------------------------------------------------------------------
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: "Administrador",
-  TRAINER: "Capacitador",
-  USUARIO: "Usuario",
+const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string }> = {
+  ADMIN:   { label: "Administrador", color: "#818CF8", bg: "rgba(79,70,229,0.12)" },
+  TRAINER: { label: "Capacitador",   color: "#34D399", bg: "rgba(16,185,129,0.12)" },
+  USUARIO: { label: "Usuario",       color: "#94a3b8", bg: "rgba(100,116,139,0.12)" },
 };
+
+function userInitials(name: string, email: string): string {
+  if (name?.trim()) {
+    return name.trim().split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  }
+  return email[0]?.toUpperCase() ?? "U";
+}
+
+const AVATAR_COLORS = [
+  "#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4",
+];
+
+function avatarColor(id: number) {
+  return AVATAR_COLORS[id % AVATAR_COLORS.length];
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function Avatar({ user }: { user: AdminUser }) {
+  const color = avatarColor(user.id);
+  return (
+    <div
+      className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0"
+      style={{ background: color }}
+    >
+      {userInitials(user.full_name, user.email)}
+    </div>
+  );
+}
+
+function RoleBadge({ role }: { role: UserRole }) {
+  const cfg = ROLE_CONFIG[role];
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+      style={{ color: cfg.color, background: cfg.bg }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -36,17 +72,10 @@ export default function UserManagementPage() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  // Filters
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "true" | "false">("");
-
-  // Modals
   const [showCreate, setShowCreate] = useState(false);
-
-  // ---------------------------------------------------------------------------
-  // Data loading
-  // ---------------------------------------------------------------------------
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -66,32 +95,17 @@ export default function UserManagementPage() {
     }
   }, [search, roleFilter, statusFilter, page]);
 
-  const loadGroups = useCallback(async () => {
-    try {
-      const data = await usersService.getGroups();
-      setGroups(data);
-    } catch {
-      // Groups are optional context for create modal
-    }
+  useEffect(() => {
+    usersService.getGroups().then(setGroups).catch(() => void 0);
   }, []);
 
-  useEffect(() => {
-    loadGroups();
-  }, [loadGroups]);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
-  // ---------------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------------
+  useEffect(() => { void loadUsers(); }, [loadUsers]);
 
   const handleChangeRole = async (user: AdminUser, newRole: UserRole) => {
     try {
       const updated = await usersService.changeUserRole(user.id, { new_role: newRole });
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-      toast.success(`Rol de ${user.full_name} actualizado a ${ROLE_LABELS[newRole]}.`);
+      toast.success(`Rol de ${user.full_name} actualizado.`);
     } catch {
       toast.error("No se pudo cambiar el rol.");
     }
@@ -102,12 +116,12 @@ export default function UserManagementPage() {
       if (user.is_active) {
         const updated = await usersService.deactivateUser(user.id);
         setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-        toast.success(`${user.full_name} ha sido desactivado.`);
+        toast.success(`${user.full_name} desactivado.`);
       } else {
-        toast("La activación de usuarios se realiza desde el panel de soporte.");
+        toast("La activación se gestiona desde soporte.");
       }
     } catch {
-      toast.error("No se pudo cambiar el estado del usuario.");
+      toast.error("No se pudo cambiar el estado.");
     }
   };
 
@@ -117,155 +131,183 @@ export default function UserManagementPage() {
     setShowCreate(false);
   };
 
-  // ---------------------------------------------------------------------------
-  // Pagination helpers
-  // ---------------------------------------------------------------------------
-
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
+  const selectCls =
+    "h-9 rounded-lg border border-slate-700 bg-background px-3 text-sm text-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300 appearance-none pr-8";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Gestión de Usuarios</h1>
-          <p className="text-muted-foreground text-sm">
-            {totalCount} usuario{totalCount !== 1 ? "s" : ""} en total
+          <h2 className="text-lg font-semibold text-foreground">Usuarios</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {totalCount} usuario{totalCount !== 1 ? "s" : ""} registrado{totalCount !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/admin/users/import"
-            className="border border-gray-200 text-gray-700 rounded px-4 py-2 text-sm font-medium hover:bg-gray-50"
+            className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
-            Importación masiva
+            <i className="ti ti-upload text-base" aria-hidden="true" />
+            Importar
           </Link>
           <button
+            type="button"
             onClick={() => setShowCreate(true)}
-            className="bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-medium"
+            className="h-9 inline-flex items-center gap-1.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
           >
-            + Nuevo Usuario
+            <i className="ti ti-user-plus text-base" aria-hidden="true" />
+            Nuevo usuario
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Buscar por nombre o correo..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          aria-label="Buscar usuarios"
-          className="border-input bg-background rounded border px-3 py-2 text-sm"
-        />
-
-        <select
-          value={roleFilter}
-          onChange={(e) => {
-            setRoleFilter(e.target.value as UserRole | "");
-            setPage(1);
-          }}
-          aria-label="Filtrar por rol"
-          className="border-input bg-background rounded border px-3 py-2 text-sm"
-        >
-          <option value="">Todos los roles</option>
-          <option value="ADMIN">Administrador</option>
-          <option value="TRAINER">Capacitador</option>
-          <option value="USUARIO">Usuario</option>
-        </select>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value as "" | "true" | "false");
-            setPage(1);
-          }}
-          aria-label="Filtrar por estado"
-          className="border-input bg-background rounded border px-3 py-2 text-sm"
-        >
-          <option value="">Todos los estados</option>
-          <option value="true">Activo</option>
-          <option value="false">Inactivo</option>
-        </select>
+      {/* Filters toolbar */}
+      <div className="flex flex-wrap gap-2">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <i className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base pointer-events-none" aria-hidden="true" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre o correo…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-700 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+          />
+        </div>
+        {/* Role filter */}
+        <div className="relative">
+          <select
+            value={roleFilter}
+            onChange={(e) => { setRoleFilter(e.target.value as UserRole | ""); setPage(1); }}
+            className={selectCls}
+          >
+            <option value="">Todos los roles</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="TRAINER">Capacitador</option>
+            <option value="USUARIO">Usuario</option>
+          </select>
+          <i className="ti ti-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" aria-hidden="true" />
+        </div>
+        {/* Status filter */}
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value as "" | "true" | "false"); setPage(1); }}
+            className={selectCls}
+          >
+            <option value="">Todos los estados</option>
+            <option value="true">Activos</option>
+            <option value="false">Inactivos</option>
+          </select>
+          <i className="ti ti-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" aria-hidden="true" />
+        </div>
       </div>
 
       {/* Table */}
-      {loading ? (
-        <p className="text-muted-foreground" role="status">
-          Cargando usuarios...
-        </p>
-      ) : users.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No se encontraron usuarios con los filtros seleccionados.
-        </p>
-      ) : (
-        <div className="overflow-hidden rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Nombre</th>
-                <th className="px-4 py-3 text-left font-medium">Correo</th>
-                <th className="px-4 py-3 text-left font-medium">Área / Cargo</th>
-                <th className="px-4 py-3 text-center font-medium">Rol</th>
-                <th className="px-4 py-3 text-center font-medium">Estado</th>
-                <th className="px-4 py-3 text-right font-medium">Acciones</th>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-7 h-7 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
+          </div>
+        ) : users.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-muted/40 flex items-center justify-center mx-auto mb-3">
+              <i className="ti ti-users text-2xl text-muted-foreground" aria-hidden="true" />
+            </div>
+            <p className="text-sm text-muted-foreground">No se encontraron usuarios.</p>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Usuario
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden md:table-cell">
+                  Área / Cargo
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Rol
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Estado
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Acciones
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-border">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-muted/50">
-                  <td className="px-4 py-3 font-medium">{user.full_name}</td>
-                  <td className="text-muted-foreground px-4 py-3">{user.email}</td>
-                  <td className="text-muted-foreground px-4 py-3">
+                <tr key={user.id} className="hover:bg-accent/30 transition-colors group">
+                  {/* User */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar user={user} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{user.full_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  {/* Area */}
+                  <td className="px-4 py-3 hidden md:table-cell">
                     {user.area ? (
-                      <>
-                        <span>{user.area}</span>
+                      <div>
+                        <p className="text-xs text-foreground">{user.area}</p>
                         {user.cargo && (
-                          <span className="ml-1 text-xs">/ {user.cargo}</span>
+                          <p className="text-xs text-muted-foreground">{user.cargo}</p>
                         )}
-                      </>
+                      </div>
                     ) : (
-                      "—"
+                      <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleChangeRole(user, e.target.value as UserRole)}
-                      aria-label={`Cambiar rol de ${user.full_name}`}
-                      className="border-input bg-background rounded border px-2 py-1 text-xs"
-                    >
-                      <option value="USUARIO">Usuario</option>
-                      <option value="TRAINER">Capacitador</option>
-                      <option value="ADMIN">Administrador</option>
-                    </select>
+                  {/* Role */}
+                  <td className="px-4 py-3">
+                    <div className="relative inline-block">
+                      <select
+                        value={user.role}
+                        onChange={(e) => void handleChangeRole(user, e.target.value as UserRole)}
+                        className="appearance-none pl-2.5 pr-6 py-1 rounded-full text-xs font-medium border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
+                        style={{
+                          color: ROLE_CONFIG[user.role].color,
+                          background: ROLE_CONFIG[user.role].bg,
+                        }}
+                      >
+                        <option value="USUARIO">Usuario</option>
+                        <option value="TRAINER">Capacitador</option>
+                        <option value="ADMIN">Administrador</option>
+                      </select>
+                      <i className="ti ti-chevron-down absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none"
+                        style={{ color: ROLE_CONFIG[user.role].color }} aria-hidden="true" />
+                    </div>
                   </td>
+                  {/* Status */}
                   <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        user.is_active
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                      user.is_active
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-muted/40 text-muted-foreground"
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-emerald-400" : "bg-muted-foreground"}`} />
                       {user.is_active ? "Activo" : "Inactivo"}
                     </span>
                   </td>
+                  {/* Actions */}
                   <td className="px-4 py-3 text-right">
                     {user.is_active && (
                       <button
-                        onClick={() => handleToggleActive(user)}
-                        className="text-destructive text-xs hover:underline"
-                        aria-label={`Desactivar ${user.full_name}`}
+                        type="button"
+                        onClick={() => void handleToggleActive(user)}
+                        title="Desactivar usuario"
+                        className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all px-2 py-1 rounded-lg hover:bg-red-500/10"
                       >
+                        <i className="ti ti-user-off text-sm" aria-hidden="true" />
                         Desactivar
                       </button>
                     )}
@@ -274,39 +316,28 @@ export default function UserManagementPage() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="rounded border px-3 py-1 disabled:opacity-40"
-          >
+        <div className="flex items-center justify-center gap-2">
+          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
+            className="h-8 px-3 text-sm border border-border rounded-lg disabled:opacity-40 hover:bg-accent/50 transition-colors text-muted-foreground">
             ← Anterior
           </button>
-          <span className="text-muted-foreground">
-            Página {page} de {totalPages}
+          <span className="text-sm text-muted-foreground px-2">
+            {page} / {totalPages}
           </span>
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="rounded border px-3 py-1 disabled:opacity-40"
-          >
+          <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
+            className="h-8 px-3 text-sm border border-border rounded-lg disabled:opacity-40 hover:bg-accent/50 transition-colors text-muted-foreground">
             Siguiente →
           </button>
         </div>
       )}
 
-      {/* Create modal */}
       {showCreate && (
-        <CreateUserModal
-          groups={groups}
-          onClose={() => setShowCreate(false)}
-          onCreated={handleCreated}
-        />
+        <CreateUserModal groups={groups} onClose={() => setShowCreate(false)} onCreated={handleCreated} />
       )}
     </div>
   );

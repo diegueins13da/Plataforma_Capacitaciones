@@ -116,24 +116,24 @@ export default function ModulePlayerPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-400 mb-4 flex items-center gap-2">
-        <Link to="/courses" className="hover:text-indigo-600">Mis cursos</Link>
+      <nav className="text-sm text-muted-foreground mb-4 flex items-center gap-2">
+        <Link to="/courses" className="hover:text-indigo-400">Mis cursos</Link>
         <span>/</span>
-        <Link to={`/courses/${course.id}`} className="hover:text-indigo-600 max-w-[200px] truncate">
+        <Link to={`/courses/${course.id}`} className="hover:text-indigo-400 max-w-[200px] truncate">
           {course.titulo}
         </Link>
         <span>/</span>
-        <span className="text-gray-600 truncate">{module.titulo}</span>
+        <span className="text-foreground truncate">{module.titulo}</span>
       </nav>
 
       {/* Module header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">{module.titulo}</h1>
+        <h1 className="text-xl font-bold text-foreground">{module.titulo}</h1>
         {module.descripcion && (
-          <p className="text-sm text-gray-500 mt-1">{module.descripcion}</p>
+          <p className="text-sm text-muted-foreground mt-1">{module.descripcion}</p>
         )}
         {module.duracion_minutos && (
-          <p className="text-xs text-gray-400 mt-1">{module.duracion_minutos} min estimados</p>
+          <p className="text-xs text-muted-foreground mt-1">{module.duracion_minutos} min estimados</p>
         )}
       </div>
 
@@ -166,7 +166,7 @@ export default function ModulePlayerPage() {
       )}
 
       {module.tipo_contenido === "SCORM" && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-700 text-sm">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-6 text-center text-amber-400 text-sm">
           Los módulos SCORM estarán disponibles en la próxima versión de la plataforma.
         </div>
       )}

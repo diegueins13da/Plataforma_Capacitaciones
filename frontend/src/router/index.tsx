@@ -11,6 +11,7 @@ const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePass
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const ProfilePage = lazy(() => import("../pages/dashboard/ProfilePage"));
 const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
+const AdminConfigPage = lazy(() => import("../pages/admin/config/AdminConfigPage"));
 const UserManagementPage = lazy(() => import("../pages/admin/users/UserManagementPage"));
 const GroupManagementPage = lazy(() => import("../pages/admin/users/GroupManagementPage"));
 const BulkImportPage = lazy(() => import("../pages/admin/users/BulkImportPage"));
@@ -29,6 +30,8 @@ const ExamResultPage = lazy(() => import("../pages/assessments/ExamResultPage"))
 const AIGeneratorPage = lazy(() => import("../pages/admin/courses/AIGeneratorPage"));
 const NotificationsPage = lazy(() => import("../pages/dashboard/NotificationsPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
+const MyCertificatesPage = lazy(() => import("../pages/certificates/MyCertificatesPage"));
+const AdminCertificatesPage = lazy(() => import("../pages/certificates/AdminCertificatesPage"));
 const NotFoundPage = lazy(() => import("../pages/errors/NotFoundPage"));
 const ForbiddenPage = lazy(() => import("../pages/errors/ForbiddenPage"));
 const ServerErrorPage = lazy(() => import("../pages/errors/ServerErrorPage"));
@@ -60,6 +63,7 @@ export function AppRouter() {
             <Route path="/courses/:courseId/modules/:moduleId" element={<ModulePlayerPage />} />
             <Route path="/courses/:courseId/completed" element={<CourseCompletedPage />} />
             <Route path="/my-courses" element={<MyCourseListPage />} />
+            <Route path="/my-certificates" element={<MyCertificatesPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/courses/:courseId/exam" element={<ExamIntroPage />} />
             <Route path="/courses/:courseId/exam/in-progress" element={<ExamQuestionPage />} />
@@ -67,19 +71,28 @@ export function AppRouter() {
           </Route>
         </Route>
 
-        {/* Authenticated — ADMIN only */}
-        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+        {/* ADMIN + TRAINER — course management */}
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN", "TRAINER"]} />}>
           <Route element={<AppLayout />}>
-            <Route path="/admin" element={<AdminDashboardPage />} />
-            <Route path="/admin/users" element={<UserManagementPage />} />
-            <Route path="/admin/groups" element={<GroupManagementPage />} />
-            <Route path="/admin/users/import" element={<BulkImportPage />} />
-            <Route path="/admin/users/import-history" element={<ImportHistoryPage />} />
-            <Route path="/admin/config" element={<SystemConfigPage />} />
             <Route path="/admin/courses" element={<CourseListPage />} />
             <Route path="/admin/courses/new" element={<CourseWizardPage />} />
             <Route path="/admin/courses/:id/edit" element={<CourseWizardPage />} />
             <Route path="/admin/courses/:id/ai-generator" element={<AIGeneratorPage />} />
+          </Route>
+        </Route>
+
+        {/* ADMIN only */}
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+          <Route element={<AppLayout />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/config" element={<AdminConfigPage />} />
+            <Route path="/admin/certificates" element={<AdminCertificatesPage />} />
+            {/* Legacy — still reachable by direct URL */}
+            <Route path="/admin/users" element={<UserManagementPage />} />
+            <Route path="/admin/groups" element={<GroupManagementPage />} />
+            <Route path="/admin/users/import" element={<BulkImportPage />} />
+            <Route path="/admin/users/import-history" element={<ImportHistoryPage />} />
+            <Route path="/admin/config/general" element={<SystemConfigPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
           </Route>
         </Route>

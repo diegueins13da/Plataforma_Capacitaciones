@@ -87,22 +87,22 @@ export function TextPlayerPage({
       <div
         ref={contentRef}
         onScroll={handleScroll}
-        className="bg-white border border-gray-200 rounded-xl p-6 overflow-y-auto prose prose-sm max-w-none"
+        className="bg-card border border-border rounded-xl p-6 overflow-y-auto prose prose-invert prose-sm max-w-none"
         style={{ maxHeight: "65vh" }}
         // Content is sanitized server-side by bleach before storage
         dangerouslySetInnerHTML={{ __html: module.contenido_html }}
       />
 
       {/* Progress indicator */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <div className="bg-card border border-border rounded-xl p-4">
         {completed ? (
-          <p className="text-sm text-green-600 font-medium">✓ Módulo completado</p>
+          <p className="text-sm text-emerald-400 font-medium">✓ Módulo completado</p>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-sm text-gray-500">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>{reachedEnd ? "✓ Leído hasta el final" : "↓ Desplázate hasta el final"}</span>
               {elapsed < MIN_SECONDS && (
-                <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-muted/40 px-2 py-0.5 rounded-full">
                   {timeLeft}s restantes
                 </span>
               )}

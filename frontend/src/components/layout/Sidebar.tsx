@@ -1,88 +1,208 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
+import { useTheme } from "../../context/ThemeContext";
 
 interface NavItem {
   to: string;
   label: string;
   icon: string;
-  roles?: string[];
+  end?: boolean;
+  badge?: boolean;
+  dividerBefore?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", label: "Inicio", icon: "🏠" },
-  { to: "/courses", label: "Cursos", icon: "📚" },
-  { to: "/my-courses", label: "Mis cursos", icon: "🎓" },
-  { to: "/notifications", label: "Notificaciones", icon: "🔔" },
-  { to: "/profile", label: "Mi perfil", icon: "👤" },
-  // Admin-only
-  { to: "/admin", label: "Panel admin", icon: "⚙️", roles: ["ADMIN"] },
-  { to: "/admin/users", label: "Usuarios", icon: "👥", roles: ["ADMIN"] },
-  { to: "/admin/courses", label: "Gestión cursos", icon: "📋", roles: ["ADMIN"] },
-  { to: "/admin/reports", label: "Auditoría", icon: "📊", roles: ["ADMIN"] },
-];
+// Role-specific navigation maps
+const NAV_BY_ROLE: Record<string, NavItem[]> = {
+  ADMIN: [
+    { to: "/admin", label: "Dashboard", icon: "ti-layout-dashboard", end: true },
+    { to: "/admin/users", label: "Usuarios", icon: "ti-users" },
+    { to: "/admin/courses", label: "Cursos", icon: "ti-books" },
+    { to: "/admin/reports", label: "Reportes", icon: "ti-chart-bar" },
+    { to: "/admin/certificates", label: "Certificados", icon: "ti-certificate" },
+    { to: "/notifications", label: "Notificaciones", icon: "ti-bell", badge: true },
+    { to: "/admin/config", label: "Configuración", icon: "ti-settings", dividerBefore: true },
+  ],
+  TRAINER: [
+    { to: "/dashboard", label: "Inicio", icon: "ti-home", end: true },
+    { to: "/admin/courses", label: "Gestión de cursos", icon: "ti-school" },
+    { to: "/courses", label: "Catálogo", icon: "ti-books" },
+    { to: "/my-certificates", label: "Mis certificados", icon: "ti-award" },
+    { to: "/notifications", label: "Notificaciones", icon: "ti-bell", badge: true },
+  ],
+  USUARIO: [
+    { to: "/dashboard", label: "Inicio", icon: "ti-home", end: true },
+    { to: "/courses", label: "Catálogo de cursos", icon: "ti-books" },
+    { to: "/my-courses", label: "Mis cursos", icon: "ti-school" },
+    { to: "/my-certificates", label: "Mis certificados", icon: "ti-award" },
+    { to: "/notifications", label: "Notificaciones", icon: "ti-bell", badge: true },
+  ],
+};
 
+// ---------------------------------------------------------------------------
+// Sidebar item
+// ---------------------------------------------------------------------------
+function SidebarItem({ item }: { item: NavItem }) {
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      title={item.label}
+      className={({ isActive }) =>
+        [
+          "relative w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-150 group",
+          isActive
+            ? "text-[#818CF8]"
+            : "text-white/30 hover:text-white/70 hover:bg-white/5",
+        ].join(" ")
+      }
+      style={({ isActive }) =>
+        isActive ? { background: "rgba(79,70,229,0.25)" } : {}
+      }
+    >
+      <i className={`ti ${item.icon} text-[18px]`} aria-hidden="true" />
+      {item.badge && (
+        <span
+          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
+          style={{ background: "#EF4444" }}
+        />
+      )}
+      {/* Tooltip */}
+      <span
+        className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
+        style={{
+          background: "#1e293b",
+          color: "#e2e8f0",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        {item.label}
+      </span>
+    </NavLink>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar
+// ---------------------------------------------------------------------------
 export function Sidebar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   async function handleLogout() {
     await logout();
     navigate("/login");
   }
 
-  const items = NAV_ITEMS.filter(
-    (item) => !item.roles || (user?.role && item.roles.includes(user.role))
-  );
+  const role = user?.role ?? "USUARIO";
+  const initials = user?.full_name
+    ? user.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : (user?.email?.[0]?.toUpperCase() ?? "U");
+
+  const navItems = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.USUARIO;
 
   return (
-    <aside className="w-60 shrink-0 bg-white border-r border-gray-200 flex flex-col min-h-screen">
+    <aside
+      className="shrink-0 flex flex-col items-center py-3 min-h-screen gap-1 overflow-visible"
+      style={{
+        width: "52px",
+        background: "#0a0f1e",
+        borderRight: "1px solid #1e293b",
+      }}
+    >
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-100">
-        <span className="text-lg font-bold text-indigo-700 tracking-tight">LMS Corporativo</span>
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center mb-3 shrink-0"
+        style={{ background: "#4F46E5" }}
+      >
+        <i className="ti ti-certificate text-white text-sm" aria-hidden="true" />
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/dashboard"}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                isActive
-                  ? "bg-indigo-50 text-indigo-700 font-medium"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`
-            }
-          >
-            <span>{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* User footer */}
-      <div className="border-t border-gray-100 p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-sm font-bold shrink-0">
-            {user?.full_name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? "U"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-gray-900 truncate">
-              {user?.full_name || user?.email}
-            </p>
-            <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-          </div>
+      {/* Role-specific nav */}
+      {navItems.map((item) => (
+        <div key={item.to} className="flex flex-col items-center w-full gap-1">
+          {item.dividerBefore && (
+            <div
+              className="w-5 my-1"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+            />
+          )}
+          <SidebarItem item={item} />
         </div>
-        <button
-          type="button"
-          onClick={() => void handleLogout()}
-          className="mt-3 w-full text-xs text-gray-500 hover:text-red-600 transition-colors text-left"
+      ))}
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Theme toggle */}
+      <button
+        type="button"
+        title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+        onClick={toggleTheme}
+        className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors group mb-1"
+        style={{ color: "rgba(255,255,255,0.35)" }}
+      >
+        <i
+          className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"} text-[18px]`}
+          aria-hidden="true"
+        />
+        <span
+          className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
+          style={{
+            background: "#1e293b",
+            color: "#e2e8f0",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+        </span>
+      </button>
+
+      {/* Logout */}
+      <button
+        type="button"
+        title="Cerrar sesión"
+        onClick={() => void handleLogout()}
+        className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors group mb-1"
+        style={{ color: "rgba(255,255,255,0.25)" }}
+      >
+        <i className="ti ti-logout text-[18px]" aria-hidden="true" />
+        <span
+          className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
+          style={{
+            background: "#1e293b",
+            color: "#e2e8f0",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
         >
           Cerrar sesión
-        </button>
-      </div>
+        </span>
+      </button>
+
+      {/* User avatar */}
+      <NavLink
+        to="/profile"
+        title={user?.full_name ?? user?.email ?? "Perfil"}
+        className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-opacity hover:opacity-80 group"
+        style={{ background: "rgba(79,70,229,0.4)", color: "#a5b4fc" }}
+      >
+        {initials}
+        <span
+          className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
+          style={{
+            background: "#1e293b",
+            color: "#e2e8f0",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          {user?.full_name ?? user?.email ?? "Perfil"}
+        </span>
+      </NavLink>
     </aside>
   );
 }

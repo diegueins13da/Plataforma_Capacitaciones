@@ -52,8 +52,8 @@ function StepIndicator({ step }: { step: Step }) {
               i === idx
                 ? "bg-indigo-600 text-white"
                 : i < idx
-                ? "bg-indigo-100 text-indigo-700"
-                : "bg-gray-100 text-gray-400"
+                ? "bg-indigo-500/20 text-indigo-400"
+                : "bg-muted/40 text-muted-foreground"
             }`}
           >
             <span
@@ -66,7 +66,7 @@ function StepIndicator({ step }: { step: Step }) {
             {s.label}
           </div>
           {i < steps.length - 1 && (
-            <div className={`h-px w-6 ${i < idx ? "bg-indigo-300" : "bg-gray-200"}`} />
+            <div className={`h-px w-6 ${i < idx ? "bg-indigo-500/40" : "bg-muted"}`} />
           )}
         </div>
       ))}
@@ -78,24 +78,24 @@ function ErrorRowsTable({ rows }: { rows: BulkImportErrorRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div className="mb-6">
-      <h3 className="text-sm font-semibold text-red-700 mb-2">
+      <h3 className="text-sm font-semibold text-red-400 mb-2">
         Filas con errores ({rows.length})
       </h3>
-      <div className="overflow-x-auto rounded-lg border border-red-200">
+      <div className="overflow-x-auto rounded-lg border border-red-500/30">
         <table className="min-w-full text-sm">
-          <thead className="bg-red-50">
+          <thead className="bg-red-500/10">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-red-700">Fila</th>
-              <th className="px-3 py-2 text-left font-medium text-red-700">Correo</th>
-              <th className="px-3 py-2 text-left font-medium text-red-700">Errores</th>
+              <th className="px-3 py-2 text-left font-medium text-red-400">Fila</th>
+              <th className="px-3 py-2 text-left font-medium text-red-400">Correo</th>
+              <th className="px-3 py-2 text-left font-medium text-red-400">Errores</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-red-100">
+          <tbody className="divide-y divide-red-500/20">
             {rows.map((r) => (
-              <tr key={r.row} className="bg-white">
-                <td className="px-3 py-2 text-gray-500">{r.row}</td>
-                <td className="px-3 py-2 text-gray-700">{r.email || "—"}</td>
-                <td className="px-3 py-2 text-red-600">
+              <tr key={r.row} className="bg-card">
+                <td className="px-3 py-2 text-muted-foreground">{r.row}</td>
+                <td className="px-3 py-2 text-foreground">{r.email || "—"}</td>
+                <td className="px-3 py-2 text-red-400">
                   <ul className="list-disc list-inside space-y-0.5">
                     {r.errors.map((e, i) => (
                       <li key={i}>{e}</li>
@@ -115,34 +115,34 @@ function ValidRowsTable({ rows }: { rows: BulkImportValidRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div className="mb-6">
-      <h3 className="text-sm font-semibold text-green-700 mb-2">
+      <h3 className="text-sm font-semibold text-emerald-400 mb-2">
         Filas válidas ({rows.length})
       </h3>
-      <div className="overflow-x-auto rounded-lg border border-green-200">
+      <div className="overflow-x-auto rounded-lg border border-emerald-500/30">
         <table className="min-w-full text-sm">
-          <thead className="bg-green-50">
+          <thead className="bg-emerald-500/10">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-green-700">Fila</th>
-              <th className="px-3 py-2 text-left font-medium text-green-700">Correo</th>
-              <th className="px-3 py-2 text-left font-medium text-green-700">Nombre</th>
-              <th className="px-3 py-2 text-left font-medium text-green-700">Rol</th>
-              <th className="px-3 py-2 text-left font-medium text-green-700">Área</th>
+              <th className="px-3 py-2 text-left font-medium text-emerald-400">Fila</th>
+              <th className="px-3 py-2 text-left font-medium text-emerald-400">Correo</th>
+              <th className="px-3 py-2 text-left font-medium text-emerald-400">Nombre</th>
+              <th className="px-3 py-2 text-left font-medium text-emerald-400">Rol</th>
+              <th className="px-3 py-2 text-left font-medium text-emerald-400">Área</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-green-50">
+          <tbody className="divide-y divide-emerald-500/10">
             {rows.map((r) => (
-              <tr key={r.row} className="bg-white">
-                <td className="px-3 py-2 text-gray-400">{r.row}</td>
-                <td className="px-3 py-2 text-gray-700">{r.email}</td>
-                <td className="px-3 py-2 text-gray-700">
+              <tr key={r.row} className="bg-card">
+                <td className="px-3 py-2 text-muted-foreground">{r.row}</td>
+                <td className="px-3 py-2 text-foreground">{r.email}</td>
+                <td className="px-3 py-2 text-foreground">
                   {r.first_name} {r.last_name}
                 </td>
                 <td className="px-3 py-2">
-                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400">
                     {ROLE_LABELS[r.role]}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-gray-500">{r.area || "—"}</td>
+                <td className="px-3 py-2 text-muted-foreground">{r.area || "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -237,8 +237,8 @@ export default function BulkImportPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Importación masiva de usuarios</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Importación masiva de usuarios</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Carga múltiples usuarios desde un archivo Excel (.xlsx).
         </p>
       </div>
@@ -247,15 +247,15 @@ export default function BulkImportPage() {
 
       {/* ── Step 1: Upload ── */}
       {step === "upload" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
+        <div className="bg-card rounded-xl border border-border p-8">
           <div
             role="button"
             tabIndex={0}
             aria-label="Zona de carga de archivo Excel"
             className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
               dragOver
-                ? "border-indigo-400 bg-indigo-50"
-                : "border-gray-300 hover:border-indigo-300 hover:bg-gray-50"
+                ? "border-indigo-500 bg-indigo-500/10"
+                : "border-border hover:border-indigo-500/40 hover:bg-background"
             }`}
             onClick={() => fileInputRef.current?.click()}
             onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
@@ -266,16 +266,16 @@ export default function BulkImportPage() {
             {loading ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-                <p className="text-sm text-gray-500">Procesando archivo…</p>
+                <p className="text-sm text-muted-foreground">Procesando archivo…</p>
               </div>
             ) : (
               <>
                 <div className="text-4xl mb-3">📄</div>
-                <p className="text-base font-medium text-gray-700">
+                <p className="text-base font-medium text-foreground">
                   Arrastra tu archivo aquí o{" "}
-                  <span className="text-indigo-600 underline">haz clic para seleccionar</span>
+                  <span className="text-indigo-400 underline">haz clic para seleccionar</span>
                 </p>
-                <p className="text-sm text-gray-400 mt-1">Solo archivos .xlsx · Máximo 5 MB</p>
+                <p className="text-sm text-muted-foreground mt-1">Solo archivos .xlsx · Máximo 5 MB</p>
               </>
             )}
           </div>
@@ -289,7 +289,7 @@ export default function BulkImportPage() {
             onChange={onFileInputChange}
           />
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-600">
+          <div className="mt-6 p-4 bg-background rounded-lg border border-border text-sm text-muted-foreground">
             <p className="font-medium mb-2">Formato requerido del archivo:</p>
             <div className="overflow-x-auto">
               <table className="text-xs w-full">
@@ -299,7 +299,7 @@ export default function BulkImportPage() {
                       (h) => (
                         <th
                           key={h}
-                          className="px-2 py-1 bg-gray-100 border border-gray-200 font-semibold"
+                          className="px-2 py-1 bg-muted/40 border border-border font-semibold"
                         >
                           {h}
                         </th>
@@ -318,7 +318,7 @@ export default function BulkImportPage() {
                       "Dev",
                       "Grupo Riesgos",
                     ].map((v, i) => (
-                      <td key={i} className="px-2 py-1 border border-gray-200 text-gray-500">
+                      <td key={i} className="px-2 py-1 border border-border text-muted-foreground">
                         {v}
                       </td>
                     ))}
@@ -326,28 +326,28 @@ export default function BulkImportPage() {
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-xs text-gray-400">* Campo obligatorio</p>
+            <p className="mt-2 text-xs text-muted-foreground">* Campo obligatorio</p>
           </div>
         </div>
       )}
 
       {/* ── Step 2: Preview ── */}
       {step === "preview" && preview && (
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
-          <div className="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="bg-card rounded-xl border border-border p-8">
+          <div className="flex items-center gap-6 mb-6 p-4 bg-background rounded-lg">
             <div className="text-center">
-              <p className="text-3xl font-bold text-green-600">{preview.valid_count}</p>
-              <p className="text-xs text-gray-500 mt-0.5">filas válidas</p>
+              <p className="text-3xl font-bold text-emerald-400">{preview.valid_count}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">filas válidas</p>
             </div>
-            <div className="h-10 w-px bg-gray-200" />
+            <div className="h-10 w-px bg-muted" />
             <div className="text-center">
-              <p className="text-3xl font-bold text-red-500">{preview.error_count}</p>
-              <p className="text-xs text-gray-500 mt-0.5">filas con errores</p>
+              <p className="text-3xl font-bold text-red-400">{preview.error_count}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">filas con errores</p>
             </div>
             {preview.error_count > 0 && (
               <>
-                <div className="h-10 w-px bg-gray-200" />
-                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+                <div className="h-10 w-px bg-muted" />
+                <p className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-2 rounded-lg">
                   Las filas con errores serán ignoradas. Solo se crearán las {preview.valid_count} filas válidas.
                 </p>
               </>
@@ -357,11 +357,11 @@ export default function BulkImportPage() {
           <ErrorRowsTable rows={preview.error_rows} />
           <ValidRowsTable rows={preview.valid_rows} />
 
-          <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 pt-4 border-t border-border">
             <button
               onClick={() => void handleConfirm()}
               disabled={loading || preview.valid_count === 0}
-              className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
             >
               {loading && (
                 <span className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -371,7 +371,7 @@ export default function BulkImportPage() {
             <button
               onClick={handleReset}
               disabled={loading}
-              className="px-5 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+              className="px-5 py-2 border border-border text-muted-foreground rounded-lg text-sm hover:bg-background"
             >
               Cancelar y subir otro archivo
             </button>
@@ -381,21 +381,21 @@ export default function BulkImportPage() {
 
       {/* ── Step 3: Result ── */}
       {step === "result" && result && (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+        <div className="bg-card rounded-xl border border-border p-8 text-center">
           <div className="text-5xl mb-4">{result.created > 0 ? "✅" : "⚠️"}</div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Importación completada</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Importación completada</h2>
 
           <div className="flex justify-center gap-8 my-6">
             <div>
-              <p className="text-4xl font-bold text-green-600">{result.created}</p>
-              <p className="text-sm text-gray-500">usuario{result.created !== 1 ? "s" : ""} creado{result.created !== 1 ? "s" : ""}</p>
+              <p className="text-4xl font-bold text-emerald-400">{result.created}</p>
+              <p className="text-sm text-muted-foreground">usuario{result.created !== 1 ? "s" : ""} creado{result.created !== 1 ? "s" : ""}</p>
             </div>
             {result.failed > 0 && (
               <>
-                <div className="h-12 w-px bg-gray-200" />
+                <div className="h-12 w-px bg-muted" />
                 <div>
-                  <p className="text-4xl font-bold text-red-500">{result.failed}</p>
-                  <p className="text-sm text-gray-500">fallido{result.failed !== 1 ? "s" : ""}</p>
+                  <p className="text-4xl font-bold text-red-400">{result.failed}</p>
+                  <p className="text-sm text-muted-foreground">fallido{result.failed !== 1 ? "s" : ""}</p>
                 </div>
               </>
             )}
@@ -410,13 +410,13 @@ export default function BulkImportPage() {
           <div className="flex justify-center gap-3 mt-4">
             <button
               onClick={() => navigate("/admin/users")}
-              className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700"
+              className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
             >
               Ver usuarios
             </button>
             <button
               onClick={handleReset}
-              className="px-5 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+              className="px-5 py-2 border border-border text-muted-foreground rounded-lg text-sm hover:bg-background"
             >
               Nueva importación
             </button>

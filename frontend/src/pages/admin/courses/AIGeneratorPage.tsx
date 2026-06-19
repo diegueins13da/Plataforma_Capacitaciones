@@ -46,28 +46,28 @@ function ModuleCard({
 
   if (mod.editing) {
     return (
-      <div className="border border-indigo-200 rounded-xl p-4 bg-indigo-50 space-y-3">
+      <div className="border border-indigo-500/30 rounded-xl p-4 bg-indigo-500/10 space-y-3">
         <input
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm font-medium"
           value={draft.title}
           onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
           placeholder="Título del módulo"
         />
         <input
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm"
           value={draft.objetivo}
           onChange={(e) => setDraft((d) => ({ ...d, objetivo: e.target.value }))}
           placeholder="Objetivo de aprendizaje"
         />
         <textarea
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none"
+          className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none"
           rows={3}
           value={draft.descripcion}
           onChange={(e) => setDraft((d) => ({ ...d, descripcion: e.target.value }))}
           placeholder="Descripción"
         />
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onCancelEdit} className="text-xs text-gray-500 hover:underline">
+          <button type="button" onClick={onCancelEdit} className="text-xs text-muted-foreground hover:underline">
             Cancelar
           </button>
           <button
@@ -84,25 +84,25 @@ function ModuleCard({
 
   const statusColor =
     mod.status === "approved"
-      ? "border-green-200 bg-green-50"
+      ? "border-emerald-500/30 bg-emerald-500/10"
       : mod.status === "discarded"
-      ? "border-gray-100 bg-gray-50 opacity-50"
-      : "border-gray-200 bg-white";
+      ? "border-border bg-background opacity-50"
+      : "border-border bg-card";
 
   return (
     <div className={`border rounded-xl p-4 space-y-2 ${statusColor}`}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-gray-800">{mod.data.title}</p>
+        <p className="text-sm font-semibold text-foreground">{mod.data.title}</p>
         {mod.status === "approved" && (
-          <span className="shrink-0 text-xs text-green-600 font-medium">✓ Aprobado</span>
+          <span className="shrink-0 text-xs text-emerald-500 font-medium">✓ Aprobado</span>
         )}
       </div>
       <p className="text-xs text-indigo-600">{mod.data.objetivo}</p>
-      <p className="text-xs text-gray-500">{mod.data.descripcion}</p>
+      <p className="text-xs text-muted-foreground">{mod.data.descripcion}</p>
       {mod.status !== "discarded" && (
         <div className="flex gap-3 pt-1">
           {mod.status !== "approved" && (
-            <button type="button" onClick={onApprove} className="text-xs text-green-600 hover:underline font-medium">
+            <button type="button" onClick={onApprove} className="text-xs text-emerald-500 hover:underline font-medium">
               Aprobar
             </button>
           )}
@@ -149,30 +149,30 @@ function QuestionCard({
 }) {
   const statusColor =
     q.status === "approved"
-      ? "border-green-200 bg-green-50"
+      ? "border-emerald-500/30 bg-emerald-500/10"
       : q.status === "discarded"
-      ? "border-gray-100 bg-gray-50 opacity-40"
-      : "border-gray-200 bg-white";
+      ? "border-border bg-background opacity-40"
+      : "border-border bg-card";
 
   return (
     <div className={`border rounded-xl p-4 space-y-2 ${statusColor}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
+          <span className="w-5 h-5 rounded-full bg-muted/40 flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
             {index + 1}
           </span>
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+          <span className="text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
             {TIPO_LABELS[q.data.tipo] ?? q.data.tipo}
           </span>
-          <span className="text-xs text-gray-400">{q.data.dificultad}</span>
+          <span className="text-xs text-muted-foreground">{q.data.dificultad}</span>
         </div>
         {q.status === "approved" && (
-          <span className="shrink-0 text-xs text-green-600 font-medium">✓ Aprobada</span>
+          <span className="shrink-0 text-xs text-emerald-500 font-medium">✓ Aprobada</span>
         )}
       </div>
-      <p className="text-sm text-gray-800 font-medium">{q.data.texto}</p>
+      <p className="text-sm text-foreground font-medium">{q.data.texto}</p>
       {q.data.opciones.length > 0 && (
-        <ul className="text-xs text-gray-500 space-y-0.5 ml-2">
+        <ul className="text-xs text-muted-foreground space-y-0.5 ml-2">
           {q.data.opciones.map((op, i) => {
             const isCorrect =
               q.data.tipo === "MULTIPLE_CHOICE"
@@ -181,7 +181,7 @@ function QuestionCard({
                 ? (q.data.respuesta_correcta as number[]).includes(i)
                 : false;
             return (
-              <li key={i} className={isCorrect ? "text-green-600 font-medium" : ""}>
+              <li key={i} className={isCorrect ? "text-emerald-500 font-medium" : ""}>
                 {isCorrect ? "✓ " : "○ "}
                 {op}
               </li>
@@ -190,14 +190,14 @@ function QuestionCard({
         </ul>
       )}
       {q.data.tipo === "TRUE_FALSE" && (
-        <p className="text-xs text-green-600 font-medium">
+        <p className="text-xs text-emerald-500 font-medium">
           ✓ {q.data.respuesta_correcta ? "Verdadero" : "Falso"}
         </p>
       )}
       {q.status !== "discarded" && (
         <div className="flex gap-3 pt-1">
           {q.status !== "approved" && (
-            <button type="button" onClick={onApprove} className="text-xs text-green-600 hover:underline font-medium">
+            <button type="button" onClick={onApprove} className="text-xs text-emerald-500 hover:underline font-medium">
               Aprobar
             </button>
           )}
@@ -383,8 +383,8 @@ export default function AIGeneratorPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Generador IA</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Generador IA</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Sube un documento para generar módulos y preguntas de evaluación automáticamente.
         </p>
       </div>
@@ -393,8 +393,8 @@ export default function AIGeneratorPage() {
           SECTION A — Document upload + module proposals
       ================================================================ */}
       <section className="space-y-4">
-        <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">A</span>
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold">A</span>
           Propuesta de módulos desde documento
         </h2>
 
@@ -403,42 +403,42 @@ export default function AIGeneratorPage() {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+          className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-colors"
         >
           <input ref={fileInputRef} type="file" accept=".pdf,.pptx,.ppt" onChange={handleFileChange} className="hidden" />
           {selectedFile ? (
             <div className="space-y-1">
               <p className="text-sm font-medium text-indigo-600">📄 {selectedFile.name}</p>
-              <p className="text-xs text-gray-400">({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)</p>
+              <p className="text-xs text-muted-foreground">({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)</p>
             </div>
           ) : (
             <div className="space-y-2">
               <p className="text-2xl">📂</p>
-              <p className="text-sm text-gray-600">Arrastra un PDF o PPT, o haz clic para seleccionar</p>
-              <p className="text-xs text-gray-400">Máx. {MAX_SIZE_MB} MB · {ALLOWED_TYPES.join(", ")}</p>
+              <p className="text-sm text-muted-foreground">Arrastra un PDF o PPT, o haz clic para seleccionar</p>
+              <p className="text-xs text-muted-foreground">Máx. {MAX_SIZE_MB} MB · {ALLOWED_TYPES.join(", ")}</p>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-4">
-          <label className="text-xs text-gray-500 shrink-0">Módulos a generar:</label>
+          <label className="text-xs text-muted-foreground shrink-0">Módulos a generar:</label>
           <input
             type="number"
             value={moduleCount}
             onChange={(e) => setModuleCount(Math.max(1, Math.min(15, Number(e.target.value))))}
             min={1} max={15}
-            className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+            className="w-20 border border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-background focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           />
           <button
             type="button"
             onClick={() => void handleAnalyze()}
             disabled={!selectedFile || uploadingDoc || modulePolling.status === "polling"}
-            className="px-5 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="px-5 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
           >
             {uploadingDoc || modulePolling.status === "polling" ? "Analizando…" : "Analizar con IA"}
           </button>
           {modulePolling.status !== "idle" && (
-            <button type="button" onClick={() => { modulePolling.reset(); setModules([]); }} className="text-xs text-gray-400 hover:underline">
+            <button type="button" onClick={() => { modulePolling.reset(); setModules([]); }} className="text-xs text-muted-foreground hover:underline">
               Reiniciar
             </button>
           )}
@@ -446,13 +446,13 @@ export default function AIGeneratorPage() {
 
         {/* Polling states */}
         {modulePolling.status === "polling" && (
-          <div className="flex items-center gap-3 py-4 text-sm text-gray-500">
+          <div className="flex items-center gap-3 py-4 text-sm text-muted-foreground">
             <div className="w-5 h-5 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
             Analizando contenido con IA…
           </div>
         )}
         {modulePolling.status === "error" && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-sm text-red-400 flex items-center justify-between">
             <span>Error al analizar el documento.</span>
             <button type="button" onClick={() => void handleAnalyze()} className="text-xs font-medium underline">
               Reintentar
@@ -464,7 +464,7 @@ export default function AIGeneratorPage() {
         {modules.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-foreground">
                 {modules.length} módulo{modules.length !== 1 ? "s" : ""} propuesto{modules.length !== 1 ? "s" : ""}
               </p>
               <button
@@ -491,7 +491,7 @@ export default function AIGeneratorPage() {
                 type="button"
                 onClick={() => void handleAddApprovedModules()}
                 disabled={addingModules}
-                className="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors"
+                className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
               >
                 {addingModules ? "Agregando…" : `Agregar ${approvedModules} módulo${approvedModules !== 1 ? "s" : ""} al curso`}
               </button>
@@ -500,48 +500,48 @@ export default function AIGeneratorPage() {
         )}
       </section>
 
-      <div className="border-t border-gray-100" />
+      <div className="border-t border-border" />
 
       {/* ================================================================
           SECTION B — Question generation
       ================================================================ */}
       <section className="space-y-4">
-        <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">B</span>
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold">B</span>
           Generación de preguntas de evaluación
         </h2>
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Contenido fuente <span className="text-gray-400">(pega el texto del módulo o tema)</span>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Contenido fuente <span className="text-muted-foreground">(pega el texto del módulo o tema)</span>
             </label>
             <textarea
               value={qContent}
               onChange={(e) => setQContent(e.target.value)}
               rows={4}
               placeholder="Pega aquí el contenido del módulo para generar preguntas relacionadas…"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full border border-slate-700 rounded-xl px-3 py-2 text-sm resize-none bg-background focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
             />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Cantidad (1-20)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Cantidad (1-20)</label>
               <input
                 type="number"
                 value={qCantidad}
                 onChange={(e) => setQCantidad(Math.max(1, Math.min(20, Number(e.target.value))))}
                 min={1} max={20}
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+                className="w-full border border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-background focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Dificultad</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Dificultad</label>
               <select
                 value={qDificultad}
                 onChange={(e) => setQDificultad(e.target.value as typeof qDificultad)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+                className="w-full border border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-background focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               >
                 <option value="FACIL">Fácil</option>
                 <option value="MEDIO">Medio</option>
@@ -549,7 +549,7 @@ export default function AIGeneratorPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tipos</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Tipos</label>
               <div className="flex flex-wrap gap-1.5">
                 {(["MULTIPLE_CHOICE", "MULTIPLE_SELECT", "TRUE_FALSE"] as const).map((t) => (
                   <button
@@ -563,7 +563,7 @@ export default function AIGeneratorPage() {
                     className={`px-2 py-1 text-xs rounded-full border transition-colors ${
                       qTipos.includes(t)
                         ? "bg-purple-600 text-white border-purple-600"
-                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                        : "border-border text-muted-foreground hover:bg-background"
                     }`}
                   >
                     {TIPO_LABELS[t]}
@@ -584,13 +584,13 @@ export default function AIGeneratorPage() {
         </div>
 
         {questionPolling.status === "polling" && (
-          <div className="flex items-center gap-3 py-4 text-sm text-gray-500">
+          <div className="flex items-center gap-3 py-4 text-sm text-muted-foreground">
             <div className="w-5 h-5 animate-spin rounded-full border-2 border-purple-600 border-t-transparent" />
             Generando preguntas con IA…
           </div>
         )}
         {questionPolling.status === "error" && (
-          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 flex items-center justify-between">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-sm text-red-400 flex items-center justify-between">
             <span>Error al generar preguntas.</span>
             <button type="button" onClick={() => void handleGenerateQuestions()} className="text-xs font-medium underline">
               Reintentar
@@ -600,7 +600,7 @@ export default function AIGeneratorPage() {
 
         {questions.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-sm font-medium text-foreground">
               {questions.length} pregunta{questions.length !== 1 ? "s" : ""} propuesta{questions.length !== 1 ? "s" : ""}
             </p>
             {questions.map((q, i) => (
@@ -625,7 +625,7 @@ export default function AIGeneratorPage() {
                 type="button"
                 onClick={() => void handleSaveApprovedQuestions()}
                 disabled={savingQuestions}
-                className="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors"
+                className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
               >
                 {savingQuestions
                   ? "Guardando…"

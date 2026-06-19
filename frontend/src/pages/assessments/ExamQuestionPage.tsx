@@ -48,7 +48,7 @@ function QuestionOptions({
             className={`flex-1 py-3 text-sm font-medium rounded-xl border transition-colors ${
               answer === val
                 ? "bg-indigo-600 text-white border-indigo-600"
-                : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                : "border-border text-foreground hover:bg-background"
             }`}
           >
             {val ? "Verdadero" : "Falso"}
@@ -78,8 +78,8 @@ function QuestionOptions({
             key={i}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
               isSelected
-                ? "bg-indigo-50 border-indigo-300"
-                : "border-gray-200 hover:bg-gray-50"
+                ? "bg-indigo-500/10 border-indigo-500/40"
+                : "border-border hover:bg-background"
             }`}
           >
             <input
@@ -95,7 +95,7 @@ function QuestionOptions({
               }}
               className="accent-indigo-600 shrink-0"
             />
-            <span className="text-sm text-gray-800">{opcion}</span>
+            <span className="text-sm text-foreground">{opcion}</span>
           </label>
         );
       })}
@@ -223,16 +223,16 @@ export default function ExamQuestionPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       {/* Header bar */}
-      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-        <div className="text-sm text-gray-600">
-          <span className="font-semibold text-gray-900">
+      <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3 shadow-sm">
+        <div className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">
             Pregunta {currentIdx + 1}
           </span>{" "}
           de {questions.length}
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-muted-foreground">
             {answeredCount}/{questions.length} respondidas
           </span>
 
@@ -240,8 +240,8 @@ export default function ExamQuestionPage() {
             <div
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-mono font-semibold ${
                 isAlmostExpired
-                  ? "bg-red-100 text-red-600 animate-pulse"
-                  : "bg-gray-100 text-gray-700"
+                  ? "bg-red-500/15 text-red-400 animate-pulse"
+                  : "bg-muted/40 text-foreground"
               }`}
             >
               <span>{isAlmostExpired ? "⚠" : "⏱"}</span>
@@ -252,7 +252,7 @@ export default function ExamQuestionPage() {
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 bg-muted/40 rounded-full overflow-hidden">
         <div
           className="h-full bg-indigo-500 rounded-full transition-all duration-300"
           style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
@@ -260,18 +260,18 @@ export default function ExamQuestionPage() {
       </div>
 
       {/* Question card */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
             {typeLabel(question.tipo)}
           </span>
           {answers[String(question.id)] !== undefined &&
             answers[String(question.id)] !== null && (
-              <span className="text-xs text-green-600 font-medium">✓ Respondida</span>
+              <span className="text-xs text-emerald-500 font-medium">✓ Respondida</span>
             )}
         </div>
 
-        <p className="text-base font-medium text-gray-900 leading-snug">
+        <p className="text-base font-medium text-foreground leading-snug">
           {question.texto}
         </p>
 
@@ -289,7 +289,7 @@ export default function ExamQuestionPage() {
           type="button"
           onClick={() => setCurrentIdx((i) => i - 1)}
           disabled={isFirst}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-muted-foreground border border-border rounded-xl hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           ← Anterior
         </button>
@@ -306,13 +306,13 @@ export default function ExamQuestionPage() {
                   ? "bg-indigo-600 w-4"
                   : answers[String(q.id)] !== undefined &&
                     answers[String(q.id)] !== null
-                  ? "bg-green-400"
-                  : "bg-gray-200"
+                  ? "bg-emerald-400"
+                  : "bg-muted"
               }`}
             />
           ))}
           {questions.length > 10 && (
-            <span className="text-xs text-gray-400 ml-1">
+            <span className="text-xs text-muted-foreground ml-1">
               +{questions.length - 10}
             </span>
           )}
@@ -323,7 +323,7 @@ export default function ExamQuestionPage() {
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting}
-            className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
           >
             {submitting ? "Enviando…" : "Enviar examen ✓"}
           </button>
@@ -331,7 +331,7 @@ export default function ExamQuestionPage() {
           <button
             type="button"
             onClick={() => setCurrentIdx((i) => i + 1)}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-indigo-400 border border-indigo-500/30 rounded-xl hover:bg-indigo-500/10 transition-colors"
           >
             Siguiente →
           </button>
@@ -339,7 +339,7 @@ export default function ExamQuestionPage() {
       </div>
 
       {secondsLeft !== null && secondsLeft === 0 && (
-        <p className="text-center text-sm text-red-600 font-medium">
+        <p className="text-center text-sm text-red-400 font-medium">
           Tiempo agotado. Enviando examen…
         </p>
       )}

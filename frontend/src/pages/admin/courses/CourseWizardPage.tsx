@@ -70,7 +70,7 @@ export default function CourseWizardPage() {
         >
           ← Volver a cursos
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-foreground">
           {isEdit ? "Editar curso" : "Crear nuevo curso"}
         </h1>
       </div>
@@ -89,15 +89,15 @@ export default function CourseWizardPage() {
                     isActive
                       ? "bg-indigo-600 text-white"
                       : isDone
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-200 text-gray-500"
+                      ? "bg-emerald-500 text-white"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {isDone ? "✓" : s.shortLabel}
                 </div>
                 <span
                   className={`text-xs mt-1 ${
-                    isActive ? "text-indigo-600 font-medium" : "text-gray-400"
+                    isActive ? "text-indigo-600 font-medium" : "text-muted-foreground"
                   }`}
                 >
                   {s.label}
@@ -106,7 +106,7 @@ export default function CourseWizardPage() {
               {idx < STEPS.length - 1 && (
                 <div
                   className={`h-0.5 flex-1 mb-5 ${
-                    step > stepNum ? "bg-green-400" : "bg-gray-200"
+                    step > stepNum ? "bg-emerald-400" : "bg-muted"
                   }`}
                 />
               )}
@@ -116,7 +116,7 @@ export default function CourseWizardPage() {
       </div>
 
       {/* Step content */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         {step === 1 && (
           <Step1Info onNext={() => setStep(2)} />
         )}
