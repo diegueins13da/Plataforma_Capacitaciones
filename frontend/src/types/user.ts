@@ -12,6 +12,7 @@ export interface AdminUser {
   role: UserRole;
   is_active: boolean;
   is_superuser: boolean;
+  is_locked: boolean;
   must_change_password: boolean;
   area: string;
   cargo: string;

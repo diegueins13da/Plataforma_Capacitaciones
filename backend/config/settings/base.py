@@ -125,6 +125,7 @@ AUTHENTICATION_BACKENDS = [
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_LOCKOUT_CALLABLE = "apps.authentication.lockout.lockout_response"
+AXES_RESET_ON_SUCCESS = True  # Reset failure counter after a successful login
 
 # ---------------------------------------------------------------------------
 # REST Framework

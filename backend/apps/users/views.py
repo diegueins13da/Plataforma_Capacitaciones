@@ -294,6 +294,26 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response({"errors": msgs}, status=status.HTTP_400_BAD_REQUEST)
         return Response(UserListSerializer(updated).data)
 
+    @action(detail=True, methods=["post"], url_path="reset-lockout")
+    def reset_lockout(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        try:
+            from axes.models import AccessAttempt
+            deleted, _ = AccessAttempt.objects.filter(username=user.username).delete()
+        except Exception:
+            deleted = 0
+        from apps.reports.audit import log_event
+        log_event(
+            accion="LOCKOUT_RESET",
+            actor=request.user,
+            ip=_get_client_ip(request),
+            entidad_tipo="User",
+            entidad_id=user.pk,
+            entidad_nombre=f"{user.get_full_name()} <{user.email}>",
+            detalle={"registros_eliminados": deleted},
+        )
+        return Response({"detail": "Bloqueo eliminado correctamente."})
+
     def destroy(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
         try:

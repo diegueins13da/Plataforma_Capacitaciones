@@ -91,14 +91,27 @@ class UserListSerializer(serializers.ModelSerializer):
     area = serializers.SerializerMethodField()
     cargo = serializers.SerializerMethodField()
     grupo_nombre = serializers.SerializerMethodField()
+    is_locked = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
-            "role", "is_active", "is_superuser", "must_change_password",
+            "role", "is_active", "is_superuser", "is_locked", "must_change_password",
             "area", "cargo", "grupo_nombre",
         ]
+
+    def get_is_locked(self, obj: User) -> bool:
+        try:
+            from axes.models import AccessAttempt
+            from django.conf import settings
+            limit = getattr(settings, "AXES_FAILURE_LIMIT", 5)
+            return AccessAttempt.objects.filter(
+                username=obj.username,
+                failures_since_start__gte=limit,
+            ).exists()
+        except Exception:
+            return False
 
     def get_full_name(self, obj: User) -> str:
         return obj.get_full_name()

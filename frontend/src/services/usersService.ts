@@ -159,6 +159,10 @@ export const usersService = {
     await api.delete(`/v1/users/${id}/`);
   },
 
+  async resetLockout(id: number): Promise<void> {
+    await api.post(`/v1/users/${id}/reset-lockout/`);
+  },
+
   // ---------------------------------------------------------------------------
   // Bulk import
   // ---------------------------------------------------------------------------

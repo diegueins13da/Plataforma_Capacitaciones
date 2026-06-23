@@ -303,6 +303,16 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleResetLockout = async (user: AdminUser) => {
+    try {
+      await usersService.resetLockout(user.id);
+      setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, is_locked: false } : u));
+      toast.success(`Bloqueo de ${user.full_name} eliminado.`);
+    } catch {
+      toast.error("No se pudo eliminar el bloqueo.");
+    }
+  };
+
   const handleDelete = async (user: AdminUser) => {
     try {
       await usersService.deleteUser(user.id);
@@ -498,14 +508,22 @@ export default function UserManagementPage() {
                   </td>
                   {/* Status */}
                   <td className="px-4 py-3 text-center">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
-                      user.is_active
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-muted/40 text-muted-foreground"
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-emerald-400" : "bg-muted-foreground"}`} />
-                      {user.is_active ? "Activo" : "Inactivo"}
-                    </span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                        user.is_active
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-muted/40 text-muted-foreground"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-emerald-400" : "bg-muted-foreground"}`} />
+                        {user.is_active ? "Activo" : "Inactivo"}
+                      </span>
+                      {user.is_locked && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-500/10 text-red-400">
+                          <i className="ti ti-lock text-[10px]" aria-hidden="true" />
+                          Bloqueado
+                        </span>
+                      )}
+                    </div>
                   </td>
                   {/* Actions */}
                   <td className="px-4 py-3 text-right">
@@ -538,6 +556,18 @@ export default function UserManagementPage() {
                           className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
                         >
                           <i className="ti ti-user-check text-sm" aria-hidden="true" />
+                        </button>
+                      )}
+
+                      {/* Desbloquear (solo visible si está bloqueado por intentos) */}
+                      {user.is_locked && (
+                        <button
+                          type="button"
+                          onClick={() => void handleResetLockout(user)}
+                          title="Desbloquear acceso (limpiar intentos fallidos)"
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
+                        >
+                          <i className="ti ti-lock-open text-sm" aria-hidden="true" />
                         </button>
                       )}
 
