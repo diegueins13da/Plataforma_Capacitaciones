@@ -496,7 +496,7 @@ export default function UserManagementPage() {
                   </td>
                   {/* Actions */}
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center justify-end gap-1">
                       {/* Editar */}
                       <button
                         type="button"
