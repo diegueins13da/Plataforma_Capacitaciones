@@ -272,8 +272,10 @@ export default function UserManagementPage() {
       const updated = await usersService.changeUserRole(user.id, { new_role: newRole });
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
       toast.success(`Rol de ${user.full_name} actualizado.`);
-    } catch {
-      toast.error("No se pudo cambiar el rol.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { errors?: string[] } } })
+        ?.response?.data?.errors?.[0];
+      toast.error(msg ?? "No se pudo cambiar el rol.");
     }
   };
 
@@ -465,23 +467,34 @@ export default function UserManagementPage() {
                   </td>
                   {/* Role */}
                   <td className="px-4 py-3">
-                    <div className="relative inline-block">
-                      <select
-                        value={user.role}
-                        onChange={(e) => void handleChangeRole(user, e.target.value as UserRole)}
-                        className="appearance-none pl-2.5 pr-6 py-1 rounded-full text-xs font-medium border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
-                        style={{
-                          color: ROLE_CONFIG[user.role].color,
-                          background: ROLE_CONFIG[user.role].bg,
-                        }}
+                    {user.is_superuser ? (
+                      <span
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                        title="El rol del administrador del sistema no puede modificarse"
+                        style={{ color: ROLE_CONFIG[user.role].color, background: ROLE_CONFIG[user.role].bg }}
                       >
-                        <option value="USUARIO">Usuario</option>
-                        <option value="TRAINER">Capacitador</option>
-                        <option value="ADMIN">Administrador</option>
-                      </select>
-                      <i className="ti ti-chevron-down absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none"
-                        style={{ color: ROLE_CONFIG[user.role].color }} aria-hidden="true" />
-                    </div>
+                        <i className="ti ti-lock text-[10px]" aria-hidden="true" />
+                        {ROLE_CONFIG[user.role].label}
+                      </span>
+                    ) : (
+                      <div className="relative inline-block">
+                        <select
+                          value={user.role}
+                          onChange={(e) => void handleChangeRole(user, e.target.value as UserRole)}
+                          className="appearance-none pl-2.5 pr-6 py-1 rounded-full text-xs font-medium border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
+                          style={{
+                            color: ROLE_CONFIG[user.role].color,
+                            background: ROLE_CONFIG[user.role].bg,
+                          }}
+                        >
+                          <option value="USUARIO">Usuario</option>
+                          <option value="TRAINER">Capacitador</option>
+                          <option value="ADMIN">Administrador</option>
+                        </select>
+                        <i className="ti ti-chevron-down absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none"
+                          style={{ color: ROLE_CONFIG[user.role].color }} aria-hidden="true" />
+                      </div>
+                    )}
                   </td>
                   {/* Status */}
                   <td className="px-4 py-3 text-center">

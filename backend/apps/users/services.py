@@ -249,6 +249,10 @@ def update_user(
 
 def change_role(user: User, *, new_role: str, admin_user: User, ip: str) -> User:
     """Change a user's role and record the event in AuditLog."""
+    if user.is_superuser:
+        raise ValidationError(
+            {"non_field_errors": ["El rol del administrador del sistema no puede ser modificado."]}
+        )
     old_role = user.role
     user.role = new_role
     user.save(update_fields=["role"])

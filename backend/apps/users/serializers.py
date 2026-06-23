@@ -96,7 +96,7 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
-            "role", "is_active", "must_change_password",
+            "role", "is_active", "is_superuser", "must_change_password",
             "area", "cargo", "grupo_nombre",
         ]
 

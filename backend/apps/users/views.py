@@ -194,7 +194,7 @@ class UserViewSet(viewsets.GenericViewSet):
     search_fields = ["first_name", "last_name", "email"]
 
     def get_queryset(self):
-        qs = User.objects.select_related("profile__grupo", "profile__area").order_by("last_name", "first_name")
+        qs = User.objects.select_related("profile__grupo", "profile__area").order_by("first_name", "last_name")
         # Manual filtering (django-filter not configured here; use query params)
         role = self.request.query_params.get("role")
         is_active = self.request.query_params.get("is_active")

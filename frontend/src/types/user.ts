@@ -11,6 +11,7 @@ export interface AdminUser {
   full_name: string;
   role: UserRole;
   is_active: boolean;
+  is_superuser: boolean;
   must_change_password: boolean;
   area: string;
   cargo: string;
