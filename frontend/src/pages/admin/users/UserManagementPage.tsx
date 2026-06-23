@@ -46,6 +46,7 @@ interface EditUserModalProps {
 }
 
 function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) {
+  const [email, setEmail] = useState(user.email);
   const [firstName, setFirstName] = useState(user.first_name);
   const [lastName, setLastName] = useState(user.last_name);
   const [areas, setAreas] = useState<Area[]>([]);
@@ -79,6 +80,7 @@ function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) {
     try {
       const areaName = areas.find((a) => a.id === selectedAreaId)?.nombre ?? "";
       const updated = await usersService.updateUser(user.id, {
+        email: email.trim(),
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         area: areaName,
@@ -113,10 +115,21 @@ function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) {
         </div>
         {/* Body */}
         <div className="px-6 py-5 flex flex-col gap-4">
-          {/* Email (read-only context) */}
-          <p className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-lg truncate">
-            <i className="ti ti-mail mr-1.5" />{user.email}
-          </p>
+          {/* Email editable */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Correo electrónico</label>
+            <div className="relative">
+              <i className="ti ti-mail absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base pointer-events-none" aria-hidden="true" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`${inputCls} pl-9`}
+                maxLength={254}
+                autoComplete="off"
+              />
+            </div>
+          </div>
           {/* First + Last name */}
           <div className="flex gap-3">
             <div className="flex-1">
@@ -185,7 +198,7 @@ function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) {
           </button>
           <button
             onClick={() => void handleSubmit()}
-            disabled={saving || !firstName.trim() || !lastName.trim()}
+            disabled={saving || !email.trim() || !firstName.trim() || !lastName.trim()}
             className="h-9 px-5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
           >
             {saving ? "Guardando..." : "Guardar"}

@@ -242,7 +242,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
     def partial_update(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
-        serializer = UserUpdateSerializer(data=request.data, partial=True)
+        serializer = UserUpdateSerializer(data=request.data, partial=True, context={"user_pk": pk})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         updated = services.update_user(user, **data)

@@ -209,6 +209,7 @@ def create_user(
 def update_user(
     user: User,
     *,
+    email: str | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
     area: str | None = None,
@@ -217,15 +218,18 @@ def update_user(
     grupo_id: int | None = None,
 ) -> User:
     """Update allowed user and profile fields (partial update)."""
-    user_changed = False
+    user_fields: list[str] = []
+    if email is not None:
+        user.email = email
+        user_fields.append("email")
     if first_name is not None:
         user.first_name = first_name
-        user_changed = True
+        user_fields.append("first_name")
     if last_name is not None:
         user.last_name = last_name
-        user_changed = True
-    if user_changed:
-        user.save(update_fields=["first_name", "last_name"])
+        user_fields.append("last_name")
+    if user_fields:
+        user.save(update_fields=user_fields)
 
     profile = user.profile
     profile_changed = False

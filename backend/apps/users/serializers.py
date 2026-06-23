@@ -152,11 +152,21 @@ class UserCreateSerializer(serializers.Serializer):
 class UserUpdateSerializer(serializers.Serializer):
     """Validated input for PATCH /users/{id}/."""
 
+    email = serializers.EmailField(required=False)
     first_name = serializers.CharField(max_length=150, required=False)
     last_name = serializers.CharField(max_length=150, required=False)
     area = serializers.CharField(max_length=150, required=False, allow_blank=True)
     cargo = serializers.CharField(max_length=150, required=False, allow_blank=True)
     grupo_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_email(self, value: str) -> str:
+        user_pk = self.context.get("user_pk")
+        qs = User.objects.filter(email__iexact=value)
+        if user_pk:
+            qs = qs.exclude(pk=user_pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe un usuario con este correo.")
+        return value.lower()
 
 
 class ChangeRoleSerializer(serializers.Serializer):
