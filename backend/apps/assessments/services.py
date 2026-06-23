@@ -310,6 +310,18 @@ def submit_exam(assessment_id: int, user: "User", answers: dict) -> dict:
     else:
         notify_examen_reprobado(user, enrollment, float(calificacion), remaining)
 
+    # Notify the course instructor about the exam result
+    from apps.notifications.services import (  # noqa: PLC0415
+        notify_instructor_alumno_aprobado,
+        notify_instructor_alumno_reprobado,
+    )
+    instructor = assessment.course.created_by
+    if instructor and instructor.pk != user.pk:
+        if aprobado:
+            notify_instructor_alumno_aprobado(instructor, user, enrollment, float(calificacion))
+        else:
+            notify_instructor_alumno_reprobado(instructor, user, enrollment, float(calificacion))
+
     # Build correct_answers map for the review screen
     questions = list(assessment.questions.filter(aprobada_por_humano=True))
     correct_answers = {str(q.pk): q.respuesta_correcta for q in questions}
@@ -331,7 +343,7 @@ def submit_exam(assessment_id: int, user: "User", answers: dict) -> dict:
 def reset_attempts(assessment_id: int, target_user_id: int, admin_user: "User") -> int:
     """ADMIN: delete all exam attempts for a user on a given assessment."""
     from apps.courses.models import Enrollment
-    from apps.reports.models import AuditLog
+    from apps.reports.audit import log_event
 
     if admin_user.role != "ADMIN":
         raise ExamError("Solo el administrador puede resetear intentos de examen.")
@@ -346,13 +358,15 @@ def reset_attempts(assessment_id: int, target_user_id: int, admin_user: "User") 
         enrollment=enrollment, assessment=assessment
     ).delete()
 
-    AuditLog.objects.create(
-        user=admin_user,
+    log_event(
         accion="EXAM_ATTEMPTS_RESET",
-        detalles_json={
-            "assessment_id": assessment.pk,
-            "target_user_id": target_user_id,
-            "attempts_deleted": deleted_count,
+        actor=admin_user,
+        entidad_tipo="Assessment",
+        entidad_id=assessment.pk,
+        entidad_nombre=assessment.course.titulo,
+        detalle={
+            "usuario_id": target_user_id,
+            "intentos_eliminados": deleted_count,
         },
     )
     return deleted_count

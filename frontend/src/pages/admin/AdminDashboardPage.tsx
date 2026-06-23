@@ -194,7 +194,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   return (
-    <div className="px-6 py-7 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Panel de Administración</h1>

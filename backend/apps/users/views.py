@@ -4,7 +4,7 @@ User app views — Group management ViewSet + User management ViewSet.
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -303,6 +303,174 @@ class UserViewSet(viewsets.GenericViewSet):
         )
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def generate_rubrica(request):
+    """
+    POST /v1/users/me/rubrica/generate/
+    Auto-generate a signature-like rubrica using Dancing Script font + Bezier flourish.
+    """
+    from apps.reports.audit import log_event
+    from PIL import Image, ImageDraw, ImageFont, ImageFilter
+    import io, uuid, math, random
+    from django.core.files.base import ContentFile
+
+    if request.user.role != "TRAINER":
+        return Response(
+            {"detail": "Solo los capacitadores pueden generar rúbricas."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    profile = request.user.profile
+    name = request.user.get_full_name() or request.user.email.split("@")[0]
+
+    # Seeded RNG so the same user always gets the same style variation
+    rng = random.Random(request.user.pk)
+
+    # ── Canvas (2× for antialiasing) ─────────────────────────────────────────
+    W, H = 500, 160
+    SCALE = 2
+    img = Image.new("RGBA", (W * SCALE, H * SCALE), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
+
+    # ── Font ─────────────────────────────────────────────────────────────────
+    font_size = rng.randint(72, 90) * SCALE
+    font_path = "/app/assets/fonts/DancingScript.ttf"
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+    except OSError:
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", font_size
+        )
+
+    # ── Ink color: dark navy, deep indigo, or near-black ─────────────────────
+    palettes = [
+        (10, 20, 80),    # deep navy
+        (5, 5, 5),       # near-black
+        (30, 10, 70),    # dark indigo
+        (0, 30, 60),     # dark teal-navy
+    ]
+    r_base, g_base, b_base = palettes[request.user.pk % len(palettes)]
+    ink = (r_base, g_base, b_base, 230)
+    ink_light = (r_base, g_base, b_base, 140)
+
+    # ── Render name ──────────────────────────────────────────────────────────
+    margin_x = 30 * SCALE
+    margin_y = 18 * SCALE
+    draw.text((margin_x, margin_y), name, fill=ink, font=font)
+
+    # ── Measure text ─────────────────────────────────────────────────────────
+    try:
+        bbox = draw.textbbox((margin_x, margin_y), name, font=font)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        base_y = bbox[3]
+    except AttributeError:
+        text_w = len(name) * font_size // 2
+        text_h = font_size
+        base_y = margin_y + text_h
+
+    # ── Bezier flourish underline ─────────────────────────────────────────────
+    def draw_bezier_line(pts, steps=120, color=ink_light, width=3):
+        def b(t, ps):
+            n = len(ps) - 1
+            x = y = 0.0
+            for i, (px, py) in enumerate(ps):
+                c = math.comb(n, i) * (t ** i) * ((1 - t) ** (n - i))
+                x += c * px; y += c * py
+            return x, y
+        prev = b(0, pts)
+        for step in range(1, steps + 1):
+            curr = b(step / steps, pts)
+            draw.line([prev, curr], fill=color, width=width)
+            prev = curr
+
+    gap = rng.randint(6, 12) * SCALE
+    x0 = margin_x
+    x3 = margin_x + text_w + rng.randint(10, 30) * SCALE
+    y_line = base_y + gap
+    style = rng.randint(0, 2)
+
+    if style == 0:
+        # Simple arc underline
+        mid_dip = rng.randint(-1, 4) * SCALE
+        ctrl_pts = [
+            (x0, y_line),
+            (x0 + text_w * 0.3, y_line - 6 * SCALE + mid_dip),
+            (x0 + text_w * 0.7, y_line + 4 * SCALE),
+            (x3, y_line - 2 * SCALE),
+        ]
+        draw_bezier_line(ctrl_pts, width=3 * SCALE, color=ink_light)
+
+    elif style == 1:
+        # Underline with ascending tail
+        tail_up = rng.randint(12, 22) * SCALE
+        ctrl_pts = [
+            (x0, y_line),
+            (x0 + text_w * 0.4, y_line + 5 * SCALE),
+            (x0 + text_w * 0.75, y_line),
+            (x3, y_line - tail_up),
+        ]
+        draw_bezier_line(ctrl_pts, width=3 * SCALE, color=ink_light)
+
+    else:
+        # Double line (main + thin echo)
+        ctrl_pts = [
+            (x0, y_line),
+            (x0 + text_w * 0.5, y_line + rng.randint(3, 8) * SCALE),
+            (x3, y_line - rng.randint(2, 6) * SCALE),
+        ]
+        draw_bezier_line(ctrl_pts, width=3 * SCALE, color=ink_light)
+        ctrl_pts2 = [(x + 0, y + 6 * SCALE) for x, y in ctrl_pts]
+        draw_bezier_line(ctrl_pts2, width=2 * SCALE, color=(*ink_light[:3], 80))
+
+    # ── Apply subtle ink-bleed: tiny blur then sharpen ───────────────────────
+    img = img.filter(ImageFilter.GaussianBlur(radius=1.2))
+    img = img.filter(ImageFilter.SHARPEN)
+
+    # ── Slight random rotation (−4° to +2°) ─────────────────────────────────
+    angle = rng.uniform(-4, 2)
+    img = img.rotate(angle, expand=False, resample=Image.BICUBIC)
+
+    # ── Downscale with LANCZOS for smooth result ─────────────────────────────
+    img = img.resize((W, H), Image.LANCZOS)
+
+    # ── Crop to content ───────────────────────────────────────────────────────
+    bbox_final = img.getbbox()
+    if bbox_final:
+        pad = 10
+        left = max(0, bbox_final[0] - pad)
+        upper = max(0, bbox_final[1] - pad)
+        right = min(W, bbox_final[2] + pad)
+        lower = min(H, bbox_final[3] + pad)
+        img = img.crop((left, upper, right, lower))
+
+    # ── Save ─────────────────────────────────────────────────────────────────
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    buf.seek(0)
+
+    if profile.rubrica:
+        profile.rubrica.delete(save=False)
+
+    filename = f"auto_{uuid.uuid4().hex[:10]}.png"
+    profile.rubrica.save(filename, ContentFile(buf.read()), save=True)
+
+    log_event(
+        accion="RUBRICA_AUTO_GENERATED",
+        request=request,
+        entidad_tipo="User",
+        entidad_id=request.user.pk,
+        entidad_nombre=f"{request.user.get_full_name()} <{request.user.email}>",
+        detalle={"nombre_usado": name},
+    )
+
+    return Response(
+        {"rubrica_url": profile.rubrica.url},
+        status=status.HTTP_200_OK,
+    )
+
+
 def _get_client_ip(request) -> str:
     x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded:
@@ -369,3 +537,53 @@ class UserDashboardView(APIView):
             ][:5],
             "actividad_reciente": list(recent_log),
         })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser])
+def upload_rubrica(request):
+    """
+    POST /v1/users/me/rubrica/
+    Upload or replace the trainer's signature image.
+    """
+    from apps.reports.audit import log_event
+
+    profile = request.user.profile
+    is_replacement = bool(profile.rubrica)
+
+    file = request.FILES.get("rubrica") or request.FILES.get("file")
+    if not file:
+        return Response(
+            {"detail": "Se requiere adjuntar un archivo de imagen."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    allowed_types = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+    if file.content_type not in allowed_types:
+        return Response(
+            {"detail": "Formato no permitido. Use PNG, JPG o WebP."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if file.size > 5 * 1024 * 1024:
+        return Response(
+            {"detail": "La imagen no puede superar 5 MB."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if is_replacement:
+        profile.rubrica.delete(save=False)
+
+    profile.rubrica = file
+    profile.save(update_fields=["rubrica"])
+
+    log_event(
+        accion="RUBRICA_REPLACED" if is_replacement else "RUBRICA_UPLOADED",
+        request=request,
+        entidad_tipo="User",
+        entidad_id=request.user.pk,
+        entidad_nombre=f"{request.user.get_full_name()} <{request.user.email}>",
+    )
+
+    return Response({"rubrica_url": profile.rubrica.url}, status=status.HTTP_200_OK)

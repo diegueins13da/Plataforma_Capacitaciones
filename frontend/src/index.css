@@ -33,30 +33,30 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 222.2 84% 4.9%;       /* slate-950 #020617 */
+    --foreground: 210 40% 98%;           /* slate-100 #f1f5f9 */
 
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 47.4% 11.2%;          /* slate-900 #0f172a */
     --card-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 239 68% 60%;             /* indigo-500 #6366f1 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 17.5%;    /* slate-800 #1e293b */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217.2 32.6% 17.5%;        /* slate-800 #1e293b */
+    --muted-foreground: 215 20.2% 65.1%; /* slate-400 #94a3b8 */
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217.2 32.6% 17.5%;       /* slate-800 #1e293b */
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 215 27.9% 16.9%;          /* slate-800 #1e293b */
+    --input: 215 27.9% 16.9%;
+    --ring: 239 68% 60%;                /* indigo-500 */
   }
 }
 
@@ -66,5 +66,23 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
+}
+
+/* ── PDF slide-viewer horizontal transitions ── */
+@keyframes pdf-slide-in-right {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pdf-slide-in-left {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.pdf-slide-in-right { animation: pdf-slide-in-right 0.34s cubic-bezier(0.4, 0, 0.2, 1); }
+.pdf-slide-in-left  { animation: pdf-slide-in-left 0.34s cubic-bezier(0.4, 0, 0.2, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-slide-in-right,
+  .pdf-slide-in-left { animation: none; }
 }

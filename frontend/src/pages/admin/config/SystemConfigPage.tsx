@@ -309,11 +309,22 @@ function AreasTab({ areas, onRefresh }: AreasTabProps) {
 // Page
 // ---------------------------------------------------------------------------
 
+interface TestEmailResult {
+  ok: boolean;
+  message: string;
+  config: Record<string, unknown>;
+}
+
 export default function SystemConfigPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("SMTP");
   const [settings, setSettings] = useState<GroupedSettings | null>(null);
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Test email state
+  const [testRecipient, setTestRecipient] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestEmailResult | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -333,6 +344,29 @@ export default function SystemConfigPage() {
 
   useEffect(() => { void loadData(); }, []);
 
+  async function handleTestEmail() {
+    if (!testRecipient.trim()) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await configService.testEmail(testRecipient.trim());
+      setTestResult(result);
+      if (result.ok) {
+        toast.success("Correo de prueba enviado correctamente.");
+      } else {
+        toast.error("No se pudo enviar el correo de prueba.");
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Error al conectar con el servidor.";
+      setTestResult({ ok: false, message: msg, config: {} });
+      toast.error(msg);
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function handleSaveSetting(clave: string, valor: string) {
     const updated = await configService.updateSetting(clave, valor);
     setSettings((prev) => {
@@ -348,7 +382,7 @@ export default function SystemConfigPage() {
   const tabSettings = activeTab !== "AREAS" && settings ? (settings[activeTab] ?? []) : [];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Configuración del sistema</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -390,6 +424,75 @@ export default function SystemConfigPage() {
               tabSettings.map((s) => (
                 <SettingRow key={s.clave} setting={s} onSave={handleSaveSetting} />
               ))
+            )}
+
+            {/* Test email — only in SMTP tab */}
+            {activeTab === "SMTP" && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <i className="ti ti-send text-indigo-400 text-base" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Probar configuración de correo</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Envía un correo de prueba para verificar que el servidor SMTP funciona correctamente.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="email"
+                    placeholder="correo@destinatario.com"
+                    value={testRecipient}
+                    onChange={(e) => setTestRecipient(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void handleTestEmail()}
+                    className="h-9 flex-1 max-w-xs rounded-lg border border-slate-700 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+                  />
+                  <button
+                    onClick={() => void handleTestEmail()}
+                    disabled={testing || !testRecipient.trim()}
+                    className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {testing ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        Enviando…
+                      </>
+                    ) : (
+                      <>
+                        <i className="ti ti-send text-sm" />
+                        Enviar prueba
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {testResult && (
+                  <div className={`mt-3 rounded-lg border p-4 ${
+                    testResult.ok
+                      ? "border-emerald-500/30 bg-emerald-500/5"
+                      : "border-red-500/30 bg-red-500/5"
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <i className={`ti ${testResult.ok ? "ti-circle-check text-emerald-400" : "ti-circle-x text-red-400"} text-lg`} />
+                      <p className={`text-sm font-medium ${testResult.ok ? "text-emerald-400" : "text-red-400"}`}>
+                        {testResult.ok ? "Correo enviado correctamente" : "Error al enviar"}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{testResult.message}</p>
+                    {testResult.ok && Object.keys(testResult.config).length > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground/70 font-mono space-y-0.5">
+                        <p>Servidor: {String(testResult.config.host)}:{String(testResult.config.port)}</p>
+                        <p>Usuario: {String(testResult.config.username)}</p>
+                        <p>TLS: {testResult.config.use_tls ? "Sí" : "No"}</p>
+                        <p>Remitente: {String(testResult.config.from_email)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

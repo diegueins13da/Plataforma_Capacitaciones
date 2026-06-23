@@ -4,12 +4,18 @@ from django.db import models
 
 class Notification(models.Model):
     class Tipo(models.TextChoices):
+        # Alumno-facing
         NUEVO_CURSO = "NUEVO_CURSO", "Nuevo curso asignado"
         VENCIMIENTO_7D = "VENCIMIENTO_7D", "Curso vence en 7 días"
         VENCIMIENTO_1D = "VENCIMIENTO_1D", "Curso vence mañana"
         VENCIDO = "VENCIDO", "Curso vencido"
         EXAMEN_APROBADO = "EXAMEN_APROBADO", "Examen aprobado"
         EXAMEN_REPROBADO = "EXAMEN_REPROBADO", "Examen reprobado"
+        # Instructor-facing
+        ALUMNO_INSCRITO = "ALUMNO_INSCRITO", "Alumno inscrito en tu curso"
+        ALUMNO_COMPLETO = "ALUMNO_COMPLETO", "Alumno completó tu curso"
+        ALUMNO_APROBADO = "ALUMNO_APROBADO", "Alumno aprobó el examen"
+        ALUMNO_REPROBADO = "ALUMNO_REPROBADO", "Alumno reprobó el examen"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -41,6 +41,7 @@ export interface Course {
   audiencia_grupos: CourseGroup[];
   cert_expira_meses: number | null;
   enrollment: CourseEnrollment | null;
+  has_assessment: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +68,7 @@ export interface CourseListItem {
   instructor_nombre: string;
   module_count: number;
   enrollment: CourseEnrollment | null;
+  can_edit: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -106,4 +108,5 @@ export interface CourseFilters {
   estado?: CourseEstado;
   area?: number;
   page?: number;
+  as_student?: boolean;
 }

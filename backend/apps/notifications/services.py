@@ -131,6 +131,89 @@ def notify_curso_vencido(user: "User", enrollment: "Enrollment") -> Notification
 
 
 # ---------------------------------------------------------------------------
+# Instructor-facing events
+# ---------------------------------------------------------------------------
+
+
+def notify_instructor_alumno_inscrito(
+    instructor: "User", alumno: "User", enrollment: "Enrollment"
+) -> Notification | None:
+    """Notify the course creator that a new student was enrolled."""
+    if instructor.pk == alumno.pk:
+        return None
+    course = enrollment.course
+    if _already_sent(instructor, Notification.Tipo.ALUMNO_INSCRITO, enrollment.pk):
+        return None
+    return create_notification(
+        user=instructor,
+        tipo=Notification.Tipo.ALUMNO_INSCRITO,
+        titulo=course.titulo,
+        mensaje=f"{alumno.get_full_name() or alumno.email} se ha inscrito en tu curso.",
+        referencia_id=course.pk,
+        referencia_tipo="course",
+    )
+
+
+def notify_instructor_alumno_completo(
+    instructor: "User", alumno: "User", enrollment: "Enrollment"
+) -> Notification | None:
+    """Notify the course creator that a student completed the course."""
+    if instructor.pk == alumno.pk:
+        return None
+    course = enrollment.course
+    if _already_sent(instructor, Notification.Tipo.ALUMNO_COMPLETO, enrollment.pk):
+        return None
+    return create_notification(
+        user=instructor,
+        tipo=Notification.Tipo.ALUMNO_COMPLETO,
+        titulo=course.titulo,
+        mensaje=f"{alumno.get_full_name() or alumno.email} completó el curso al 100%.",
+        referencia_id=course.pk,
+        referencia_tipo="course",
+    )
+
+
+def notify_instructor_alumno_aprobado(
+    instructor: "User", alumno: "User", enrollment: "Enrollment", calificacion: float
+) -> Notification | None:
+    """Notify the course creator that a student passed the exam."""
+    if instructor.pk == alumno.pk:
+        return None
+    course = enrollment.course
+    return create_notification(
+        user=instructor,
+        tipo=Notification.Tipo.ALUMNO_APROBADO,
+        titulo=course.titulo,
+        mensaje=(
+            f"{alumno.get_full_name() or alumno.email} aprobó la evaluación "
+            f"con {calificacion:.0f}%."
+        ),
+        referencia_id=course.pk,
+        referencia_tipo="course",
+    )
+
+
+def notify_instructor_alumno_reprobado(
+    instructor: "User", alumno: "User", enrollment: "Enrollment", calificacion: float
+) -> Notification | None:
+    """Notify the course creator that a student failed the exam."""
+    if instructor.pk == alumno.pk:
+        return None
+    course = enrollment.course
+    return create_notification(
+        user=instructor,
+        tipo=Notification.Tipo.ALUMNO_REPROBADO,
+        titulo=course.titulo,
+        mensaje=(
+            f"{alumno.get_full_name() or alumno.email} no aprobó la evaluación "
+            f"({calificacion:.0f}%). Puede necesitar apoyo."
+        ),
+        referencia_id=course.pk,
+        referencia_tipo="course",
+    )
+
+
+# ---------------------------------------------------------------------------
 # User-facing queries
 # ---------------------------------------------------------------------------
 

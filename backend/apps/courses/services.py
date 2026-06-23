@@ -12,7 +12,7 @@ import bleach
 from django.db import models as django_models
 from django.db.models import QuerySet
 
-from apps.reports.models import AuditLog
+from apps.reports.audit import log_event
 from storage.factory import get_storage
 
 from .models import Course, Enrollment, Module, ModuleProgress
@@ -101,14 +101,20 @@ def _next_module_orden(course: "Course") -> int:
 # ---------------------------------------------------------------------------
 
 
-def list_courses(user: "User", *, estado: str | None = None, area_id: int | None = None) -> "QuerySet[Course]":
+def list_courses(
+    user: "User",
+    *,
+    estado: str | None = None,
+    area_id: int | None = None,
+    as_student: bool = False,
+) -> "QuerySet[Course]":
     qs = Course.objects.select_related("instructor", "area", "created_by").prefetch_related(
         "audiencia_grupos"
     )
-    if user.role == "TRAINER":
+    if user.role == "TRAINER" and not as_student:
         qs = qs.filter(created_by=user)
-    elif user.role == "USUARIO":
-        # Regular users only see courses they are enrolled in
+    else:
+        # USUARIO always, or TRAINER requesting their student view
         enrolled_ids = Enrollment.objects.filter(user=user).values_list("course_id", flat=True)
         qs = qs.filter(pk__in=enrolled_ids)
     if estado:
@@ -126,7 +132,9 @@ def get_course(course_id: int, user: "User") -> "Course":
     except Course.DoesNotExist:
         raise Course.DoesNotExist(course_id)
     if user.role == "TRAINER":
-        _assert_owner(course, user)
+        is_enrolled = Enrollment.objects.filter(course=course, user=user).exists()
+        if not is_enrolled:
+            _assert_owner(course, user)
     return course
 
 
@@ -283,15 +291,14 @@ def publish_course(course_id: int, user: "User", ip: str | None = None) -> "Cour
                     referencia_tipo="course",
                 )
 
-    AuditLog.objects.create(
-        user=user,
-        accion="CURSO_PUBLICADO",
+    log_event(
+        accion="COURSE_PUBLISHED",
+        actor=user,
         ip=ip,
-        detalles_json={
-            "course_id": course.pk,
-            "titulo": course.titulo,
-            "enrollments_created": enrollments_created,
-        },
+        entidad_tipo="Course",
+        entidad_id=course.pk,
+        entidad_nombre=course.titulo,
+        detalle={"inscripciones_creadas": enrollments_created},
     )
 
     return course
@@ -347,6 +354,14 @@ def complete_module(enrollment_id: int, module_id: int, user: "User") -> "Enroll
 
     enrollment.update_progress()
     enrollment.refresh_from_db()
+
+    # Notify course creator when a student completes the course
+    if enrollment.estado == "COMPLETADO":
+        instructor = enrollment.course.created_by
+        if instructor and instructor.pk != enrollment.user.pk:
+            from apps.notifications.services import notify_instructor_alumno_completo  # noqa: PLC0415
+            notify_instructor_alumno_completo(instructor, enrollment.user, enrollment)
+
     return enrollment
 
 

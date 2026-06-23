@@ -15,7 +15,6 @@ django-filter>=24.0
 
 # --- Security ---
 django-axes>=6.4,<7.0
-django-ratelimit>=4.1,<5.0
 argon2-cffi>=23.1,<24.0
 
 # --- Async tasks ---

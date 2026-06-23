@@ -83,6 +83,13 @@ class UserProfile(models.Model):
         verbose_name="área",
     )
     cargo = models.CharField(max_length=150, blank=True, verbose_name="cargo")
+    rubrica = models.ImageField(
+        upload_to="rubricas/",
+        null=True,
+        blank=True,
+        verbose_name="rúbrica (firma)",
+        help_text="Imagen de la firma del capacitador. Una vez subida no se puede reemplazar.",
+    )
     grupo = models.ForeignKey(
         Group,
         null=True,

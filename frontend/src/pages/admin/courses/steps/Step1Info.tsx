@@ -13,7 +13,10 @@ const schema = z.object({
   titulo: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   descripcion: z.string().optional(),
   tipo: z.enum(["ONLINE", "PRESENCIAL", "HIBRIDO", "AUTOAPRENDIZAJE"]),
-  area: z.number().nullable().optional(),
+  area: z
+    .number({ invalid_type_error: "Selecciona un área válida" })
+    .nullable()
+    .optional(),
   fecha_limite: z.string().optional(),
   version: z.string().min(1, "La versión es requerida"),
   imagen_portada: z.string().optional(),
@@ -163,7 +166,7 @@ export function Step1Info({ onNext }: Props) {
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">Área</label>
           <select
-            {...register("area", { valueAsNumber: true })}
+            {...register("area", { setValueAs: (v: string) => (!v ? null : parseInt(v, 10)) })}
             className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
           >
             <option value="">Sin área específica</option>

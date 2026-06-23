@@ -5,11 +5,12 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAuthStore } from "./store/authStore";
 import { AppRouter } from "./router";
 import { SessionExpiredModal } from "./components/shared/SessionExpiredModal";
+import { BrandingProvider } from "./context/BrandingContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 function AppInner() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
 
-  // Restore session once on app mount: reads stored token → calls /me/
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
@@ -21,11 +22,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <AppInner />
-        {/* Global toast — available on every page including login */}
-        <Toaster position="top-right" richColors closeButton />
-        {/* P05 — fires when Axios refresh interceptor can't renew tokens */}
-        <SessionExpiredModal />
+        <ThemeProvider>
+          <BrandingProvider>
+            <AppInner />
+            <Toaster position="top-right" richColors closeButton />
+            <SessionExpiredModal />
+          </BrandingProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );

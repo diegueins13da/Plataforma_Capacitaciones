@@ -40,18 +40,16 @@ class MeSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     area = serializers.SerializerMethodField()
     grupo = serializers.SerializerMethodField()
+    cargo = serializers.SerializerMethodField()
+    rubrica_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
-            "id",
-            "email",
-            "role",
-            "full_name",
-            "area",
-            "grupo",
-            "must_change_password",
-            "is_active",
+            "id", "email", "role",
+            "first_name", "last_name", "full_name",
+            "area", "grupo", "cargo", "rubrica_url",
+            "must_change_password", "is_active",
         ]
 
     def get_full_name(self, obj: User) -> str:
@@ -59,12 +57,12 @@ class MeSerializer(serializers.ModelSerializer):
 
     def get_area(self, obj: User) -> str:
         try:
-            return obj.profile.area
+            area = obj.profile.area
+            return area.nombre if area else ""
         except Exception:
             return ""
 
     def get_grupo(self, obj: User) -> dict | None:
-        # Group FK added to UserProfile in T09b — safe fallback until then
         try:
             profile = obj.profile
         except Exception:
@@ -72,7 +70,22 @@ class MeSerializer(serializers.ModelSerializer):
         group = getattr(profile, "grupo", None)
         if group is None:
             return None
-        return {"id": group.id, "name": group.name}
+        return {"id": group.id, "name": group.nombre}
+
+    def get_cargo(self, obj: User) -> str:
+        try:
+            return obj.profile.cargo or ""
+        except Exception:
+            return ""
+
+    def get_rubrica_url(self, obj: User) -> str | None:
+        try:
+            profile = obj.profile
+            if profile.rubrica:
+                return profile.rubrica.url  # relative: /media/rubricas/...
+        except Exception:
+            pass
+        return None
 
 
 # ---------------------------------------------------------------------------

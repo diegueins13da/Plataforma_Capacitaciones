@@ -308,3 +308,21 @@ class Certificate(models.Model):
 
     def __str__(self) -> str:
         return f"Cert {self.id} — {self.user} / {self.course}"
+
+
+# ---------------------------------------------------------------------------
+# Signals
+# ---------------------------------------------------------------------------
+from django.db.models.signals import post_save  # noqa: E402
+from django.dispatch import receiver  # noqa: E402
+
+
+@receiver(post_save, sender=Certificate)
+def trigger_certificate_pdf(sender, instance: Certificate, created: bool, **kwargs) -> None:
+    """Auto-generate the PDF when a new Certificate is created without a PDF."""
+    if created and not instance.url_pdf:
+        try:
+            from apps.certificates.tasks import generate_certificate_pdf_task
+            generate_certificate_pdf_task.delay(str(instance.id))
+        except Exception:
+            pass  # Non-blocking — PDF can be regenerated manually by admin

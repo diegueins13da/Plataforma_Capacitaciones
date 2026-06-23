@@ -38,7 +38,6 @@ def _log_lockout(request, credentials: dict) -> None:
     """Silently records the lockout event. Errors must not break the lockout flow."""
     try:
         from apps.authentication.services import get_client_ip
-        from apps.reports.models import AuditLog
         from apps.users.models import User
 
         email = credentials.get("username") or (request.POST or {}).get("email", "")
@@ -49,11 +48,15 @@ def _log_lockout(request, credentials: dict) -> None:
             except User.DoesNotExist:
                 pass
 
-        AuditLog.objects.create(
-            user=user,
+        from apps.reports.audit import log_event
+        log_event(
             accion="ACCOUNT_LOCKED",
+            actor=user,
             ip=get_client_ip(request),
-            detalles_json={"trigger": "axes_lockout"},
+            entidad_tipo="User",
+            entidad_id=user.pk if user else "",
+            entidad_nombre=email,
+            detalle={"trigger": "axes_lockout"},
         )
     except Exception:  # noqa: BLE001
         pass  # Logging failure must never prevent the lockout response from being sent

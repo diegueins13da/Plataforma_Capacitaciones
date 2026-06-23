@@ -84,7 +84,7 @@ export default function ExamIntroPage() {
 
   if (!assessment && error) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+      <div className="max-w-xl mx-auto text-center space-y-4">
         <p className="text-red-400">{error}</p>
         <Link
           to={`/courses/${courseId}`}
@@ -103,7 +103,7 @@ export default function ExamIntroPage() {
     !!assessment && assessment.question_count_approved > 0 && remainingAttempts > 0;
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-10">
+    <div className="max-w-xl mx-auto">
       <div className="bg-card border border-border rounded-2xl p-8 space-y-6 shadow-sm">
         {/* Header */}
         <div className="text-center">

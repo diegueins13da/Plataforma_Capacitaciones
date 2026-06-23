@@ -235,7 +235,7 @@ export default function BulkImportPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Importación masiva de usuarios</h1>
         <p className="text-sm text-muted-foreground mt-1">

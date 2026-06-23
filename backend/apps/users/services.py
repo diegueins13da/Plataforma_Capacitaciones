@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.core.validators import validate_email as _validate_email_format
 
-from apps.reports.models import AuditLog
+from apps.reports.audit import log_event
 
 from .models import Area, Group, User, UserProfile
 
@@ -193,11 +193,14 @@ def create_user(
         fail_silently=True,
     )
 
-    AuditLog.objects.create(
-        user=admin_user,
+    log_event(
         accion="USER_CREATED",
+        actor=admin_user,
         ip=ip,
-        detalles_json={"target_user_id": user.pk, "email": email, "role": role},
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=f"{first_name} {last_name} <{email}>",
+        detalle={"email": email, "role": role},
     )
 
     return user
@@ -250,15 +253,14 @@ def change_role(user: User, *, new_role: str, admin_user: User, ip: str) -> User
     user.role = new_role
     user.save(update_fields=["role"])
 
-    AuditLog.objects.create(
-        user=admin_user,
+    log_event(
         accion="ROLE_CHANGED",
+        actor=admin_user,
         ip=ip,
-        detalles_json={
-            "target_user_id": user.pk,
-            "old_role": old_role,
-            "new_role": new_role,
-        },
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=f"{user.get_full_name()} <{user.email}>",
+        detalle={"rol_anterior": old_role, "rol_nuevo": new_role},
     )
     return user
 
@@ -275,11 +277,13 @@ def deactivate_user(user: User, *, admin_user: User, ip: str) -> User:
 
     _blacklist_all_user_tokens(user)
 
-    AuditLog.objects.create(
-        user=admin_user,
+    log_event(
         accion="USER_DEACTIVATED",
+        actor=admin_user,
         ip=ip,
-        detalles_json={"target_user_id": user.pk},
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=f"{user.get_full_name()} <{user.email}>",
     )
     return user
 
@@ -585,15 +589,20 @@ def bulk_import_commit(
                 ErrorRow(row=row_num, email=email, errors=["Error interno al crear el usuario."])
             )
 
-    AuditLog.objects.create(
-        user=admin_user,
+    resultado = "OK" if not commit_errors else ("ERROR" if created == 0 else "OK")
+    log_event(
         accion="BULK_USER_IMPORT",
+        actor=admin_user,
         ip=ip,
-        detalles_json={
-            "created": created,
-            "failed": len(commit_errors),
-            "total_rows": len(rows),
+        resultado=resultado,
+        entidad_tipo="User",
+        detalle={
+            "creados": created,
+            "fallidos": len(commit_errors),
+            "total_filas": len(rows),
+            "errores": [{"fila": e["row"], "email": e["email"]} for e in commit_errors[:20]],
         },
+        error_detalle=f"{len(commit_errors)} filas fallaron" if commit_errors else "",
     )
 
     return BulkImportCommitResult(

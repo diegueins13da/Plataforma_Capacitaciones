@@ -9,12 +9,20 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ["react", "react-dom"],
   },
   server: {
     host: "0.0.0.0",
     port: 3000,
+    headers: {
+      "Cache-Control": "no-store",
+    },
     proxy: {
       "/api": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/media": {
         target: "http://backend:8000",
         changeOrigin: true,
       },

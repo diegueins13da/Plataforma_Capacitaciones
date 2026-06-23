@@ -165,7 +165,7 @@ export default function AdminCertificatesPage() {
   const totalCerts = groups.reduce((s, g) => s + g.count, 0);
 
   return (
-    <div className="px-6 py-7 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { coursesService } from "../../services/coursesService";
 import { CourseEditModal } from "../../components/shared/CourseEditModal";
 import { UrgencyBadge } from "../../components/shared/UrgencyBadge";
+import { useAuthStore } from "../../store/authStore";
+import { useTrainerModeStore } from "../../store/trainerModeStore";
 import type { CourseListItem } from "../../types/course";
 
 const TIPO_ICONS: Record<string, string> = {
@@ -130,12 +132,20 @@ export default function CourseCatalogPage() {
   const [page, setPage] = useState(1);
   const [filterEstado, setFilterEstado] = useState("");
   const [editCourse, setEditCourse] = useState<CourseListItem | null>(null);
+  const { user } = useAuthStore();
+  const trainerMode = useTrainerModeStore((s) => s.mode);
+
+  // Trainers in Alumno mode see enrolled courses (same as a regular user)
+  const asStudent = user?.role === "TRAINER" && trainerMode === "ALUMNO";
 
   const load = useCallback(async (p: number) => {
     setLoading(true);
     try {
-      // Show ALL published courses — not filtered to enrolled only
-      const res = await coursesService.getCourses({ estado: "PUBLICADO", page: p });
+      const res = await coursesService.getCourses({
+        estado: "PUBLICADO",
+        page: p,
+        as_student: asStudent || undefined,
+      });
       setCourses(res.results);
       setTotal(res.count);
     } catch {
@@ -143,7 +153,7 @@ export default function CourseCatalogPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [asStudent]);
 
   useEffect(() => { void load(1); setPage(1); }, [load]);
 
@@ -160,7 +170,7 @@ export default function CourseCatalogPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Catálogo de cursos</h1>

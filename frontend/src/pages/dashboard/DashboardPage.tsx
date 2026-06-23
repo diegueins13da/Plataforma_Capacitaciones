@@ -13,11 +13,13 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useAuthStore } from "../../store/authStore";
+import { useTrainerModeStore } from "../../store/trainerModeStore";
 import {
   usersService,
   type DashboardCourse,
   type DashboardData,
 } from "../../services/usersService";
+import InstructorDashboardPage from "./InstructorDashboardPage";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -264,6 +266,18 @@ function DeadlineCard({ course }: { course: DashboardCourse }) {
 // ---------------------------------------------------------------------------
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
+  const trainerMode = useTrainerModeStore((s) => s.mode);
+
+  // Instructor mode → show instructor-specific dashboard
+  if (user?.role === "TRAINER" && trainerMode === "INSTRUCTOR") {
+    return <InstructorDashboardPage />;
+  }
+
+  return <StudentDashboard />;
+}
+
+function StudentDashboard() {
+  const user = useAuthStore((s) => s.user);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -286,7 +300,7 @@ export default function DashboardPage() {
 
   if (error || !data) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12 text-center">
+      <div className="py-12 text-center">
         <p className="text-muted-foreground">{error ?? "Sin datos."}</p>
       </div>
     );
@@ -298,7 +312,7 @@ export default function DashboardPage() {
   const pctCompleted = total > 0 ? Math.round((data.resumen.completados / total) * 100) : 0;
 
   return (
-    <div className="px-6 py-7 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* ── Header ──────────────────────────────────────────────── */}
       <div>
         <h1 className="text-2xl font-semibold text-foreground">

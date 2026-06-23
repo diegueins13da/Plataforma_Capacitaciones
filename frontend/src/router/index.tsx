@@ -62,7 +62,7 @@ export function AppRouter() {
             <Route path="/courses/:id" element={<CourseDetailPage />} />
             <Route path="/courses/:courseId/modules/:moduleId" element={<ModulePlayerPage />} />
             <Route path="/courses/:courseId/completed" element={<CourseCompletedPage />} />
-            <Route path="/my-courses" element={<MyCourseListPage />} />
+            <Route path="/my-courses" element={<Navigate to="/courses" replace />} />
             <Route path="/my-certificates" element={<MyCertificatesPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/courses/:courseId/exam" element={<ExamIntroPage />} />

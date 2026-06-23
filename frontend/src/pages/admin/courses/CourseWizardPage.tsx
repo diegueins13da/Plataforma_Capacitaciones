@@ -61,7 +61,7 @@ export default function CourseWizardPage() {
   const isEdit = mode === "edit";
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
         <button

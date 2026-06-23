@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import UserManagementPage from "../users/UserManagementPage";
 import SystemConfigPage from "./SystemConfigPage";
-import AdminReportsPage from "../reports/AdminReportsPage";
+import { AuditLogTab } from "../reports/AuditLogTab";
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -43,7 +43,7 @@ export default function AdminConfigPage() {
   }, [activeTab]);
 
   return (
-    <div className="px-6 py-7 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Configuración</h1>
@@ -80,7 +80,7 @@ export default function AdminConfigPage() {
         {mounted.parametros && <SystemConfigPage />}
       </div>
       <div className={activeTab === "auditoria" ? "" : "hidden"}>
-        {mounted.auditoria && <AdminReportsPage />}
+        {mounted.auditoria && <AuditLogTab />}
       </div>
     </div>
   );

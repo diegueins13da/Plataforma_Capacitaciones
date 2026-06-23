@@ -16,7 +16,7 @@ export default function CourseCompletedPage() {
   }, [courseId]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background">
       <div className="max-w-md w-full text-center">
         {/* Trophy / checkmark */}
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-500/15 flex items-center justify-center text-4xl">
@@ -48,7 +48,7 @@ export default function CourseCompletedPage() {
               Ver detalle del curso
             </Link>
             <Link
-              to="/my-courses"
+              to="/courses"
               className="px-5 py-2.5 text-sm font-medium border border-border rounded-lg text-foreground hover:bg-background transition-colors"
             >
               Mis cursos

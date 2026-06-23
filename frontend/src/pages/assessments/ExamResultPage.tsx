@@ -73,7 +73,7 @@ function PassedView({
           Ver curso
         </Link>
         <Link
-          to="/my-courses"
+          to="/courses"
           className="px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           Mis cursos
@@ -263,7 +263,7 @@ export default function ExamResultPage() {
   const remainingAttempts = Math.max(0, maxIntentos - intento_numero);
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-10">
+    <div className="max-w-lg mx-auto">
       <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
         {aprobado ? (
           <PassedView

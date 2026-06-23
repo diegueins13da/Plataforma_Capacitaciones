@@ -59,6 +59,11 @@ export function TextPlayerPage({
     if (atBottom) setReachedEnd(true);
   }, []);
 
+  // If content fits without scrolling, mark as reached-end immediately on mount
+  useEffect(() => {
+    handleScroll();
+  }, [handleScroll]);
+
   // Save position every 10 seconds and on unmount
   useEffect(() => {
     const id = setInterval(() => {

@@ -1,9 +1,19 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
-from ratelimit.decorators import ratelimit
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+
+
+class LoginRateThrottle(AnonRateThrottle):
+    rate = "10/min"
+    scope = "login"
+
+
+class PasswordResetThrottle(AnonRateThrottle):
+    rate = "5/min"
+    scope = "password_reset"
 
 from . import services
 from .serializers import (
@@ -17,23 +27,10 @@ from .serializers import (
 )
 
 
-@ratelimit(key="ip", rate="10/m", method="POST", block=False)
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle])
 def login(request):
-    if getattr(request, "limited", False):
-        return Response(
-            {
-                "errors": {
-                    "non_field_errors": [
-                        "Demasiadas solicitudes. Intenta de nuevo en un minuto."
-                    ]
-                },
-                "status": 429,
-            },
-            status=status.HTTP_429_TOO_MANY_REQUESTS,
-        )
-
     serializer = LoginRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
@@ -42,6 +39,7 @@ def login(request):
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             ip=services.get_client_ip(request),
+            request=request,
         )
     except services.AuthenticationError as exc:
         body: dict = {
@@ -70,32 +68,48 @@ def logout(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     if request.method == "GET":
-        return Response(MeSerializer(request.user).data)
+        return Response(MeSerializer(request.user, context={"request": request}).data)
 
     serializer = UpdateMeSerializer(data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
     user = request.user
+
+    changed: dict = {}
     user_fields = [f for f in ("first_name", "last_name") if f in data]
     for field in user_fields:
+        before = getattr(user, field)
+        if before != data[field]:
+            changed[field] = {"before": before, "after": data[field]}
         setattr(user, field, data[field])
     if user_fields:
         user.save(update_fields=user_fields)
+
     if "cargo" in data:
         profile, _ = user.profile.__class__.objects.get_or_create(user=user)
+        if profile.cargo != data["cargo"]:
+            changed["cargo"] = {"before": profile.cargo, "after": data["cargo"]}
         profile.cargo = data["cargo"]
         profile.save(update_fields=["cargo"])
-    return Response(MeSerializer(user).data)
+
+    if changed:
+        from apps.reports.audit import log_event
+        log_event(
+            accion="USER_UPDATED",
+            request=request,
+            entidad_tipo="User",
+            entidad_id=user.pk,
+            entidad_nombre=f"{user.get_full_name()} <{user.email}>",
+            detalle={"campos": changed},
+        )
+
+    return Response(MeSerializer(user, context={"request": request}).data)
 
 
-@ratelimit(key="ip", rate="5/m", method="POST", block=False)
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([PasswordResetThrottle])
 def password_reset_request(request):
-    if getattr(request, "limited", False):
-        # Still return 200 to avoid timing attacks / enumeration
-        return Response({"detail": "Si tu correo existe, recibirás un código en breve."})
-
     serializer = PasswordResetRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 

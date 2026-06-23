@@ -11,10 +11,9 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.utils import timezone
 
-from apps.reports.models import AuditLog
+from apps.reports.audit import log_event
 
 if TYPE_CHECKING:
     from apps.users.models import User
@@ -52,7 +51,7 @@ class PasswordResetError(Exception):
 # ---------------------------------------------------------------------------
 
 
-def login(*, email: str, password: str, ip: str) -> dict:
+def login(*, email: str, password: str, ip: str, request=None) -> dict:
     """
     Authenticate a user by email + password and return JWT tokens.
 
@@ -70,40 +69,49 @@ def login(*, email: str, password: str, ip: str) -> dict:
     try:
         user = User.objects.select_related("profile").get(email=email)
     except User.DoesNotExist:
-        AuditLog.objects.create(
+        log_event(
             accion="LOGIN_FAILED",
             ip=ip,
-            detalles_json={"reason": "user_not_found"},
+            detalle={"reason": "user_not_found", "email_intentado": email},
         )
         raise AuthenticationError(_GENERIC_ERROR)
 
-    authenticated_user = authenticate(username=user.username, password=password)
+    authenticated_user = authenticate(request=request, username=user.username, password=password)
 
     if authenticated_user is None:
-        AuditLog.objects.create(
-            user=user,
+        log_event(
             accion="LOGIN_FAILED",
+            actor=user,
             ip=ip,
-            detalles_json={"reason": "invalid_credentials"},
+            entidad_tipo="User",
+            entidad_id=user.pk,
+            entidad_nombre=user.email,
+            detalle={"reason": "invalid_credentials"},
         )
         attempts_left = _get_attempts_left(user.username)
         raise AuthenticationError(_GENERIC_ERROR, attempts_left=attempts_left)
 
     if not authenticated_user.is_active:
-        AuditLog.objects.create(
-            user=authenticated_user,
+        log_event(
             accion="LOGIN_FAILED",
+            actor=authenticated_user,
             ip=ip,
-            detalles_json={"reason": "inactive_account"},
+            entidad_tipo="User",
+            entidad_id=authenticated_user.pk,
+            entidad_nombre=authenticated_user.email,
+            detalle={"reason": "inactive_account"},
         )
         raise AuthenticationError("Cuenta inactiva. Contacta al administrador.")
 
     refresh = RefreshToken.for_user(authenticated_user)
 
-    AuditLog.objects.create(
-        user=authenticated_user,
+    log_event(
         accion="LOGIN_SUCCESS",
+        actor=authenticated_user,
         ip=ip,
+        entidad_tipo="User",
+        entidad_id=authenticated_user.pk,
+        entidad_nombre=authenticated_user.email,
     )
 
     return {
@@ -125,7 +133,14 @@ def logout(*, user: "User", refresh_token: str | None, ip: str) -> None:
         except TokenError:
             pass
 
-    AuditLog.objects.create(user=user, accion="LOGOUT", ip=ip)
+    log_event(
+        accion="LOGOUT",
+        actor=user,
+        ip=ip,
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=user.email,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +153,7 @@ def request_password_reset(*, email: str) -> None:
     Generate a 6-digit reset code and email it to the user.
     ALWAYS returns silently — never reveals whether the email exists.
     """
+    from apps.config.email import send_mail as db_send_mail
     from apps.users.models import User
 
     try:
@@ -150,9 +166,8 @@ def request_password_reset(*, email: str) -> None:
     cache.set(cache_key, {"code": code, "used": False}, timeout=_RESET_CODE_TTL)
 
     frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
-    from_email = settings.DEFAULT_FROM_EMAIL or settings.EMAIL_HOST_USER
 
-    send_mail(
+    db_send_mail(
         subject="Código de recuperación de contraseña",
         message=(
             f"Tu código de recuperación es: {code}\n\n"
@@ -160,7 +175,6 @@ def request_password_reset(*, email: str) -> None:
             f"Si no solicitaste este código, ignora este mensaje.\n\n"
             f"{frontend_url}"
         ),
-        from_email=from_email,
         recipient_list=[user.email],
         fail_silently=True,  # Never crash because of an email failure
     )
@@ -204,10 +218,13 @@ def confirm_password_reset(*, email: str, code: str, new_password: str) -> None:
     user.must_change_password = False
     user.save(update_fields=["password", "must_change_password"])
 
-    AuditLog.objects.create(
-        user=user,
+    log_event(
         accion="PASSWORD_RESET",
-        detalles_json={"method": "code"},
+        actor=user,
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=user.email,
+        detalle={"method": "code"},
     )
 
 
@@ -237,10 +254,13 @@ def change_password(*, user: "User", current_password: str, new_password: str, i
     # Invalidate ALL active sessions — security critical (T03 spec)
     _blacklist_all_tokens(user)
 
-    AuditLog.objects.create(
-        user=user,
+    log_event(
         accion="PASSWORD_CHANGED",
+        actor=user,
         ip=ip,
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=user.email,
     )
 
 

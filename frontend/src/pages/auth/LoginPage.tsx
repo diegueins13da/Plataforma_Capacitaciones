@@ -48,7 +48,7 @@ export default function LoginPage() {
     try {
       await login(formData);
       const user = useAuthStore.getState().user;
-      navigate(user?.role === "ADMIN" ? "/admin/users" : "/dashboard", { replace: true });
+      navigate(user?.role === "ADMIN" ? "/admin" : "/dashboard", { replace: true });
     } catch (err: unknown) {
       const { status, data } = parseLoginError(err);
       if (status === 423 || data.locked) {

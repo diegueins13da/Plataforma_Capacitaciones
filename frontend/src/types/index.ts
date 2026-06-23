@@ -8,9 +8,15 @@ export interface User {
   id: number;
   email: string;
   full_name: string;
+  first_name: string;
+  last_name: string;
   role: Role;
   is_active: boolean;
   must_change_password: boolean;
+  cargo?: string;
+  rubrica_url?: string | null;
+  area?: string;
+  grupo?: { id: number; name: string } | null;
 }
 
 export interface ApiError {

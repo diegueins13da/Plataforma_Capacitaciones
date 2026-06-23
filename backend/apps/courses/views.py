@@ -1,10 +1,13 @@
+from datetime import date
+
 from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from apps.reports.audit import log_event
 from apps.users.permissions import IsAdmin, IsAdminOrTrainer
 
 from . import services
@@ -16,6 +19,120 @@ from .serializers import (
     ModuleCreateSerializer,
     ModuleSerializer,
 )
+
+
+# ---------------------------------------------------------------------------
+# Instructor dashboard
+# ---------------------------------------------------------------------------
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def instructor_dashboard(request):
+    if request.user.role not in ("TRAINER", "ADMIN"):
+        return Response({"detail": "Forbidden."}, status=403)
+
+    instructor = request.user
+    courses = (
+        Course.objects.filter(created_by=instructor)
+        .prefetch_related("enrollments", "enrollments__user")
+        .select_related("assessment")
+    )
+
+    total_inscritos = 0
+    total_completados = 0
+    total_progreso_sum = 0
+    cursos_data = []
+    alumnos_data = []
+    alertas = []
+
+    for course in courses:
+        enrollments = list(course.enrollments.all())
+        count = len(enrollments)
+        completed = [e for e in enrollments if e.estado == "COMPLETADO"]
+        prog_sum = sum(e.progreso_porcentaje for e in enrollments)
+        avg_prog = round(prog_sum / count) if count > 0 else 0
+
+        total_inscritos += count
+        total_completados += len(completed)
+        total_progreso_sum += prog_sum
+
+        # exam stats
+        nota_promedio = None
+        tasa_aprobacion = None
+        try:
+            attempts = list(
+                course.assessment.attempts.filter(aprobado__isnull=False)
+            )
+            if attempts:
+                scores = [float(a.calificacion) for a in attempts if a.calificacion is not None]
+                passed = [a for a in attempts if a.aprobado]
+                if scores:
+                    nota_promedio = round(sum(scores) / len(scores), 1)
+                tasa_aprobacion = round(len(passed) / len(attempts) * 100)
+        except Exception:
+            pass
+
+        dias_vencer = None
+        if course.fecha_limite:
+            dias_vencer = (course.fecha_limite - date.today()).days
+
+        cursos_data.append({
+            "id": course.id,
+            "titulo": course.titulo,
+            "estado": course.estado,
+            "tipo": course.tipo,
+            "duracion_horas": course.duracion_horas,
+            "total_inscritos": count,
+            "completados": len(completed),
+            "en_progreso": len([e for e in enrollments if e.estado == "EN_PROGRESO"]),
+            "vencidos": len([e for e in enrollments if e.estado == "VENCIDO"]),
+            "progreso_promedio": avg_prog,
+            "fecha_limite": course.fecha_limite.isoformat() if course.fecha_limite else None,
+            "dias_para_vencer": dias_vencer,
+            "nota_promedio": nota_promedio,
+            "tasa_aprobacion": tasa_aprobacion,
+        })
+
+        for e in enrollments:
+            alumnos_data.append({
+                "user_id": e.user.id,
+                "nombre": e.user.get_full_name() or e.user.email,
+                "email": e.user.email,
+                "curso_id": course.id,
+                "curso_titulo": course.titulo,
+                "progreso": e.progreso_porcentaje,
+                "estado": e.estado,
+                "fecha_limite": course.fecha_limite.isoformat() if course.fecha_limite else None,
+                "dias_para_vencer": dias_vencer,
+            })
+
+        if dias_vencer is not None and 0 <= dias_vencer <= 14:
+            en_prog_count = len([e for e in enrollments if e.estado == "EN_PROGRESO"])
+            if en_prog_count > 0:
+                alertas.append({
+                    "tipo": "VENCIMIENTO_PROXIMO",
+                    "curso_id": course.id,
+                    "curso_titulo": course.titulo,
+                    "dias": dias_vencer,
+                    "alumnos_afectados": en_prog_count,
+                })
+
+    kpis = {
+        "total_alumnos": total_inscritos,
+        "tasa_completado": round(total_completados / total_inscritos * 100) if total_inscritos else 0,
+        "progreso_promedio": round(total_progreso_sum / total_inscritos) if total_inscritos else 0,
+        "cursos_publicados": courses.filter(estado="PUBLICADO").count(),
+        "cursos_borrador": courses.filter(estado="BORRADOR").count(),
+        "cursos_archivados": courses.filter(estado="ARCHIVADO").count(),
+    }
+
+    alumnos_data.sort(key=lambda a: a["progreso"])
+
+    return Response({
+        "kpis": kpis,
+        "cursos": cursos_data,
+        "alumnos": alumnos_data,
+        "alertas": alertas,
+    })
 
 
 class CourseViewSet(GenericViewSet):
@@ -30,7 +147,8 @@ class CourseViewSet(GenericViewSet):
     """
 
     def get_permissions(self):
-        if self.action in ("list", "retrieve"):
+        # Any authenticated user can read courses and view the course assessment
+        if self.action in ("list", "retrieve", "assessment"):
             return [IsAuthenticated()]
         return [IsAuthenticated(), IsAdminOrTrainer()]
 
@@ -41,10 +159,12 @@ class CourseViewSet(GenericViewSet):
     def list(self, request: Request) -> Response:
         estado = request.query_params.get("estado")
         area_id = request.query_params.get("area")
+        as_student = request.query_params.get("as_student") == "true"
         qs = services.list_courses(
             request.user,
             estado=estado,
             area_id=int(area_id) if area_id else None,
+            as_student=as_student,
         )
         ctx = {"request": request}
         page = self.paginate_queryset(qs)
@@ -71,6 +191,13 @@ class CourseViewSet(GenericViewSet):
             course = services.create_course(dict(serializer.validated_data), request.user)
         except services.CourseValidationError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_event(
+            accion="COURSE_CREATED",
+            request=request,
+            entidad_tipo="Course",
+            entidad_id=course.pk,
+            entidad_nombre=course.titulo,
+        )
         return Response(CourseDetailSerializer(course, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request: Request, pk: str | None = None) -> Response:
@@ -83,6 +210,14 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except services.CoursePermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        log_event(
+            accion="COURSE_UPDATED",
+            request=request,
+            entidad_tipo="Course",
+            entidad_id=course.pk,
+            entidad_nombre=course.titulo,
+            detalle={"campos": list(serializer.validated_data.keys())},
+        )
         return Response(CourseDetailSerializer(course, context={"request": request}).data)
 
     def destroy(self, request: Request, pk: str | None = None) -> Response:
@@ -97,7 +232,15 @@ class CourseViewSet(GenericViewSet):
                 {"error": "No se puede eliminar un curso publicado. Archívalo primero."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        course_id, course_titulo = course.pk, course.titulo
         course.delete()
+        log_event(
+            accion="COURSE_DELETED",
+            request=request,
+            entidad_tipo="Course",
+            entidad_id=course_id,
+            entidad_nombre=course_titulo,
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ------------------------------------------------------------------
@@ -137,6 +280,31 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except ValueError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(CourseDetailSerializer(course, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="archive")
+    def archive(self, request: Request, pk: str | None = None) -> Response:
+        try:
+            course = Course.objects.get(pk=pk)
+        except Course.DoesNotExist:
+            return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        is_owner = hasattr(course, "instructor") and course.instructor == request.user
+        if not (request.user.role == "ADMIN" or is_owner):
+            return Response(
+                {"error": "Sin permisos para archivar este curso."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            course.archive()
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_event(
+            accion="COURSE_ARCHIVED",
+            request=request,
+            entidad_tipo="Course",
+            entidad_id=course.pk,
+            entidad_nombre=course.titulo,
+        )
         return Response(CourseDetailSerializer(course, context={"request": request}).data)
 
     # ------------------------------------------------------------------
@@ -185,6 +353,14 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         except services.CourseValidationError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_event(
+            accion="MODULE_CREATED",
+            request=request,
+            entidad_tipo="Module",
+            entidad_id=module.pk,
+            entidad_nombre=module.titulo,
+            detalle={"course_id": int(pk)},
+        )
         return Response(ModuleSerializer(module).data, status=status.HTTP_201_CREATED)
 
     def _update_module(
@@ -204,18 +380,138 @@ class CourseViewSet(GenericViewSet):
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         except services.CourseValidationError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_event(
+            accion="MODULE_UPDATED",
+            request=request,
+            entidad_tipo="Module",
+            entidad_id=module.pk,
+            entidad_nombre=module.titulo,
+            detalle={"course_id": int(pk), "campos": list(serializer.validated_data.keys())},
+        )
         return Response(ModuleSerializer(module).data)
 
     def _delete_module(
         self, request: Request, pk: str | None, module_id: str | None
     ) -> Response:
         try:
+            module = Module.objects.select_related("course").get(pk=module_id, course_id=pk)
+        except Module.DoesNotExist:
+            return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        module_titulo = module.titulo
+        try:
             services.delete_module(int(pk), int(module_id), request.user)
-        except (Course.DoesNotExist, Module.DoesNotExist):
+        except Course.DoesNotExist:
             return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except services.CoursePermissionDenied as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        log_event(
+            accion="MODULE_DELETED",
+            request=request,
+            entidad_tipo="Module",
+            entidad_id=int(module_id),
+            entidad_nombre=module_titulo,
+            detalle={"course_id": int(pk)},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # ------------------------------------------------------------------
+    # User assignment (admin tool)
+    # ------------------------------------------------------------------
+
+    @action(detail=True, methods=["get"], url_path="enrollment-users")
+    def enrollment_users(self, request: Request, pk: str | None = None) -> Response:
+        """Return all active users with their enrollment status for this course."""
+        if request.user.role not in ("ADMIN", "TRAINER"):
+            return Response({"detail": "Forbidden."}, status=403)
+        try:
+            course = Course.objects.get(pk=pk)
+        except Course.DoesNotExist:
+            return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        from apps.users.models import User as AppUser  # noqa: PLC0415
+
+        enrolled_map = {
+            e.user_id: e.estado
+            for e in Enrollment.objects.filter(course=course).select_related("user")
+        }
+        users = (
+            AppUser.objects.filter(is_active=True)
+            .exclude(role="ADMIN")
+            .order_by("first_name", "last_name", "email")
+        )
+        result = [
+            {
+                "id": u.id,
+                "nombre": u.get_full_name() or u.email,
+                "email": u.email,
+                "role": u.role,
+                "estado_inscripcion": enrolled_map.get(u.id),
+            }
+            for u in users
+        ]
+        return Response(result)
+
+    @action(detail=True, methods=["post"], url_path="bulk-assign")
+    def bulk_assign(self, request: Request, pk: str | None = None) -> Response:
+        """Create enrollments for a list of user IDs. Already-enrolled users are skipped."""
+        if request.user.role not in ("ADMIN", "TRAINER"):
+            return Response({"detail": "Forbidden."}, status=403)
+        try:
+            course = Course.objects.get(pk=pk)
+        except Course.DoesNotExist:
+            return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        if course.estado != Course.Estado.PUBLICADO:
+            return Response(
+                {"error": "Solo se puede asignar usuarios a cursos publicados."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_ids = request.data.get("user_ids", [])
+        if not isinstance(user_ids, list) or not user_ids:
+            return Response({"error": "Envía user_ids como lista."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.users.models import User as AppUser  # noqa: PLC0415
+
+        existing = set(Enrollment.objects.filter(course=course, user_id__in=user_ids).values_list("user_id", flat=True))
+        new_ids = [uid for uid in user_ids if uid not in existing]
+        from apps.notifications.models import Notification  # noqa: PLC0415
+
+        valid_users = AppUser.objects.filter(id__in=new_ids, is_active=True)
+        fecha_str = (
+            f" La fecha límite es el {course.fecha_limite.strftime('%d/%m/%Y')}."
+            if course.fecha_limite
+            else ""
+        )
+        from apps.notifications.services import notify_instructor_alumno_inscrito  # noqa: PLC0415
+
+        instructor = course.created_by
+        created = 0
+        for user in valid_users:
+            enrollment = Enrollment.objects.create(user=user, course=course)
+            Notification.objects.create(
+                user=user,
+                tipo=Notification.Tipo.NUEVO_CURSO,
+                titulo=f"{course.titulo}",
+                mensaje=(
+                    f"Se te ha asignado este curso.{fecha_str}"
+                    f" Puedes comenzar cuando quieras."
+                ),
+                referencia_id=course.pk,
+                referencia_tipo="course",
+            )
+            # Notify instructor if the assigner is different from the course creator
+            if instructor and instructor.pk != request.user.pk:
+                notify_instructor_alumno_inscrito(instructor, user, enrollment)
+            created += 1
+            log_event(
+                accion="ENROLLMENT_ADMIN_ASSIGN",
+                request=request,
+                entidad_tipo="Enrollment",
+                entidad_id=user.id,
+                entidad_nombre=f"{user.email} → {course.titulo}",
+                detalle={"course_id": course.pk, "assigned_by": request.user.email},
+            )
+        return Response({"created": created, "skipped": len(existing)})
 
 
 class EnrollmentViewSet(GenericViewSet):

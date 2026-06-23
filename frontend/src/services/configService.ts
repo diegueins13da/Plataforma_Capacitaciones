@@ -18,6 +18,14 @@ export const configService = {
     return res.data;
   },
 
+  async testEmail(recipient: string): Promise<{ ok: boolean; message: string; config: Record<string, unknown> }> {
+    const res = await api.post<{ ok: boolean; message: string; config: Record<string, unknown> }>(
+      "/v1/config/test-email/",
+      { recipient },
+    );
+    return res.data;
+  },
+
   // ---------------------------------------------------------------------------
   // Area catalog
   // ---------------------------------------------------------------------------

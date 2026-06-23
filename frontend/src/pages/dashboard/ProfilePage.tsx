@@ -1,365 +1,438 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useAuthStore } from "../../store/authStore";
 import { authService } from "../../services/authService";
 import api from "../../services/api";
-import type { MeResponse } from "../../types/auth";
 
-interface ProfileForm {
-  first_name: string;
-  last_name: string;
-  cargo: string;
-}
+// ── Shared styles ─────────────────────────────────────────────────────────────
+const INPUT =
+  "w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground " +
+  "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-colors";
+const LABEL = "block text-xs font-medium text-muted-foreground mb-1";
 
-interface PasswordForm {
-  current_password: string;
-  new_password: string;
-  confirm_password: string;
-}
-
-function FieldRow({ label, value }: { label: string; value: string }) {
+// ── Section wrapper ───────────────────────────────────────────────────────────
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="flex justify-between py-2 border-b border-border">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value || "—"}</span>
+    <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+      <div>
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+      </div>
+      {children}
     </div>
   );
 }
 
-type RubricaStatus = "idle" | "uploading" | "done" | "already_set" | "error";
+// ── Read-only field row ───────────────────────────────────────────────────────
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center py-2.5 border-b border-border last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium text-foreground text-right">{value || "—"}</span>
+    </div>
+  );
+}
 
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: "Administrador",
+  TRAINER: "Capacitador",
+  USUARIO: "Usuario",
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const { user, restoreSession } = useAuthStore();
 
+  // ── Profile edit ────────────────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
-  const [profileForm, setProfileForm] = useState<ProfileForm>({
-    first_name: user?.full_name?.split(" ")[0] ?? "",
-    last_name: user?.full_name?.split(" ").slice(1).join(" ") ?? "",
-    cargo: "",
-  });
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [pwForm, setPwForm] = useState<PasswordForm>({
-    current_password: "",
-    new_password: "",
-    confirm_password: "",
-  });
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwSuccess, setPwSuccess] = useState(false);
-  const [pwErrors, setPwErrors] = useState<Record<string, string>>({});
-
-  const [rubricaStatus, setRubricaStatus] = useState<RubricaStatus>("idle");
-  const [rubricaError, setRubricaError] = useState<string | null>(null);
-  const [rubricaPreview, setRubricaPreview] = useState<string | null>(null);
-  const rubricaInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.first_name ?? user.full_name?.split(" ")[0] ?? "");
+      setLastName(user.last_name ?? user.full_name?.split(" ").slice(1).join(" ") ?? "");
+      setCargo(user.cargo ?? "");
+    }
+  }, [user]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
-    setProfileSaving(true);
-    setProfileError(null);
-    setProfileSuccess(false);
+    setSaving(true);
     try {
-      await api.patch<MeResponse>("/v1/auth/me/", {
-        first_name: profileForm.first_name,
-        last_name: profileForm.last_name,
-        cargo: profileForm.cargo,
-      });
+      await api.patch("/v1/auth/me/", { first_name: firstName, last_name: lastName, cargo });
       await restoreSession();
-      setProfileSuccess(true);
       setEditMode(false);
+      toast.success("Perfil actualizado correctamente.");
     } catch {
-      setProfileError("No se pudo guardar el perfil. Inténtalo de nuevo.");
+      toast.error("No se pudo guardar el perfil.");
     } finally {
-      setProfileSaving(false);
+      setSaving(false);
     }
   }
 
-  async function handlePasswordSave(e: React.FormEvent) {
-    e.preventDefault();
-    const errors: Record<string, string> = {};
-    if (!pwForm.current_password) errors.current_password = "Requerido";
-    if (pwForm.new_password.length < 8) errors.new_password = "Mínimo 8 caracteres";
-    if (pwForm.new_password !== pwForm.confirm_password)
-      errors.confirm_password = "Las contraseñas no coinciden";
-    if (Object.keys(errors).length) {
-      setPwErrors(errors);
+  // ── Rubrica ─────────────────────────────────────────────────────────────────
+  const [rubricaUrl, setRubricaUrl] = useState<string | null>(user?.rubrica_url ?? null);
+  const [rubricaPreview, setRubricaPreview] = useState<string | null>(null);
+  const [uploadMode, setUploadMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const rubricaRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setRubricaUrl(user?.rubrica_url ?? null);
+  }, [user?.rubrica_url]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      toast.error("Solo se permiten imágenes PNG, JPG o WebP.");
       return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen no puede superar 5 MB.");
+      return;
+    }
+    setRubricaPreview(URL.createObjectURL(file));
+  }
+
+  async function handleRubricaUpload(e: React.FormEvent) {
+    e.preventDefault();
+    const file = rubricaRef.current?.files?.[0];
+    if (!file) { toast.error("Selecciona una imagen primero."); return; }
+    setUploading(true);
+    const form = new FormData();
+    form.append("rubrica", file);
+    try {
+      const res = await api.post<{ rubrica_url: string }>("/v1/users/me/rubrica/", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setRubricaUrl(res.data.rubrica_url);
+      setRubricaPreview(null);
+      setUploadMode(false);
+      await restoreSession();
+      toast.success(rubricaUrl ? "Rúbrica reemplazada correctamente." : "Rúbrica guardada correctamente.");
+    } catch {
+      toast.error("No se pudo subir la rúbrica.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleGenerate() {
+    setGenerating(true);
+    try {
+      const res = await api.post<{ rubrica_url: string }>("/v1/users/me/rubrica/generate/");
+      setRubricaUrl(res.data.rubrica_url);
+      await restoreSession();
+      toast.success("Rúbrica generada automáticamente.");
+    } catch {
+      toast.error("No se pudo generar la rúbrica.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ── Password ─────────────────────────────────────────────────────────────────
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwErrors, setPwErrors] = useState<Record<string, string>>({});
+
+  async function handlePasswordSave(e: React.FormEvent) {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!pwCurrent) errs.current = "Requerido";
+    if (pwNew.length < 8) errs.new = "Mínimo 8 caracteres";
+    if (pwNew !== pwConfirm) errs.confirm = "Las contraseñas no coinciden";
+    if (Object.keys(errs).length) { setPwErrors(errs); return; }
     setPwSaving(true);
     setPwErrors({});
-    setPwSuccess(false);
     try {
-      await authService.changePassword({
-        current_password: pwForm.current_password,
-        new_password: pwForm.new_password,
-      });
-      setPwSuccess(true);
-      setPwForm({ current_password: "", new_password: "", confirm_password: "" });
+      await authService.changePassword({ current_password: pwCurrent, new_password: pwNew });
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
+      toast.success("Contraseña cambiada correctamente.");
     } catch (err: unknown) {
       const apiErr = (err as { response?: { data?: { errors?: Record<string, string[]> } } })
         ?.response?.data?.errors;
       if (apiErr?.current_password) {
-        setPwErrors({ current_password: apiErr.current_password[0] });
+        setPwErrors({ current: apiErr.current_password[0] });
       } else {
-        setPwErrors({ general: "No se pudo cambiar la contraseña." });
+        toast.error("No se pudo cambiar la contraseña.");
       }
     } finally {
       setPwSaving(false);
     }
   }
 
-  function handleRubricaFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const allowed = ["image/png", "image/jpeg", "image/webp"];
-    if (!allowed.includes(file.type)) {
-      setRubricaError("Solo se permiten imágenes PNG, JPG o WebP.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setRubricaError("La imagen no puede superar 5 MB.");
-      return;
-    }
-    setRubricaError(null);
-    setRubricaPreview(URL.createObjectURL(file));
-  }
-
-  async function handleRubricaUpload(e: React.FormEvent) {
-    e.preventDefault();
-    const file = rubricaInputRef.current?.files?.[0];
-    if (!file) {
-      setRubricaError("Selecciona una imagen primero.");
-      return;
-    }
-    setRubricaStatus("uploading");
-    setRubricaError(null);
-    const formData = new FormData();
-    formData.append("rubrica", file);
-    try {
-      await api.post("/v1/users/me/rubrica/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setRubricaStatus("done");
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 400) {
-        setRubricaStatus("already_set");
-      } else {
-        setRubricaStatus("error");
-        setRubricaError("No se pudo subir la rúbrica. Inténtalo de nuevo.");
-      }
-    }
-  }
-
-  const roleLabel: Record<string, string> = {
-    ADMIN: "Administrador",
-    TRAINER: "Capacitador",
-    USUARIO: "Usuario",
-  };
-
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-      {/* Profile info */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Mi perfil</h2>
-          {!editMode && (
+    <div className="max-w-xl space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Mi perfil</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Información personal y configuración de cuenta</p>
+      </div>
+
+      {/* ── Info / edit ───────────────────────────────────────────────────── */}
+      <Section
+        title="Información personal"
+        subtitle="Nombre, cargo y datos de la cuenta"
+      >
+        {!editMode ? (
+          <>
+            <div>
+              <InfoRow label="Nombre completo" value={user?.full_name ?? ""} />
+              <InfoRow label="Correo electrónico" value={user?.email ?? ""} />
+              <InfoRow label="Rol" value={ROLE_LABEL[user?.role ?? ""] ?? ""} />
+              <InfoRow label="Área" value={user?.area ?? ""} />
+              <InfoRow label="Cargo" value={user?.cargo ?? ""} />
+              {user?.grupo && <InfoRow label="Grupo" value={user.grupo.name} />}
+            </div>
             <button
               type="button"
               onClick={() => setEditMode(true)}
-              className="text-sm text-indigo-600 hover:underline"
+              className="flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
             >
-              Editar
+              <i className="ti ti-edit text-base" aria-hidden="true" />
+              Editar nombre y cargo
             </button>
-          )}
-        </div>
-
-        {!editMode ? (
-          <div className="space-y-1">
-            <FieldRow label="Nombre completo" value={user?.full_name ?? ""} />
-            <FieldRow label="Correo electrónico" value={user?.email ?? ""} />
-            <FieldRow label="Rol" value={roleLabel[user?.role ?? ""] ?? ""} />
-            {profileSuccess && (
-              <p className="text-xs text-emerald-500 pt-1">Perfil actualizado correctamente.</p>
-            )}
-          </div>
+          </>
         ) : (
           <form onSubmit={(e) => void handleProfileSave(e)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Nombre</label>
+                <label className={LABEL}>Nombre</label>
                 <input
                   type="text"
-                  value={profileForm.first_name}
-                  onChange={(e) =>
-                    setProfileForm((f) => ({ ...f, first_name: e.target.value }))
-                  }
-                  className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={INPUT}
+                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Apellidos</label>
+                <label className={LABEL}>Apellidos</label>
                 <input
                   type="text"
-                  value={profileForm.last_name}
-                  onChange={(e) =>
-                    setProfileForm((f) => ({ ...f, last_name: e.target.value }))
-                  }
-                  className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={INPUT}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Cargo</label>
+              <label className={LABEL}>Cargo</label>
               <input
                 type="text"
-                value={profileForm.cargo}
-                onChange={(e) =>
-                  setProfileForm((f) => ({ ...f, cargo: e.target.value }))
-                }
-                className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
+                placeholder="Ej. Analista de Riesgos"
+                className={INPUT}
               />
             </div>
-            {profileError && <p className="text-xs text-red-500">{profileError}</p>}
-            <div className="flex gap-3">
+            <p className="text-xs text-muted-foreground/60">
+              El correo, rol y área son gestionados por el administrador.
+            </p>
+            <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={profileSaving}
-                className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
+                disabled={saving}
+                className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
               >
-                {profileSaving ? "Guardando…" : "Guardar cambios"}
+                {saving ? (
+                  <><div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Guardando…</>
+                ) : (
+                  <><i className="ti ti-device-floppy text-sm" aria-hidden="true" />Guardar cambios</>
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => setEditMode(false)}
-                className="flex-1 border border-border text-foreground text-sm py-2 rounded-lg hover:bg-background"
+                onClick={() => { setEditMode(false); if (user) { setFirstName(user.first_name ?? ""); setLastName(user.last_name ?? ""); setCargo(user.cargo ?? ""); } }}
+                className="px-4 py-2 border border-border text-muted-foreground text-sm rounded-lg hover:bg-background transition-colors"
               >
                 Cancelar
               </button>
             </div>
           </form>
         )}
-      </div>
+      </Section>
 
-      {/* Rubrica upload — TRAINER only */}
+      {/* ── Rubrica — TRAINER only ────────────────────────────────────────── */}
       {user?.role === "TRAINER" && (
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Mi rúbrica (firma)</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              La rúbrica aparecerá en los certificados de los cursos que impartas.
-              Una vez subida no puede modificarse.
-            </p>
-          </div>
-
-          {rubricaStatus === "done" || rubricaStatus === "already_set" ? (
-            <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-              <i className="ti ti-circle-check text-emerald-400 text-xl" aria-hidden="true" />
-              <p className="text-sm text-emerald-400">
-                {rubricaStatus === "done"
-                  ? "Rúbrica subida correctamente. Ya no se puede reemplazar."
-                  : "Ya tienes una rúbrica registrada. Solo puede subirse una vez."}
-              </p>
+        <Section
+          title="Rúbrica (firma)"
+          subtitle="Aparece en los certificados de los cursos que impartas"
+        >
+          {/* Current rubrica preview */}
+          {rubricaUrl && !uploadMode && (
+            <div className="flex flex-col items-center gap-3 p-4 bg-background border border-border rounded-xl">
+              <img
+                src={rubricaUrl}
+                alt="Rúbrica actual"
+                className="max-h-24 max-w-full object-contain"
+              />
+              <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+                <i className="ti ti-circle-check" aria-hidden="true" />
+                Rúbrica registrada
+              </div>
             </div>
-          ) : (
-            <form onSubmit={(e) => void handleRubricaUpload(e)} className="space-y-4">
+          )}
+
+          {/* No rubrica yet */}
+          {!rubricaUrl && !uploadMode && (
+            <div className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-border rounded-xl text-center">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <i className="ti ti-writing text-amber-400 text-xl" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Sin rúbrica registrada</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Sube tu propia imagen o genera una automáticamente
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons when not in upload mode */}
+          {!uploadMode && (
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setUploadMode(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <i className="ti ti-upload text-sm" aria-hidden="true" />
+                {rubricaUrl ? "Reemplazar rúbrica" : "Subir rúbrica"}
+              </button>
+
+              {/* Generate button — only active when no rubrica exists */}
+              <button
+                type="button"
+                disabled={generating}
+                onClick={() => {
+                  if (rubricaUrl) {
+                    toast.info("Ya tienes una rúbrica registrada. Usa 'Reemplazar rúbrica' para cambiarla.", { duration: 4000 });
+                    return;
+                  }
+                  void handleGenerate();
+                }}
+                className={`flex items-center gap-1.5 px-4 py-2 border text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                  rubricaUrl
+                    ? "border-border/40 text-muted-foreground/40 cursor-not-allowed"
+                    : "border-border text-muted-foreground hover:bg-background cursor-pointer"
+                }`}
+              >
+                {generating ? (
+                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+                ) : (
+                  <i className="ti ti-wand text-sm" aria-hidden="true" />
+                )}
+                Generar automáticamente
+              </button>
+            </div>
+          )}
+
+          {/* Upload form */}
+          {uploadMode && (
+            <form onSubmit={(e) => void handleRubricaUpload(e)} className="space-y-3">
               <div
-                className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-indigo-300 transition-colors"
-                onClick={() => rubricaInputRef.current?.click()}
-                style={{ cursor: "pointer" }}
+                className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-indigo-500/50 transition-colors"
+                onClick={() => rubricaRef.current?.click()}
               >
                 {rubricaPreview ? (
-                  <img
-                    src={rubricaPreview}
-                    alt="Vista previa de rúbrica"
-                    className="max-h-24 max-w-full object-contain"
-                  />
+                  <img src={rubricaPreview} alt="Vista previa" className="max-h-20 max-w-full object-contain" />
                 ) : (
                   <>
-                    <i className="ti ti-upload text-3xl text-muted-foreground" aria-hidden="true" />
-                    <p className="text-sm text-muted-foreground">
-                      Haz clic para seleccionar una imagen
-                    </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG o WebP — máx. 5 MB</p>
+                    <i className="ti ti-photo-up text-3xl text-muted-foreground/50" aria-hidden="true" />
+                    <p className="text-sm text-muted-foreground">Clic para seleccionar imagen</p>
+                    <p className="text-xs text-muted-foreground/60">PNG, JPG o WebP — máx. 5 MB</p>
                   </>
                 )}
               </div>
               <input
-                ref={rubricaInputRef}
+                ref={rubricaRef}
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 className="hidden"
-                onChange={handleRubricaFileChange}
+                onChange={handleFileChange}
               />
-              {rubricaError && (
-                <p className="text-xs text-red-500">{rubricaError}</p>
-              )}
-              <button
-                type="submit"
-                disabled={rubricaStatus === "uploading" || !rubricaPreview}
-                className="w-full bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                {rubricaStatus === "uploading" ? (
-                  <>
-                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Subiendo…
-                  </>
-                ) : (
-                  <>
-                    <i className="ti ti-upload text-sm" aria-hidden="true" />
-                    Subir rúbrica
-                  </>
-                )}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={uploading || !rubricaPreview}
+                  className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                >
+                  {uploading ? (
+                    <><div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Subiendo…</>
+                  ) : (
+                    <><i className="ti ti-upload text-sm" aria-hidden="true" />Subir rúbrica</>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUploadMode(false); setRubricaPreview(null); }}
+                  className="px-4 py-2 border border-border text-muted-foreground text-sm rounded-lg hover:bg-background transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
             </form>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Change password */}
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-        <h2 className="text-base font-semibold text-foreground">Cambiar contraseña</h2>
-        <form onSubmit={(e) => void handlePasswordSave(e)} className="space-y-4">
-          {(["current_password", "new_password", "confirm_password"] as const).map((field) => {
-            const labels: Record<string, string> = {
-              current_password: "Contraseña actual",
-              new_password: "Nueva contraseña",
-              confirm_password: "Confirmar nueva contraseña",
-            };
-            return (
-              <div key={field}>
-                <label className="block text-xs text-muted-foreground mb-1">{labels[field]}</label>
-                <input
-                  type="password"
-                  value={pwForm[field]}
-                  onChange={(e) =>
-                    setPwForm((f) => ({ ...f, [field]: e.target.value }))
-                  }
-                  autoComplete={field === "current_password" ? "current-password" : "new-password"}
-                  className="w-full border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
-                />
-                {pwErrors[field] && (
-                  <p className="text-xs text-red-500 mt-1">{pwErrors[field]}</p>
-                )}
-              </div>
-            );
-          })}
-          {pwErrors.general && (
-            <p className="text-xs text-red-500">{pwErrors.general}</p>
-          )}
-          {pwSuccess && (
-            <p className="text-xs text-emerald-500">Contraseña cambiada correctamente.</p>
-          )}
+      {/* ── Change password ───────────────────────────────────────────────── */}
+      <Section title="Cambiar contraseña">
+        <form onSubmit={(e) => void handlePasswordSave(e)} className="space-y-3">
+          <div>
+            <label className={LABEL}>Contraseña actual</label>
+            <input
+              type="password"
+              value={pwCurrent}
+              onChange={(e) => setPwCurrent(e.target.value)}
+              autoComplete="current-password"
+              className={INPUT}
+            />
+            {pwErrors.current && <p className="text-xs text-red-400 mt-1">{pwErrors.current}</p>}
+          </div>
+          <div>
+            <label className={LABEL}>Nueva contraseña</label>
+            <input
+              type="password"
+              value={pwNew}
+              onChange={(e) => setPwNew(e.target.value)}
+              autoComplete="new-password"
+              className={INPUT}
+            />
+            {pwErrors.new && <p className="text-xs text-red-400 mt-1">{pwErrors.new}</p>}
+          </div>
+          <div>
+            <label className={LABEL}>Confirmar nueva contraseña</label>
+            <input
+              type="password"
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              autoComplete="new-password"
+              className={INPUT}
+            />
+            {pwErrors.confirm && <p className="text-xs text-red-400 mt-1">{pwErrors.confirm}</p>}
+          </div>
           <button
             type="submit"
             disabled={pwSaving}
-            className="w-full bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
+            className="w-full bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
           >
-            {pwSaving ? "Guardando…" : "Cambiar contraseña"}
+            {pwSaving ? (
+              <><div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Guardando…</>
+            ) : (
+              <><i className="ti ti-lock text-sm" aria-hidden="true" />Cambiar contraseña</>
+            )}
           </button>
         </form>
-      </div>
+      </Section>
     </div>
   );
 }

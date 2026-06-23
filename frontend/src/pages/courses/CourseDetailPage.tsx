@@ -1,8 +1,3 @@
-/**
- * P11 — Course Detail
- * Shows course info, module list with lock/completion state, enrollment progress,
- * and a "Comenzar/Continuar" CTA. Module players will be wired in T19.
- */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -10,6 +5,7 @@ import { toast } from "sonner";
 import { coursesService } from "../../services/coursesService";
 import { UrgencyBadge } from "../../components/shared/UrgencyBadge";
 import { useAuthStore } from "../../store/authStore";
+import { useTrainerModeStore } from "../../store/trainerModeStore";
 import type { Course, CourseModuleWithStatus } from "../../types/course";
 
 const TIPO_LABEL: Record<string, string> = {
@@ -20,43 +16,115 @@ const TIPO_LABEL: Record<string, string> = {
 };
 
 const MODULE_TIPO_ICON: Record<string, string> = {
-  VIDEO: "▶",
-  PDF: "📄",
-  TEXTO: "📝",
-  SCORM: "🎮",
+  VIDEO: "ti-brand-youtube",
+  PDF: "ti-file-type-pdf",
+  TEXTO: "ti-file-text",
+  SCORM: "ti-device-gamepad-2",
 };
 
-function ModuleRow({ mod, index }: { mod: CourseModuleWithStatus; index: number }) {
-  const locked = !mod.is_unlocked;
+function ExamRow({
+  courseId,
+  locked,
+}: {
+  courseId: number;
+  locked: boolean;
+}) {
+  const navigate = useNavigate();
+
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 border-b border-border last:border-0 ${
-        locked ? "opacity-50 cursor-not-allowed" : "hover:bg-background cursor-pointer"
+      onClick={() => !locked && navigate(`/courses/${courseId}/exam`)}
+      className={`flex items-center gap-3 px-5 py-3.5 border-t border-border transition-colors ${
+        locked
+          ? "opacity-40 cursor-not-allowed"
+          : "hover:bg-muted/20 cursor-pointer active:bg-muted/30"
       }`}
     >
-      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-muted/40 text-muted-foreground shrink-0">
+      <div
+        className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs ${
+          locked ? "bg-muted/40 text-muted-foreground" : "bg-indigo-500/20 text-indigo-400"
+        }`}
+      >
+        <i className="ti ti-rosette text-sm" />
+      </div>
+
+      <i className="ti ti-clipboard-check text-base text-muted-foreground shrink-0" />
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground">Evaluación final</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {locked ? "Completa todos los módulos para desbloquear" : "Lista para comenzar"}
+        </p>
+      </div>
+
+      {locked ? (
+        <i className="ti ti-lock text-muted-foreground/50 text-sm shrink-0" />
+      ) : (
+        <span className="text-xs text-indigo-400 font-medium flex items-center gap-1 shrink-0">
+          Iniciar <i className="ti ti-arrow-right text-xs" />
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ModuleRow({
+  mod,
+  index,
+  onNavigate,
+}: {
+  mod: CourseModuleWithStatus;
+  index: number;
+  onNavigate: (id: number) => void;
+}) {
+  const locked = !mod.is_unlocked;
+
+  return (
+    <div
+      onClick={() => !locked && onNavigate(mod.id)}
+      className={`flex items-center gap-3 px-5 py-3.5 border-b border-border last:border-0 transition-colors ${
+        locked
+          ? "opacity-40 cursor-not-allowed"
+          : "hover:bg-muted/20 cursor-pointer active:bg-muted/30"
+      }`}
+    >
+      {/* Status circle */}
+      <div
+        className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-semibold ${
+          mod.is_completed
+            ? "bg-emerald-500/20 text-emerald-400"
+            : "bg-muted/40 text-muted-foreground"
+        }`}
+      >
         {mod.is_completed ? (
-          <span className="text-emerald-500 text-base">✓</span>
+          <i className="ti ti-check text-sm" />
         ) : (
           <span>{index + 1}</span>
         )}
       </div>
 
-      <span className="text-base">{MODULE_TIPO_ICON[mod.tipo_contenido] ?? "📋"}</span>
+      {/* Content type icon */}
+      <i
+        className={`ti ${MODULE_TIPO_ICON[mod.tipo_contenido] ?? "ti-file"} text-base text-muted-foreground shrink-0`}
+      />
 
+      {/* Title + duration */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{mod.titulo}</p>
         {mod.duracion_minutos && (
-          <p className="text-xs text-muted-foreground">{mod.duracion_minutos} min</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{mod.duracion_minutos} min</p>
         )}
       </div>
 
+      {/* Right status */}
       {locked ? (
-        <span className="text-muted-foreground text-sm">🔒</span>
+        <i className="ti ti-lock text-muted-foreground/50 text-sm shrink-0" />
       ) : mod.is_completed ? (
-        <span className="text-xs text-emerald-500 font-medium">Completado</span>
+        <span className="text-xs text-emerald-500 font-medium shrink-0">Completado</span>
       ) : (
-        <span className="text-xs text-indigo-500 font-medium">Iniciar →</span>
+        <span className="text-xs text-indigo-400 font-medium flex items-center gap-1 shrink-0">
+          Iniciar <i className="ti ti-arrow-right text-xs" />
+        </span>
       )}
     </div>
   );
@@ -66,6 +134,7 @@ export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const trainerMode = useTrainerModeStore((s) => s.mode);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -96,106 +165,171 @@ export default function CourseDetailPage() {
   const progreso = enrollment?.progreso_porcentaje ?? 0;
   const isAdmin = user?.role === "ADMIN";
   const isTrainer = user?.role === "TRAINER";
+  const canEdit = isAdmin || (isTrainer && trainerMode === "INSTRUCTOR");
 
-  // First module that is unlocked and not completed
-  const nextModule = course.modules_with_status.find((m) => m.is_unlocked && !m.is_completed);
-  const ctaLabel = progreso === 0 ? "Comenzar curso" : progreso === 100 ? "Revisar curso" : "Continuar";
+  const modules = course.modules_with_status;
+  const totalModules = modules.length;
+  const completedCount = modules.filter((m) => m.is_completed).length;
+
+  // Next module to continue, or first for "revisar"
+  const nextModule = modules.find((m) => m.is_unlocked && !m.is_completed);
+  const firstModule = modules[0];
+  const ctaTarget = nextModule ?? firstModule;
+
+  const ctaLabel =
+    progreso === 0 ? "Comenzar curso" : progreso === 100 ? "Revisar curso" : "Continuar";
+  const ctaDisabled = !enrollment || totalModules === 0 || !ctaTarget;
+
+  function handleCta() {
+    if (!course || !ctaTarget) return;
+    navigate(`/courses/${course.id}/modules/${ctaTarget.id}`);
+  }
+
+  function handleModuleNavigate(moduleId: number) {
+    if (!course) return;
+    navigate(`/courses/${course.id}/modules/${moduleId}`);
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* Back */}
-      <Link to="/courses" className="text-sm text-indigo-600 hover:underline mb-4 inline-block">
-        ← Mis cursos
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Back link */}
+      <Link
+        to="/courses"
+        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+      >
+        <i className="ti ti-arrow-left text-xs" />
+        Mis cursos
       </Link>
 
-      {/* Header */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
-        <div className="bg-gradient-to-br from-indigo-500/10 to-indigo-500/20 px-6 py-10 text-center">
-          <h1 className="text-2xl font-bold text-foreground">{course.titulo}</h1>
-          {course.descripcion && (
-            <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">{course.descripcion}</p>
-          )}
-        </div>
-
-        {/* Meta */}
-        <div className="px-6 py-4 flex flex-wrap gap-3 items-center border-b border-border">
-          {course.area_nombre && (
-            <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full">
-              {course.area_nombre}
+      {/* ── Hero card ── */}
+      <div className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm">
+        {/* Banner */}
+        <div
+          className="px-8 pt-7 pb-6"
+          style={{
+            background:
+              "linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #4c46b0 100%)",
+          }}
+        >
+          {/* Tags row */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {course.area_nombre && (
+              <span className="text-xs bg-white/10 text-white/80 px-2.5 py-0.5 rounded-full">
+                {course.area_nombre}
+              </span>
+            )}
+            <span className="text-xs bg-white/10 text-white/80 px-2.5 py-0.5 rounded-full">
+              {TIPO_LABEL[course.tipo] ?? course.tipo}
             </span>
+            {course.duracion_horas && (
+              <span className="text-xs bg-white/10 text-white/80 px-2.5 py-0.5 rounded-full">
+                <i className="ti ti-clock mr-1" />
+                {course.duracion_horas}h
+              </span>
+            )}
+            <UrgencyBadge fechaLimite={course.fecha_limite} />
+          </div>
+
+          <h1 className="text-2xl font-bold text-white leading-snug">{course.titulo}</h1>
+
+          {course.descripcion && (
+            <p className="mt-2 text-sm text-white/65 max-w-lg leading-relaxed">
+              {course.descripcion}
+            </p>
           )}
-          <span className="text-xs bg-muted/40 text-muted-foreground px-2 py-0.5 rounded-full">
-            {TIPO_LABEL[course.tipo] ?? course.tipo}
-          </span>
-          {course.duracion_horas && (
-            <span className="text-xs text-muted-foreground">{course.duracion_horas}h estimadas</span>
-          )}
-          <UrgencyBadge fechaLimite={course.fecha_limite} />
+
           {course.instructor_nombre && (
-            <span className="text-xs text-muted-foreground">Instructor: {course.instructor_nombre}</span>
+            <p className="mt-3 text-xs text-white/45 flex items-center gap-1.5">
+              <i className="ti ti-user-circle" />
+              Instructor: {course.instructor_nombre}
+            </p>
           )}
         </div>
 
-        {/* Enrollment progress */}
+        {/* Progress bar */}
         {enrollment && (
-          <div className="px-6 py-4 border-b border-border">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-              <span>Progreso del curso</span>
-              <span className="font-medium">{progreso}%</span>
+          <div className="px-8 py-4 border-b border-border">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-xs text-muted-foreground">
+                {completedCount}/{totalModules} módulos completados
+              </span>
+              <span
+                className={`text-xs font-semibold ${
+                  progreso === 100 ? "text-emerald-400" : "text-indigo-400"
+                }`}
+              >
+                {progreso}%
+              </span>
             </div>
             <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
               <div
-                className="h-full bg-indigo-500 rounded-full transition-all"
+                className={`h-full rounded-full transition-all duration-700 ${
+                  progreso === 100 ? "bg-emerald-500" : "bg-indigo-500"
+                }`}
                 style={{ width: `${progreso}%` }}
               />
             </div>
           </div>
         )}
 
-        {/* CTA */}
-        <div className="px-6 py-4 flex items-center gap-3">
+        {/* CTA row */}
+        <div className="px-8 py-4 flex items-center gap-3">
           {enrollment && (
             <button
-              onClick={() => {
-                if (nextModule) {
-                  // T19 will implement the player route
-                  navigate(`/courses/${course.id}/modules/${nextModule.id}`);
-                }
-              }}
-              disabled={!nextModule && progreso < 100}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 px-4 rounded-lg shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
+              onClick={handleCta}
+              disabled={ctaDisabled}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg ${
+                progreso === 100
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20"
+              }`}
             >
+              <i
+                className={`ti ${progreso === 100 ? "ti-eye" : "ti-player-play"} text-sm`}
+              />
               {ctaLabel}
             </button>
           )}
-          {(isAdmin || isTrainer) && (
+          {canEdit && (
             <Link
               to={`/admin/courses/${course.id}/edit`}
-              className="text-sm text-indigo-600 hover:underline px-2"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-2.5 rounded-xl hover:bg-muted/30 transition-colors"
             >
+              <i className="ti ti-pencil text-sm" />
               Editar curso
             </Link>
           )}
         </div>
       </div>
 
-      {/* Module list */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground">
-            Contenido del curso ({course.modules_with_status.length} módulo
-            {course.modules_with_status.length !== 1 ? "s" : ""})
-          </h2>
+      {/* ── Module list ── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-foreground">Contenido del curso</h2>
+          <span className="text-xs text-muted-foreground">
+            {totalModules} módulo{totalModules !== 1 ? "s" : ""}
+            {course.has_assessment && " · 1 evaluación"}
+          </span>
         </div>
 
-        {course.modules_with_status.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Este curso no tiene módulos aún.
+        {totalModules === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <i className="ti ti-inbox text-3xl text-muted-foreground/40 block mb-2" />
+            <p className="text-sm text-muted-foreground">Este curso aún no tiene módulos.</p>
           </div>
         ) : (
-          course.modules_with_status.map((mod, i) => (
-            <ModuleRow key={mod.id} mod={mod} index={i} />
+          modules.map((mod, i) => (
+            <ModuleRow
+              key={mod.id}
+              mod={mod}
+              index={i}
+              onNavigate={handleModuleNavigate}
+            />
           ))
+        )}
+
+        {course.has_assessment && enrollment && (
+          <ExamRow courseId={course.id} locked={completedCount < totalModules} />
         )}
       </div>
     </div>

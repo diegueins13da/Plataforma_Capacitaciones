@@ -381,7 +381,7 @@ export default function AIGeneratorPage() {
   const approvedQuestions = questions.filter((q) => q.status === "approved").length;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-10">
+    <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Generador IA</h1>
         <p className="text-sm text-muted-foreground mt-1">

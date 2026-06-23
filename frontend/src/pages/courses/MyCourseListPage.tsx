@@ -10,6 +10,8 @@ import { differenceInDays, parseISO } from "date-fns";
 
 import { coursesService } from "../../services/coursesService";
 import { UrgencyBadge } from "../../components/shared/UrgencyBadge";
+import { useAuthStore } from "../../store/authStore";
+import { useTrainerModeStore } from "../../store/trainerModeStore";
 import type { CourseListItem } from "../../types/course";
 
 type Tab = "EN_PROGRESO" | "COMPLETADO" | "VENCIDO";
@@ -31,14 +33,19 @@ export default function MyCourseListPage() {
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("EN_PROGRESO");
+  const { user } = useAuthStore();
+  const trainerMode = useTrainerModeStore((s) => s.mode);
 
   useEffect(() => {
+    setLoading(true);
+    // Trainers in Alumno mode must see their enrolled courses, not their created ones
+    const asStudent = user?.role === "TRAINER" && trainerMode === "ALUMNO";
     coursesService
-      .getCourses({ estado: "PUBLICADO" })
+      .getCourses({ estado: "PUBLICADO", as_student: asStudent || undefined })
       .then((res) => setCourses(res.results))
       .catch(() => toast.error("No se pudieron cargar tus cursos."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user, trainerMode]);
 
   const byTab: Record<Tab, CourseListItem[]> = {
     EN_PROGRESO: courses
@@ -57,7 +64,7 @@ export default function MyCourseListPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Mi aprendizaje</h1>
         <p className="text-sm text-muted-foreground mt-1">Seguimiento de tus cursos</p>

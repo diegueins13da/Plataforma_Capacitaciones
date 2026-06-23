@@ -53,7 +53,7 @@ export function NotificationDropdown() {
       return `/courses/${n.referencia_id}`;
     }
     if (n.referencia_tipo === "enrollment" && n.referencia_id) {
-      return `/my-courses`;
+      return `/courses`;
     }
     return "/notifications";
   }

@@ -14,6 +14,13 @@ class UserEnrollmentSerializer(serializers.Serializer):
 
 
 class ModuleSerializer(serializers.ModelSerializer):
+    archivo_pdf = serializers.SerializerMethodField()
+
+    def get_archivo_pdf(self, obj: "Module") -> str:
+        if not obj.archivo_pdf:
+            return ""
+        return f"/media/{obj.archivo_pdf}"
+
     class Meta:
         model = Module
         fields = [
@@ -60,6 +67,7 @@ class CourseListSerializer(serializers.ModelSerializer):
     area_nombre = serializers.SerializerMethodField()
     module_count = serializers.SerializerMethodField()
     enrollment = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -77,6 +85,7 @@ class CourseListSerializer(serializers.ModelSerializer):
             "instructor_nombre",
             "module_count",
             "enrollment",
+            "can_edit",
             "created_at",
             "updated_at",
         ]
@@ -101,17 +110,36 @@ class CourseListSerializer(serializers.ModelSerializer):
             return None
         return UserEnrollmentSerializer(enrollment).data
 
+    def get_can_edit(self, obj: Course) -> bool:
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        user = request.user
+        if user.role == "ADMIN":
+            return True
+        if user.role == "TRAINER" and obj.instructor_id == user.pk:
+            return True
+        return False
+
 
 class CourseDetailSerializer(CourseListSerializer):
     modules_with_status = serializers.SerializerMethodField()
     audiencia_grupos = serializers.SerializerMethodField()
+    has_assessment = serializers.SerializerMethodField()
 
     class Meta(CourseListSerializer.Meta):
         fields = CourseListSerializer.Meta.fields + [
             "modules_with_status",
             "audiencia_grupos",
             "cert_expira_meses",
+            "has_assessment",
         ]
+
+    def get_has_assessment(self, obj: Course) -> bool:
+        try:
+            return obj.assessment.questions.filter(aprobada_por_humano=True).exists()
+        except Exception:
+            return False
 
     def get_audiencia_grupos(self, obj: Course) -> list[dict]:
         return [{"id": g.id, "nombre": g.nombre} for g in obj.audiencia_grupos.all()]
