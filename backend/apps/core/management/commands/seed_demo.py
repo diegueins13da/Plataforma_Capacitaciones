@@ -831,7 +831,7 @@ Recursos Humanos y Finanzas, todas reportando a la Dirección General.</p>
 
         matrix = [
             # (user, course_key, estado, modulos_completados, nota_examen)
-            (admin,  "iso27001",   "COMPLETADO",  4, Decimal("87.50")),
+            *( [(admin, "iso27001", "COMPLETADO", 4, Decimal("87.50"))] if admin else [] ),
             (ana,    "iso27001",   "COMPLETADO",  4, Decimal("100.0")),
             (ana,    "prevencion", "EN_PROGRESO",  2, None),
             (pedro,  "iso27001",   "EN_PROGRESO",  3, None),
