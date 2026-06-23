@@ -67,6 +67,32 @@ class Group(models.Model):
         return self.nombre
 
 
+class Cargo(models.Model):
+    """Catalog of job positions per area."""
+
+    nombre = models.CharField(max_length=100, verbose_name="cargo")
+    area = models.ForeignKey(
+        Area,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="cargos",
+        verbose_name="área",
+    )
+    activo = models.BooleanField(default=True, verbose_name="activo")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
+
+    class Meta:
+        db_table = "cargos"
+        unique_together = [("nombre", "area")]
+        verbose_name = "cargo"
+        verbose_name_plural = "cargos"
+        ordering = ["nombre"]
+
+    def __str__(self) -> str:
+        return f"{self.nombre} ({self.area})" if self.area else self.nombre
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(
         User,

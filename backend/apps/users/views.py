@@ -12,11 +12,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import services
-from .models import Area, Group, User, UserProfile
+from .models import Area, Cargo, Group, User, UserProfile
 from .permissions import IsAdmin
 from .serializers import (
     AddMembersSerializer,
     AreaSerializer,
+    CargoSerializer,
     BulkImportConfirmRequestSerializer,
     BulkImportPreviewResponseSerializer,
     BulkImportCommitResponseSerializer,
@@ -48,6 +49,37 @@ class AreaViewSet(viewsets.ModelViewSet):
         if area.user_profiles.exists():
             return Response(
                 {"errors": ["No se puede eliminar un área que tiene usuarios asignados."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
+
+
+class CargoViewSet(viewsets.ModelViewSet):
+    """
+    CRUD endpoints for the Cargo catalog.
+    List/retrieve: any authenticated user. Create/update/delete: ADMIN only.
+    Filter by area: GET /cargos/?area_id=N
+    """
+
+    serializer_class = CargoSerializer
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsAdmin()]
+
+    def get_queryset(self):
+        qs = Cargo.objects.all().select_related("area")
+        area_id = self.request.query_params.get("area_id")
+        if area_id:
+            qs = qs.filter(area_id=area_id)
+        return qs
+
+    def destroy(self, request, *args, **kwargs):
+        cargo = self.get_object()
+        if UserProfile.objects.filter(cargo=cargo.nombre).exists():
+            return Response(
+                {"errors": ["No se puede eliminar un cargo que está asignado a usuarios."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return super().destroy(request, *args, **kwargs)

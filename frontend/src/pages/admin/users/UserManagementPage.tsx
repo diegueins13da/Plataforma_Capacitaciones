@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+import { configService } from "../../../services/configService";
 import { usersService } from "../../../services/usersService";
 import { CreateUserModal } from "../../../components/shared/CreateUserModal";
+import type { Area } from "../../../types/area";
+import type { Cargo } from "../../../types/cargo";
 import type { AdminUser, UserRole } from "../../../types/user";
 import type { Group } from "../../../types/groups";
 
@@ -30,6 +33,167 @@ const AVATAR_COLORS = [
 
 function avatarColor(id: number) {
   return AVATAR_COLORS[id % AVATAR_COLORS.length];
+}
+
+// ---------------------------------------------------------------------------
+// EditUserModal
+// ---------------------------------------------------------------------------
+
+interface EditUserModalProps {
+  user: AdminUser;
+  onClose: () => void;
+  onUpdated: (u: AdminUser) => void;
+}
+
+function EditUserModal({ user, onClose, onUpdated }: EditUserModalProps) {
+  const [firstName, setFirstName] = useState(user.first_name);
+  const [lastName, setLastName] = useState(user.last_name);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [selectedAreaId, setSelectedAreaId] = useState<number | "">("");
+  const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [selectedCargoNombre, setSelectedCargoNombre] = useState(user.cargo ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    configService.getAreas().then((list) => {
+      setAreas(list);
+      const found = list.find((a) => a.nombre === user.area);
+      if (found) setSelectedAreaId(found.id);
+    }).catch(() => void 0);
+  }, [user.area]);
+
+  useEffect(() => {
+    if (!selectedAreaId) { setCargos([]); return; }
+    configService.getCargos(Number(selectedAreaId)).then((list) => {
+      setCargos(list.filter((c) => c.activo));
+    }).catch(() => void 0);
+  }, [selectedAreaId]);
+
+  const handleAreaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedAreaId(e.target.value ? Number(e.target.value) : "");
+    setSelectedCargoNombre("");
+  };
+
+  async function handleSubmit() {
+    setSaving(true);
+    try {
+      const areaName = areas.find((a) => a.id === selectedAreaId)?.nombre ?? "";
+      const updated = await usersService.updateUser(user.id, {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        area: areaName,
+        cargo: selectedCargoNombre,
+      });
+      onUpdated(updated);
+      toast.success("Usuario actualizado.");
+    } catch {
+      toast.error("No se pudo actualizar el usuario.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls =
+    "w-full h-9 rounded-lg border border-slate-700 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300";
+  const selectCls = `${inputCls} appearance-none`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">Editar usuario</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-accent/50 text-muted-foreground transition-colors"
+          >
+            <i className="ti ti-x text-sm" />
+          </button>
+        </div>
+        {/* Body */}
+        <div className="px-6 py-5 flex flex-col gap-4">
+          {/* Email (read-only context) */}
+          <p className="text-xs text-muted-foreground px-3 py-2 bg-muted/20 rounded-lg truncate">
+            <i className="ti ti-mail mr-1.5" />{user.email}
+          </p>
+          {/* First + Last name */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">Nombre</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={inputCls}
+                maxLength={150}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">Apellido</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={inputCls}
+                maxLength={150}
+              />
+            </div>
+          </div>
+          {/* Area */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Área</label>
+            <div className="relative">
+              <select value={selectedAreaId} onChange={handleAreaChange} className={selectCls}>
+                <option value="">Sin área</option>
+                {areas.map((a) => (
+                  <option key={a.id} value={a.id}>{a.nombre}</option>
+                ))}
+              </select>
+              <i className="ti ti-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" />
+            </div>
+          </div>
+          {/* Cargo (filtered by area) */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Cargo</label>
+            <div className="relative">
+              <select
+                value={selectedCargoNombre}
+                onChange={(e) => setSelectedCargoNombre(e.target.value)}
+                className={selectCls}
+                disabled={!selectedAreaId && cargos.length === 0}
+              >
+                <option value="">Sin cargo</option>
+                {cargos.map((c) => (
+                  <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                ))}
+              </select>
+              <i className="ti ti-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" />
+            </div>
+            {!selectedAreaId && (
+              <p className="text-xs text-muted-foreground mt-1">Selecciona un área para ver los cargos disponibles.</p>
+            )}
+          </div>
+        </div>
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="h-9 px-4 border border-border text-muted-foreground text-sm rounded-lg hover:bg-accent/50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => void handleSubmit()}
+            disabled={saving || !firstName.trim() || !lastName.trim()}
+            className="h-9 px-5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
+          >
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +240,7 @@ export default function UserManagementPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
   const [statusFilter, setStatusFilter] = useState<"" | "true" | "false">("");
   const [showCreate, setShowCreate] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -129,6 +294,11 @@ export default function UserManagementPage() {
     setUsers((prev) => [newUser, ...prev]);
     setTotalCount((c) => c + 1);
     setShowCreate(false);
+  };
+
+  const handleUpdated = (updated: AdminUser) => {
+    setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    setEditingUser(null);
   };
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -300,17 +470,28 @@ export default function UserManagementPage() {
                   </td>
                   {/* Actions */}
                   <td className="px-4 py-3 text-right">
-                    {user.is_active && (
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                       <button
                         type="button"
-                        onClick={() => void handleToggleActive(user)}
-                        title="Desactivar usuario"
-                        className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all px-2 py-1 rounded-lg hover:bg-red-500/10"
+                        onClick={() => setEditingUser(user)}
+                        title="Editar usuario"
+                        className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded-lg hover:bg-indigo-500/10"
                       >
-                        <i className="ti ti-user-off text-sm" aria-hidden="true" />
-                        Desactivar
+                        <i className="ti ti-pencil text-sm" aria-hidden="true" />
+                        Editar
                       </button>
-                    )}
+                      {user.is_active && (
+                        <button
+                          type="button"
+                          onClick={() => void handleToggleActive(user)}
+                          title="Desactivar usuario"
+                          className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-500/10"
+                        >
+                          <i className="ti ti-user-off text-sm" aria-hidden="true" />
+                          Desactivar
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -338,6 +519,9 @@ export default function UserManagementPage() {
 
       {showCreate && (
         <CreateUserModal groups={groups} onClose={() => setShowCreate(false)} onCreated={handleCreated} />
+      )}
+      {editingUser && (
+        <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} onUpdated={handleUpdated} />
       )}
     </div>
   );

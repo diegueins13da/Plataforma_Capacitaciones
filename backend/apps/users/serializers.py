@@ -3,7 +3,19 @@ User app serializers.
 """
 from rest_framework import serializers
 
-from .models import Area, Group, User, UserProfile
+from .models import Area, Cargo, Group, User, UserProfile
+
+
+class CargoSerializer(serializers.ModelSerializer):
+    area_nombre = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cargo
+        fields = ["id", "nombre", "area", "area_nombre", "activo", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def get_area_nombre(self, obj: Cargo) -> str | None:
+        return obj.area.nombre if obj.area else None
 
 
 class AreaSerializer(serializers.ModelSerializer):

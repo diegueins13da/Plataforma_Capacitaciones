@@ -1,5 +1,6 @@
 import api from "./api";
 import type { Area, CreateAreaPayload, UpdateAreaPayload } from "../types/area";
+import type { Cargo, CreateCargoPayload, UpdateCargoPayload } from "../types/cargo";
 import type { GroupedSettings, SystemSetting } from "../types/config";
 import type { PaginatedResponse } from "../types";
 
@@ -48,5 +49,30 @@ export const configService = {
 
   async deleteArea(id: number): Promise<void> {
     await api.delete(`/v1/areas/${id}/`);
+  },
+
+  // ---------------------------------------------------------------------------
+  // Cargo catalog
+  // ---------------------------------------------------------------------------
+
+  async getCargos(areaId?: number): Promise<Cargo[]> {
+    const params = areaId ? { area_id: areaId } : {};
+    const res = await api.get<PaginatedResponse<Cargo> | Cargo[]>("/v1/cargos/", { params });
+    const data = res.data;
+    return Array.isArray(data) ? data : data.results;
+  },
+
+  async createCargo(payload: CreateCargoPayload): Promise<Cargo> {
+    const res = await api.post<Cargo>("/v1/cargos/", payload);
+    return res.data;
+  },
+
+  async updateCargo(id: number, payload: UpdateCargoPayload): Promise<Cargo> {
+    const res = await api.patch<Cargo>(`/v1/cargos/${id}/`, payload);
+    return res.data;
+  },
+
+  async deleteCargo(id: number): Promise<void> {
+    await api.delete(`/v1/cargos/${id}/`);
   },
 };
