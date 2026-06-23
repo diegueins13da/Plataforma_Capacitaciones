@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page { size: A4 landscape; margin: 0; }
+
+  body {
+    width: 297mm;
+    height: 210mm;
+    font-family: 'Inter', Arial, sans-serif;
+    background: #ffffff;
+    background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+    background-size: 20px 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .accent-corner {
+    position: absolute;
+    top: 0; right: 0;
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 0 52mm 52mm 0;
+    border-color: transparent {{ primary_color }} transparent transparent;
+    z-index: 1;
+  }
+
+  .deco-border {
+    position: absolute;
+    top: 5mm; left: 5mm; right: 5mm; bottom: 5mm;
+    border: 0.5px solid #dde1e8;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    z-index: 2;
+    padding: 9mm 0 0 18mm;
+  }
+  .logo-img {
+    height: 20mm;
+    max-width: 75mm;
+    object-fit: contain;
+  }
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 10pt;
+    font-weight: 700;
+    color: {{ primary_color }};
+    line-height: 1.4;
+  }
+
+  /* ── Main ── */
+  main {
+    flex: 1;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 18mm;
+  }
+
+  .cert-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 38pt;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+    margin-bottom: 3mm;
+  }
+
+  .cert-rule {
+    width: 38mm;
+    height: 1mm;
+    background: #E30613;
+    margin: 0 auto 5mm;
+  }
+
+  .cert-pre {
+    font-size: 8pt;
+    color: #64748b;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4mm;
+  }
+
+  .cert-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 34pt;
+    font-weight: 700;
+    color: {{ primary_color }};
+    border-bottom: 0.5px solid #e2e8f0;
+    padding: 0 10mm 3mm;
+    display: inline-block;
+    margin-bottom: 5mm;
+  }
+
+  .cert-body {
+    font-size: 11pt;
+    color: #475569;
+    line-height: 1.7;
+    max-width: 195mm;
+  }
+  .cert-body strong { font-weight: 600; color: #0f172a; }
+
+  .cert-date {
+    font-size: 9pt;
+    color: #94a3b8;
+    margin-top: 3mm;
+  }
+
+  /* ── Footer ── */
+  footer {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    padding: 0 22mm 9mm;
+  }
+
+  .sig-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 65mm;
+  }
+  .sig-img {
+    height: 14mm;
+    max-width: 60mm;
+    object-fit: contain;
+    margin-bottom: 1.5mm;
+  }
+  .sig-spacer { height: 14mm; }
+  .sig-line {
+    width: 58mm;
+    height: 0.4mm;
+    background: #cbd5e1;
+    margin-bottom: 2mm;
+  }
+  .sig-name {
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: center;
+  }
+  .sig-role {
+    font-size: 7.5pt;
+    color: #94a3b8;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 1mm;
+  }
+
+  .cert-id {
+    position: absolute;
+    bottom: 7mm; right: 9mm;
+    font-size: 5.5pt;
+    color: #cbd5e1;
+    font-family: monospace;
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+
+<div class="accent-corner"></div>
+<div class="deco-border"></div>
+
+<header>
+  {% if logo_url %}
+    <img src="{{ logo_url }}" alt="{{ company_name }}" class="logo-img">
+  {% else %}
+    <div class="logo-text">{{ company_name }}</div>
+  {% endif %}
+</header>
+
+<main>
+  <div class="cert-title">Certificado de Participación</div>
+  <div class="cert-rule"></div>
+  <div class="cert-pre">Tenemos el honor de extender este certificado a:</div>
+  <div class="cert-name">{{ participant_name }}</div>
+  <div class="cert-body">
+    Por haber culminado con éxito el programa de capacitación en<br>
+    <strong>"{{ course_title }}"</strong>, con una duración de {{ duration_hours }} horas.
+  </div>
+  <div class="cert-date">
+    Conferido en {{ cert_city }}, a los {{ completion_day }} días de {{ completion_month_year }}.
+  </div>
+</main>
+
+<footer>
+  <div class="sig-block">
+    {% if rubrica_gerente_url %}
+      <img src="{{ rubrica_gerente_url }}" alt="Firma gerente" class="sig-img">
+    {% else %}
+      <div class="sig-spacer"></div>
+    {% endif %}
+    <div class="sig-line"></div>
+    <div class="sig-name">{{ manager_name }}</div>
+    <div class="sig-role">{{ manager_title }}</div>
+  </div>
+
+  <div class="sig-block">
+    {% if rubrica_instructor_url %}
+      <img src="{{ rubrica_instructor_url }}" alt="Firma capacitador" class="sig-img">
+    {% else %}
+      <div class="sig-spacer"></div>
+    {% endif %}
+    <div class="sig-line"></div>
+    <div class="sig-name">{{ instructor_name }}</div>
+    <div class="sig-role">Capacitador(a)</div>
+  </div>
+</footer>
+
+<div class="cert-id">ID: {{ cert_id }}</div>
+
+</body>
+</html>
