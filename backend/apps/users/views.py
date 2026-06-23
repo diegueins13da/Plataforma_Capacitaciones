@@ -271,14 +271,41 @@ class UserViewSet(viewsets.GenericViewSet):
         return Response(UserListSerializer(updated).data)
 
     @action(detail=True, methods=["post"])
-    def deactivate(self, request, pk=None):
+    def activate(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
-        updated = services.deactivate_user(
+        updated = services.activate_user(
             user,
             admin_user=request.user,
             ip=_get_client_ip(request),
         )
         return Response(UserListSerializer(updated).data)
+
+    @action(detail=True, methods=["post"])
+    def deactivate(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        try:
+            updated = services.deactivate_user(
+                user,
+                admin_user=request.user,
+                ip=_get_client_ip(request),
+            )
+        except DjangoValidationError as exc:
+            msgs = [m for msgs in exc.message_dict.values() for m in msgs]
+            return Response({"errors": msgs}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(UserListSerializer(updated).data)
+
+    def destroy(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        try:
+            services.delete_user(
+                user,
+                admin_user=request.user,
+                ip=_get_client_ip(request),
+            )
+        except DjangoValidationError as exc:
+            msgs = [m for msgs in exc.message_dict.values() for m in msgs]
+            return Response({"errors": msgs}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ------------------------------------------------------------------
     # Bulk import

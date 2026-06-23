@@ -145,9 +145,18 @@ export const usersService = {
     return res.data;
   },
 
+  async activateUser(id: number): Promise<AdminUser> {
+    const res = await api.post<AdminUser>(`/v1/users/${id}/activate/`);
+    return res.data;
+  },
+
   async deactivateUser(id: number): Promise<AdminUser> {
     const res = await api.post<AdminUser>(`/v1/users/${id}/deactivate/`);
     return res.data;
+  },
+
+  async deleteUser(id: number): Promise<void> {
+    await api.delete(`/v1/users/${id}/`);
   },
 
   // ---------------------------------------------------------------------------

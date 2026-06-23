@@ -265,13 +265,40 @@ def change_role(user: User, *, new_role: str, admin_user: User, ip: str) -> User
     return user
 
 
+def activate_user(user: User, *, admin_user: User, ip: str) -> User:
+    """Reactivate a previously deactivated user account."""
+    user.is_active = True
+    user.save(update_fields=["is_active"])
+
+    log_event(
+        accion="USER_ACTIVATED",
+        actor=admin_user,
+        ip=ip,
+        entidad_tipo="User",
+        entidad_id=user.pk,
+        entidad_nombre=f"{user.get_full_name()} <{user.email}>",
+    )
+    return user
+
+
 def deactivate_user(user: User, *, admin_user: User, ip: str) -> User:
     """
     Deactivate a user account:
-    1. Set is_active=False
-    2. Immediately blacklist ALL outstanding refresh tokens (closes active sessions)
-    3. Record in AuditLog
+    1. Guard: cannot deactivate the last active ADMIN.
+    2. Set is_active=False
+    3. Immediately blacklist ALL outstanding refresh tokens (closes active sessions)
+    4. Record in AuditLog
     """
+    if user.role == User.Role.ADMIN:
+        active_admins = User.objects.filter(role=User.Role.ADMIN, is_active=True).count()
+        if active_admins <= 1:
+            raise ValidationError(
+                {"non_field_errors": [
+                    "No se puede desactivar al único administrador activo. "
+                    "Asigna otro administrador antes de desactivar este usuario."
+                ]}
+            )
+
     user.is_active = False
     user.save(update_fields=["is_active"])
 
@@ -286,6 +313,42 @@ def deactivate_user(user: User, *, admin_user: User, ip: str) -> User:
         entidad_nombre=f"{user.get_full_name()} <{user.email}>",
     )
     return user
+
+
+def delete_user(user: User, *, admin_user: User, ip: str) -> None:
+    """
+    Permanently delete a user.
+    Allowed only when the user has no enrollments and no platform activity.
+    """
+    from apps.courses.models import Enrollment  # noqa: PLC0415
+    from apps.reports.models import AuditLog    # noqa: PLC0415
+
+    if Enrollment.objects.filter(user=user).exists():
+        raise ValidationError(
+            {"non_field_errors": [
+                "No se puede eliminar este usuario porque está inscrito en uno o más cursos."
+            ]}
+        )
+    if AuditLog.objects.filter(user=user).exists():
+        raise ValidationError(
+            {"non_field_errors": [
+                "No se puede eliminar este usuario porque ya ha tenido actividad en la plataforma. "
+                "Puedes desactivarlo en su lugar."
+            ]}
+        )
+
+    user_label = f"{user.get_full_name()} <{user.email}>"
+    user_pk = user.pk
+    user.delete()
+
+    log_event(
+        accion="USER_DELETED",
+        actor=admin_user,
+        ip=ip,
+        entidad_tipo="User",
+        entidad_id=user_pk,
+        entidad_nombre=user_label,
+    )
 
 
 # ---------------------------------------------------------------------------

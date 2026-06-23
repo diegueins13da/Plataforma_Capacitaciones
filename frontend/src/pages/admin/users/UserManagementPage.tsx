@@ -241,6 +241,7 @@ export default function UserManagementPage() {
   const [statusFilter, setStatusFilter] = useState<"" | "true" | "false">("");
   const [showCreate, setShowCreate] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -276,17 +277,42 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleToggleActive = async (user: AdminUser) => {
+  const handleActivate = async (user: AdminUser) => {
     try {
-      if (user.is_active) {
-        const updated = await usersService.deactivateUser(user.id);
-        setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-        toast.success(`${user.full_name} desactivado.`);
-      } else {
-        toast("La activación se gestiona desde soporte.");
-      }
-    } catch {
-      toast.error("No se pudo cambiar el estado.");
+      const updated = await usersService.activateUser(user.id);
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+      toast.success(`${user.full_name} activado.`);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { errors?: string[] } } })
+        ?.response?.data?.errors?.[0];
+      toast.error(msg ?? "No se pudo activar el usuario.");
+    }
+  };
+
+  const handleDeactivate = async (user: AdminUser) => {
+    try {
+      const updated = await usersService.deactivateUser(user.id);
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+      toast.success(`${user.full_name} desactivado.`);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { errors?: string[] } } })
+        ?.response?.data?.errors?.[0];
+      toast.error(msg ?? "No se pudo desactivar el usuario.");
+    }
+  };
+
+  const handleDelete = async (user: AdminUser) => {
+    try {
+      await usersService.deleteUser(user.id);
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      setTotalCount((c) => c - 1);
+      setPendingDeleteId(null);
+      toast.success(`Usuario ${user.full_name} eliminado.`);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { errors?: string[] } } })
+        ?.response?.data?.errors?.[0];
+      toast.error(msg ?? "No se pudo eliminar el usuario.");
+      setPendingDeleteId(null);
     }
   };
 
@@ -471,24 +497,65 @@ export default function UserManagementPage() {
                   {/* Actions */}
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      {/* Editar */}
                       <button
                         type="button"
                         onClick={() => setEditingUser(user)}
                         title="Editar usuario"
-                        className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded-lg hover:bg-indigo-500/10"
+                        className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
                       >
                         <i className="ti ti-pencil text-sm" aria-hidden="true" />
-                        Editar
                       </button>
-                      {user.is_active && (
+
+                      {/* Activar / Desactivar */}
+                      {user.is_active ? (
                         <button
                           type="button"
-                          onClick={() => void handleToggleActive(user)}
+                          onClick={() => void handleDeactivate(user)}
                           title="Desactivar usuario"
-                          className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-500/10"
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
                         >
                           <i className="ti ti-user-off text-sm" aria-hidden="true" />
-                          Desactivar
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void handleActivate(user)}
+                          title="Activar usuario"
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+                        >
+                          <i className="ti ti-user-check text-sm" aria-hidden="true" />
+                        </button>
+                      )}
+
+                      {/* Eliminar — confirmación en dos pasos */}
+                      {pendingDeleteId === user.id ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(user)}
+                            title="Confirmar eliminación"
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors"
+                          >
+                            <i className="ti ti-check text-sm" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPendingDeleteId(null)}
+                            title="Cancelar"
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent/50 transition-colors"
+                          >
+                            <i className="ti ti-x text-sm" aria-hidden="true" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setPendingDeleteId(user.id)}
+                          title="Eliminar usuario"
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                        >
+                          <i className="ti ti-trash text-sm" aria-hidden="true" />
                         </button>
                       )}
                     </div>
