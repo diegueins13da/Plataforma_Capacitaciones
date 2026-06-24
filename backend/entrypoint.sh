@@ -10,6 +10,9 @@ echo "Database ready."
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+echo "Creating default admin (skipped if already exists)..."
+python manage.py create_default_admin
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
