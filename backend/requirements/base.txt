@@ -17,6 +17,10 @@ django-filter>=24.0
 django-axes>=6.4,<7.0
 argon2-cffi>=23.1,<24.0
 
+# --- LDAP / Active Directory ---
+python-ldap>=3.4,<4.0
+django-auth-ldap>=4.6,<5.0
+
 # --- Async tasks ---
 celery>=5.4,<6.0
 django-celery-beat>=2.6,<3.0

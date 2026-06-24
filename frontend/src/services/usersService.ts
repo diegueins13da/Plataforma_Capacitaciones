@@ -43,6 +43,7 @@ import type {
   BulkImportValidRow,
   ChangeRolePayload,
   CreateUserPayload,
+  LdapSyncResult,
   UpdateUserPayload,
   UserFilters,
 } from "../types/user";
@@ -161,6 +162,11 @@ export const usersService = {
 
   async resetLockout(id: number): Promise<void> {
     await api.post(`/v1/users/${id}/reset-lockout/`);
+  },
+
+  async ldapSync(): Promise<LdapSyncResult> {
+    const res = await api.post<LdapSyncResult>("/v1/users/ldap-sync/");
+    return res.data;
   },
 
   // ---------------------------------------------------------------------------

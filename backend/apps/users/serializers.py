@@ -92,13 +92,14 @@ class UserListSerializer(serializers.ModelSerializer):
     cargo = serializers.SerializerMethodField()
     grupo_nombre = serializers.SerializerMethodField()
     is_locked = serializers.SerializerMethodField()
+    auth_source = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
             "role", "is_active", "is_superuser", "is_locked", "must_change_password",
-            "area", "cargo", "grupo_nombre",
+            "area", "cargo", "grupo_nombre", "auth_source",
         ]
 
     def get_is_locked(self, obj: User) -> bool:
@@ -112,6 +113,10 @@ class UserListSerializer(serializers.ModelSerializer):
             ).exists()
         except Exception:
             return False
+
+    def get_auth_source(self, obj: User) -> str:
+        profile = getattr(obj, "profile", None)
+        return profile.auth_source if profile else "LOCAL"
 
     def get_full_name(self, obj: User) -> str:
         return obj.get_full_name()

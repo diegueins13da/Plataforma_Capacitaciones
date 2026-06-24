@@ -94,6 +94,9 @@ class Cargo(models.Model):
 
 
 class UserProfile(models.Model):
+    AUTH_SOURCE_LOCAL = "LOCAL"
+    AUTH_SOURCE_LDAP = "LDAP"
+
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
@@ -123,6 +126,18 @@ class UserProfile(models.Model):
         on_delete=models.SET_NULL,
         related_name="members",
         verbose_name="grupo",
+    )
+    auth_source = models.CharField(
+        max_length=10,
+        default=AUTH_SOURCE_LOCAL,
+        choices=[(AUTH_SOURCE_LOCAL, "Local"), (AUTH_SOURCE_LDAP, "LDAP / AD")],
+        verbose_name="origen de autenticación",
+        help_text="LOCAL: contraseña local. LDAP: autentica contra Active Directory.",
+    )
+    ldap_dn = models.TextField(
+        blank=True,
+        verbose_name="DN en el directorio LDAP",
+        help_text="Distinguished Name del usuario en Active Directory (solo lectura).",
     )
 
     class Meta:

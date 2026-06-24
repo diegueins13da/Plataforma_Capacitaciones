@@ -7,7 +7,7 @@ import { usersService } from "../../../services/usersService";
 import { CreateUserModal } from "../../../components/shared/CreateUserModal";
 import type { Area } from "../../../types/area";
 import type { Cargo } from "../../../types/cargo";
-import type { AdminUser, UserRole } from "../../../types/user";
+import type { AdminUser, LdapSyncResult, UserRole } from "../../../types/user";
 import type { Group } from "../../../types/groups";
 
 // ---------------------------------------------------------------------------
@@ -255,6 +255,8 @@ export default function UserManagementPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [ldapSyncing, setLdapSyncing] = useState(false);
+  const [ldapResult, setLdapResult] = useState<LdapSyncResult | null>(null);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -341,6 +343,27 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleLdapSync = async () => {
+    setLdapSyncing(true);
+    setLdapResult(null);
+    try {
+      const result = await usersService.ldapSync();
+      setLdapResult(result);
+      if (result.errors === 0) {
+        toast.success(`Sync AD completado: ${result.created} creados, ${result.updated} actualizados.`);
+      } else {
+        toast.warning(`Sync AD completado con ${result.errors} error(es).`);
+      }
+      void loadUsers();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { errors?: string[] } } })
+        ?.response?.data?.errors?.[0];
+      toast.error(msg ?? "No se pudo conectar al servidor LDAP.");
+    } finally {
+      setLdapSyncing(false);
+    }
+  };
+
   const handleCreated = (newUser: AdminUser) => {
     setUsers((prev) => [newUser, ...prev]);
     setTotalCount((c) => c + 1);
@@ -368,6 +391,16 @@ export default function UserManagementPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleLdapSync()}
+            disabled={ldapSyncing}
+            title="Sincronizar usuarios desde Active Directory"
+            className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-50 transition-colors"
+          >
+            <i className={`ti ti-building-community text-base ${ldapSyncing ? "animate-spin" : ""}`} aria-hidden="true" />
+            {ldapSyncing ? "Sincronizando..." : "Sync AD"}
+          </button>
           <Link
             to="/admin/users/import"
             className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -428,6 +461,32 @@ export default function UserManagementPage() {
         </div>
       </div>
 
+      {/* LDAP sync result panel */}
+      {ldapResult && (
+        <div className="flex items-start gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 px-4 py-3">
+          <i className="ti ti-building-community text-indigo-400 text-base mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Último sync con Active Directory</p>
+            <div className="flex flex-wrap gap-3 mt-1.5">
+              <span className="text-xs text-emerald-400"><i className="ti ti-user-plus mr-1" />{ldapResult.created} creados</span>
+              <span className="text-xs text-sky-400"><i className="ti ti-refresh mr-1" />{ldapResult.updated} actualizados</span>
+              <span className="text-xs text-amber-400"><i className="ti ti-user-off mr-1" />{ldapResult.deactivated} desactivados</span>
+              <span className="text-xs text-muted-foreground"><i className="ti ti-minus mr-1" />{ldapResult.skipped} omitidos</span>
+              {ldapResult.errors > 0 && (
+                <span className="text-xs text-red-400"><i className="ti ti-alert-circle mr-1" />{ldapResult.errors} errores</span>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLdapResult(null)}
+            className="text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+          >
+            <i className="ti ti-x text-sm" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {loading ? (
@@ -470,7 +529,17 @@ export default function UserManagementPage() {
                     <div className="flex items-center gap-3">
                       <Avatar user={user} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{user.full_name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-foreground truncate">{user.full_name}</p>
+                          {user.auth_source === "LDAP" && (
+                            <span
+                              title="Usuario sincronizado desde Active Directory"
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/15 text-sky-400 shrink-0"
+                            >
+                              AD
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>

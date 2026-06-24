@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdk-pixbuf-xlib-2.0-0 \
     libffi-dev \
     shared-mime-info \
+    libldap2-dev \
+    libsasl2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/ requirements/

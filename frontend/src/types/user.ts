@@ -17,6 +17,16 @@ export interface AdminUser {
   area: string;
   cargo: string;
   grupo_nombre: string | null;
+  auth_source: "LOCAL" | "LDAP";
+}
+
+export interface LdapSyncResult {
+  created: number;
+  updated: number;
+  deactivated: number;
+  skipped: number;
+  errors: number;
+  error_details: string[];
 }
 
 export interface CreateUserPayload {

@@ -331,6 +331,40 @@ class UserViewSet(viewsets.GenericViewSet):
     # Bulk import
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # LDAP sync
+    # ------------------------------------------------------------------
+
+    @action(detail=False, methods=["post"], url_path="ldap-sync")
+    def ldap_sync(self, request):
+        """
+        POST /users/ldap-sync/
+        Trigger a manual synchronization from Active Directory.
+        Returns counts of created / updated / deactivated / skipped / errors.
+        """
+        from django.conf import settings
+
+        if not getattr(settings, "LDAP_ENABLED", False):
+            return Response(
+                {"errors": ["La integración LDAP no está habilitada en la configuración del servidor."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from apps.users.ldap_sync import run_ldap_sync
+            result = run_ldap_sync(
+                admin_user=request.user,
+                ip=_get_client_ip(request),
+            )
+        except RuntimeError as exc:
+            return Response({"errors": [str(exc)]}, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response(result, status=status.HTTP_200_OK)
+
+    # ------------------------------------------------------------------
+    # Bulk import
+    # ------------------------------------------------------------------
+
     @action(
         detail=False,
         methods=["post"],

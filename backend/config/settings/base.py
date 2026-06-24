@@ -120,12 +120,55 @@ AUTH_PASSWORD_VALIDATORS = [
 # Axes (account lockout) — uses standalone backend to avoid database access issues
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
+    "apps.authentication.ldap_backend.LMSLdapBackend",  # LDAP (only for users with auth_source=LDAP)
     "django.contrib.auth.backends.ModelBackend",
 ]
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = timedelta(minutes=15)
 AXES_LOCKOUT_CALLABLE = "apps.authentication.lockout.lockout_response"
 AXES_RESET_ON_SUCCESS = True  # Reset failure counter after a successful login
+
+# ---------------------------------------------------------------------------
+# LDAP / Active Directory
+# ---------------------------------------------------------------------------
+LDAP_ENABLED = env.bool("LDAP_ENABLED", default=False)
+
+if LDAP_ENABLED:
+    import ldap
+    from django_auth_ldap.config import LDAPSearch
+
+    AUTH_LDAP_SERVER_URI = env("LDAP_SERVER_URI")
+    AUTH_LDAP_BIND_DN = env("LDAP_BIND_DN")
+    AUTH_LDAP_BIND_PASSWORD = env("LDAP_BIND_PASSWORD")
+    AUTH_LDAP_BASE_DN = env("LDAP_BASE_DN")
+
+    # Search users by sAMAccountName (the Django username for LDAP users)
+    AUTH_LDAP_USER_SEARCH = LDAPSearch(
+        AUTH_LDAP_BASE_DN,
+        ldap.SCOPE_SUBTREE,
+        "(sAMAccountName=%(user)s)",
+    )
+
+    # Map AD attributes → Django User fields on each login
+    AUTH_LDAP_USER_ATTR_MAP = {
+        "first_name": "givenName",
+        "last_name": "sn",
+        "email": "mail",
+    }
+
+    # Do not update user data on every login (managed by our sync service)
+    AUTH_LDAP_ALWAYS_UPDATE_USER = env.bool("LDAP_ALWAYS_UPDATE_USER", default=False)
+
+    # Use StartTLS if the server supports it (recommended for security)
+    AUTH_LDAP_START_TLS = env.bool("LDAP_START_TLS", default=False)
+
+    # Additional LDAP options (e.g. disable certificate verification in dev)
+    # AUTH_LDAP_GLOBAL_OPTIONS = {ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER}
+
+    LDAP_SYNC_FILTER = env(
+        "LDAP_SYNC_FILTER",
+        default="(&(objectClass=person)(mail=*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))",
+    )
 
 # ---------------------------------------------------------------------------
 # REST Framework
@@ -180,6 +223,16 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_RESULT_EXPIRES = 3600
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    # LDAP sync runs daily at 02:00 UTC (only active when LDAP_ENABLED=True)
+    "ldap-sync-daily": {
+        "task": "apps.users.tasks.ldap_sync_task",
+        "schedule": crontab(hour=2, minute=0),
+    },
+}
 
 # ---------------------------------------------------------------------------
 # Email
