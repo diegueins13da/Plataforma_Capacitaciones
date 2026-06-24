@@ -93,6 +93,21 @@ def test_email(request):
     return Response(result, status=http_status)
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdmin])
+def test_ldap(request):
+    """
+    POST /api/v1/config/test-ldap/
+    Tests the service-account bind against the configured LDAP server.
+    Returns { ok, message, latency_ms }.
+    """
+    from apps.config.ldap import test_ldap_connection
+
+    result = test_ldap_connection()
+    http_status = status.HTTP_200_OK if result["ok"] else status.HTTP_502_BAD_GATEWAY
+    return Response(result, status=http_status)
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def public_branding(request):

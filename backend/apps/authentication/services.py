@@ -148,18 +148,33 @@ def logout(*, user: "User", refresh_token: str | None, ip: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+class LdapUserError(Exception):
+    """Raised when a password reset is requested for an LDAP-managed user."""
+
+
 def request_password_reset(*, email: str) -> None:
     """
     Generate a 6-digit reset code and email it to the user.
     ALWAYS returns silently — never reveals whether the email exists.
+
+    Raises:
+        LdapUserError — if the user authenticates via Active Directory
+                        (password is managed by AD, cannot be reset here).
     """
     from apps.config.email import send_mail as db_send_mail
     from apps.users.models import User
 
     try:
-        user = User.objects.get(email=email, is_active=True)
+        user = User.objects.select_related("profile").get(email=email, is_active=True)
     except User.DoesNotExist:
         return  # Silent — anti-enumeration
+
+    # LDAP users must reset their password through Active Directory
+    if hasattr(user, "profile") and user.profile.auth_source == "LDAP":
+        raise LdapUserError(
+            "Tu contraseña es administrada por Active Directory. "
+            "Contacta al área de TI para restablecerla."
+        )
 
     code = f"{secrets.randbelow(1_000_000):06d}"
     cache_key = f"{_RESET_CACHE_PREFIX}:{user.pk}"

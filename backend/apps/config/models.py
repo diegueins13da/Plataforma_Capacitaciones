@@ -23,6 +23,7 @@ class SystemSetting(models.Model):
         BRANDING = "BRANDING", "Identidad visual"
         SEGURIDAD = "SEGURIDAD", "Seguridad y contraseñas"
         NOTIF = "NOTIF", "Notificaciones"
+        LDAP = "LDAP", "LDAP / Active Directory"
 
     clave = models.CharField(max_length=100, unique=True, verbose_name="clave")
     valor = models.TextField(blank=True, verbose_name="valor")

@@ -27,6 +27,13 @@ export const configService = {
     return res.data;
   },
 
+  async testLdap(): Promise<{ ok: boolean; message: string; latency_ms: number | null }> {
+    const res = await api.post<{ ok: boolean; message: string; latency_ms: number | null }>(
+      "/v1/config/test-ldap/",
+    );
+    return res.data;
+  },
+
   // ---------------------------------------------------------------------------
   // Area catalog
   // ---------------------------------------------------------------------------

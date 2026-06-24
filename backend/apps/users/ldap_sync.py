@@ -14,8 +14,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, TypedDict
 
-from django.conf import settings
-
 if TYPE_CHECKING:
     from apps.users.models import User
 
@@ -96,8 +94,10 @@ def run_ldap_sync(
 
     Returns a dict with statistics.
     """
-    if not getattr(settings, "LDAP_ENABLED", False):
-        raise RuntimeError("LDAP is not enabled. Set LDAP_ENABLED=True in .env.")
+    from apps.config.ldap import get_ldap_config as _get_ldap_config
+    ldap_cfg = _get_ldap_config()
+    if not ldap_cfg.get("enabled"):
+        raise RuntimeError("LDAP no está habilitado. Actívalo en Configuración → LDAP.")
 
     import ldap as _ldap
 
@@ -114,15 +114,11 @@ def run_ldap_sync(
     }
 
     # ── Connect to AD ─────────────────────────────────────────────────────────
-    server_uri: str = settings.AUTH_LDAP_SERVER_URI
-    bind_dn: str = settings.AUTH_LDAP_BIND_DN
-    bind_password: str = settings.AUTH_LDAP_BIND_PASSWORD
-    base_dn: str = settings.AUTH_LDAP_BASE_DN
-    sync_filter: str = getattr(
-        settings,
-        "LDAP_SYNC_FILTER",
-        "(&(objectClass=person)(mail=*))",
-    )
+    server_uri: str = ldap_cfg["server_uri"]
+    bind_dn: str = ldap_cfg["bind_dn"]
+    bind_password: str = ldap_cfg["bind_password"]
+    base_dn: str = ldap_cfg["base_dn"]
+    sync_filter: str = ldap_cfg["sync_filter"]
 
     try:
         conn = _ldap.initialize(server_uri)

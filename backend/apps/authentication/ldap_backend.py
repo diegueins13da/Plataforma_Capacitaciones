@@ -1,52 +1,58 @@
 """
 Custom LDAP authentication backend.
 
+Reads connection settings from the DB (SystemSetting categoria='LDAP')
+so everything is configurable from the admin UI without .env changes.
+
 Only activates for users whose UserProfile.auth_source == 'LDAP'.
-This prevents local accounts (like the superuser admin) from being
-accidentally matched against Active Directory.
 """
 from __future__ import annotations
 
 import logging
-
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 class LMSLdapBackend:
     """
-    Thin wrapper around django-auth-ldap's LDAPBackend.
+    Authentication backend for LDAP / Active Directory users.
 
-    Authentication is attempted only when:
-      1. LDAP is enabled (LDAP_ENABLED=True in .env).
-      2. A local User record exists for the username AND its profile
-         has auth_source == 'LDAP'.
+    Called by Django's authenticate() chain after AxesStandaloneBackend.
+    Returns None (falls through to ModelBackend) for:
+      - LDAP disabled in DB config
+      - User not found in DB
+      - User auth_source != 'LDAP'
+      - Wrong password (LDAP bind fails)
     """
 
     def authenticate(self, request, username: str | None = None, password: str | None = None, **kwargs):
-        if not getattr(settings, "LDAP_ENABLED", False):
-            return None
-
         if not username or not password:
             return None
 
-        # Only allow LDAP auth for users explicitly marked as LDAP users.
         try:
+            from apps.config.ldap import get_ldap_config, ldap_bind_as_user
+
+            config = get_ldap_config()
+            if not config["enabled"]:
+                return None
+
             from apps.users.models import UserProfile
+
             profile = UserProfile.objects.select_related("user").get(user__username=username)
             if profile.auth_source != UserProfile.AUTH_SOURCE_LDAP:
                 return None
-        except UserProfile.DoesNotExist:
+
+            if not profile.ldap_dn:
+                logger.warning("LDAP user %s has no ldap_dn stored — cannot authenticate", username)
+                return None
+
+            if ldap_bind_as_user(config, profile.ldap_dn, password):
+                return profile.user
+
             return None
 
-        try:
-            from django_auth_ldap.backend import LDAPBackend
-            backend = LDAPBackend()
-            user = backend.authenticate(request, username=username, password=password)
-            return user
         except Exception:
-            logger.exception("LDAP authentication error for user=%s", username)
+            logger.exception("LMSLdapBackend error for username=%s", username)
             return None
 
     def get_user(self, user_id: int):

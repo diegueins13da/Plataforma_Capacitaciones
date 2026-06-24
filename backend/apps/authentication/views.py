@@ -16,6 +16,7 @@ class PasswordResetThrottle(AnonRateThrottle):
     scope = "password_reset"
 
 from . import services
+from .services import LdapUserError
 from .serializers import (
     ChangePasswordSerializer,
     LoginRequestSerializer,
@@ -113,7 +114,13 @@ def password_reset_request(request):
     serializer = PasswordResetRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    services.request_password_reset(email=serializer.validated_data["email"])
+    try:
+        services.request_password_reset(email=serializer.validated_data["email"])
+    except LdapUserError as exc:
+        return Response(
+            {"ldap_user": True, "detail": str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     # ALWAYS return 200 with the same message — prevents user enumeration
     return Response({"detail": "Si tu correo existe, recibirás un código en breve."})

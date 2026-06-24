@@ -1,4 +1,4 @@
-export type SettingCategory = "SMTP" | "BRANDING" | "SEGURIDAD" | "NOTIF";
+export type SettingCategory = "SMTP" | "BRANDING" | "SEGURIDAD" | "NOTIF" | "LDAP";
 
 export interface SystemSetting {
   id: number;

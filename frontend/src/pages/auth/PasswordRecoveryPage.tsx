@@ -35,7 +35,7 @@ type NewPasswordValues = z.infer<typeof newPasswordSchema>;
 // Step 1 — email
 // ---------------------------------------------------------------------------
 interface Step1Props {
-  onSuccess: (email: string) => void;
+  onSuccess: (email: string, isLdap?: boolean) => void;
 }
 function Step1({ onSuccess }: Step1Props) {
   const {
@@ -47,9 +47,19 @@ function Step1({ onSuccess }: Step1Props) {
   });
 
   const onSubmit = async (data: PasswordResetRequestValues) => {
-    // Backend always responds silently (anti-enumeration)
-    await authService.requestPasswordReset({ email: data.email });
-    onSuccess(data.email);
+    try {
+      // Backend always responds silently for local accounts (anti-enumeration)
+      await authService.requestPasswordReset({ email: data.email });
+      onSuccess(data.email);
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { ldap_user?: boolean } } };
+      if (apiErr?.response?.data?.ldap_user) {
+        onSuccess(data.email, true);
+      } else {
+        // On other errors still advance — we don't reveal user existence
+        onSuccess(data.email);
+      }
+    }
   };
 
   return (
@@ -92,6 +102,43 @@ function Step1({ onSuccess }: Step1Props) {
         )}
       </button>
     </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LDAP notice — shown instead of steps 2+3 for AD-managed accounts
+// ---------------------------------------------------------------------------
+function LdapNotice() {
+  return (
+    <div className="space-y-4 text-center">
+      <div className="mx-auto w-12 h-12 rounded-full bg-sky-500/10 flex items-center justify-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-sky-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 110 20A10 10 0 0112 2z" />
+        </svg>
+      </div>
+      <div>
+        <h2 className="text-base font-semibold text-foreground">
+          Cuenta administrada por Active Directory
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          Tu contraseña es gestionada por el directorio corporativo. No es posible restablecerla desde esta plataforma.
+        </p>
+      </div>
+      <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-4 text-left">
+        <p className="text-sm font-medium text-sky-300 mb-1">¿Olvidaste tu contraseña?</p>
+        <p className="text-sm text-muted-foreground">
+          Contacta al área de <strong className="text-foreground">Tecnología (TI)</strong> para
+          que restablezcan tu contraseña en Active Directory.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -299,6 +346,7 @@ export default function PasswordRecoveryPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [isLdapUser, setIsLdapUser] = useState(false);
 
   const stepTitles: Record<1 | 2 | 3, string> = {
     1: "Recuperar contraseña",
@@ -309,31 +357,46 @@ export default function PasswordRecoveryPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md rounded-lg border bg-card p-8 shadow-sm">
-        <StepIndicator current={step} />
+        {isLdapUser ? (
+          <>
+            <div className="mb-6 text-center">
+              <h1 className="text-xl font-bold">Recuperar contraseña</h1>
+            </div>
+            <LdapNotice />
+          </>
+        ) : (
+          <>
+            <StepIndicator current={step} />
 
-        <div className="mb-6 text-center">
-          <h1 className="text-xl font-bold">{stepTitles[step]}</h1>
-        </div>
+            <div className="mb-6 text-center">
+              <h1 className="text-xl font-bold">{stepTitles[step]}</h1>
+            </div>
 
-        {step === 1 && (
-          <Step1
-            onSuccess={(e) => {
-              setEmail(e);
-              setStep(2);
-            }}
-          />
-        )}
-        {step === 2 && (
-          <Step2
-            onSuccess={(c) => {
-              setCode(c);
-              setStep(3);
-            }}
-            onBack={() => setStep(1)}
-          />
-        )}
-        {step === 3 && (
-          <Step3 email={email} code={code} onBack={() => setStep(2)} />
+            {step === 1 && (
+              <Step1
+                onSuccess={(e, ldap) => {
+                  setEmail(e);
+                  if (ldap) {
+                    setIsLdapUser(true);
+                  } else {
+                    setStep(2);
+                  }
+                }}
+              />
+            )}
+            {step === 2 && (
+              <Step2
+                onSuccess={(c) => {
+                  setCode(c);
+                  setStep(3);
+                }}
+                onBack={() => setStep(1)}
+              />
+            )}
+            {step === 3 && (
+              <Step3 email={email} code={code} onBack={() => setStep(2)} />
+            )}
+          </>
         )}
 
         <p className="mt-5 text-center text-sm">

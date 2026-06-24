@@ -342,11 +342,10 @@ class UserViewSet(viewsets.GenericViewSet):
         Trigger a manual synchronization from Active Directory.
         Returns counts of created / updated / deactivated / skipped / errors.
         """
-        from django.conf import settings
-
-        if not getattr(settings, "LDAP_ENABLED", False):
+        from apps.config.ldap import get_ldap_config
+        if not get_ldap_config().get("enabled"):
             return Response(
-                {"errors": ["La integración LDAP no está habilitada en la configuración del servidor."]},
+                {"errors": ["La integración LDAP no está habilitada. Actívala en Configuración → LDAP."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

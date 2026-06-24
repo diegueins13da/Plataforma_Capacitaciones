@@ -22,10 +22,9 @@ def ldap_sync_task(self):
     Scheduled daily via Celery Beat (configured in settings/base.py).
     Only runs when LDAP_ENABLED=True.
     """
-    from django.conf import settings
-
-    if not getattr(settings, "LDAP_ENABLED", False):
-        logger.info("ldap_sync_task: LDAP not enabled, skipping.")
+    from apps.config.ldap import get_ldap_config
+    if not get_ldap_config().get("enabled"):
+        logger.info("ldap_sync_task: LDAP not enabled in DB config, skipping.")
         return {"skipped": True}
 
     try:
