@@ -102,7 +102,7 @@ def run_ldap_sync(
     import ldap as _ldap
 
     from apps.reports.audit import log_event
-    from apps.users.models import Area, User, UserProfile
+    from apps.users.models import Area, Cargo, User, UserProfile
 
     result: LdapSyncResult = {
         "created": 0,
@@ -201,10 +201,15 @@ def run_ldap_sync(
                 profile.cargo = title
 
                 # Resolve department → Area (best effort)
+                area = None
                 if department:
                     area = Area.objects.filter(nombre__iexact=department, activo=True).first()
                     if area:
                         profile.area = area
+
+                # Auto-create cargo in catalog so the dropdown shows it
+                if title:
+                    Cargo.objects.get_or_create(nombre=title, area=area)
 
                 profile.save()
 
@@ -240,11 +245,16 @@ def run_ldap_sync(
                     profile.ldap_dn = distinguished_name
                     profile_changed.append("ldap_dn")
 
+                area = None
                 if department:
                     area = Area.objects.filter(nombre__iexact=department, activo=True).first()
                     if area and profile.area != area:
                         profile.area = area
                         profile_changed.append("area")
+
+                # Auto-create cargo in catalog so the dropdown shows it
+                if title:
+                    Cargo.objects.get_or_create(nombre=title, area=area)
 
                 if profile_changed:
                     profile.save(update_fields=profile_changed)
