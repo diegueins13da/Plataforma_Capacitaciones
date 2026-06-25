@@ -20,6 +20,49 @@ const TIPO_ICONS: Record<string, string> = {
   AUTOAPRENDIZAJE: "ti-books",
 };
 
+// Generates a consistent hue from a string (0-360)
+function stringToHue(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  return Math.abs(hash) % 360;
+}
+
+function CourseCover({ course }: { course: CourseListItem }) {
+  const [imgError, setImgError] = useState(false);
+  if (course.imagen_portada && !imgError) {
+    return (
+      <img
+        src={course.imagen_portada}
+        alt={course.titulo}
+        className="w-full h-full object-cover"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  const hue = stringToHue(course.titulo);
+  const initials = course.titulo
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center"
+      style={{
+        background: `linear-gradient(135deg, hsl(${hue},55%,22%) 0%, hsl(${(hue + 30) % 360},60%,35%) 100%)`,
+      }}
+    >
+      <span
+        className="text-2xl font-bold tracking-widest select-none"
+        style={{ color: `hsl(${hue},80%,85%)` }}
+      >
+        {initials}
+      </span>
+    </div>
+  );
+}
+
 const ESTADO_LABELS = [
   { value: "", label: "Todos" },
   { value: "EN_PROGRESO", label: "En progreso" },
@@ -40,11 +83,10 @@ function CourseCard({
 }) {
   const enrollment = course.enrollment;
   const progreso = enrollment?.progreso_porcentaje ?? 0;
-  const icon = TIPO_ICONS[course.tipo] ?? "ti-book";
 
   return (
     <div className="relative group bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-500/30 transition-all">
-      {/* Edit/Delete overlay — only visible when can_edit */}
+      {/* Edit overlay — only visible when can_edit */}
       {course.can_edit && (
         <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
           <button
@@ -60,9 +102,9 @@ function CourseCard({
 
       {/* Card link area */}
       <Link to={`/courses/${course.id}`} className="block">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-800/10 px-4 py-7 flex items-center justify-center">
-          <i className={`ti ${icon} text-4xl text-indigo-400/70`} aria-hidden="true" />
+        {/* Cover — image if set, otherwise auto-generated gradient with initials */}
+        <div className="h-28 overflow-hidden">
+          <CourseCover course={course} />
         </div>
 
         {/* Body */}

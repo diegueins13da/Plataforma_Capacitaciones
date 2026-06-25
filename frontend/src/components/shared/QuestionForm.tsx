@@ -141,18 +141,32 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
       {/* Options — MULTIPLE_CHOICE */}
       {tipo === "MULTIPLE_CHOICE" && (
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-muted-foreground">
-            Opciones <span className="text-muted-foreground">(selecciona la correcta)</span>
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-xs font-medium text-muted-foreground">Opciones</label>
+            <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+              <i className="ti ti-star-filled text-[9px] mr-1" />
+              marca la respuesta correcta
+            </span>
+          </div>
           {opciones.map((op, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="correct"
-                checked={correctaIdx === i}
-                onChange={() => setCorrectaIdx(i)}
-                className="accent-indigo-600"
-              />
+            <div
+              key={i}
+              className={`flex items-center gap-2 rounded-lg px-2 py-1 transition-colors ${
+                correctaIdx === i ? "bg-emerald-500/8 ring-1 ring-emerald-500/30" : ""
+              }`}
+            >
+              <button
+                type="button"
+                title="Marcar como respuesta correcta"
+                onClick={() => setCorrectaIdx(i)}
+                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                  correctaIdx === i
+                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    : "border-slate-600 hover:border-emerald-500/60"
+                }`}
+              >
+                {correctaIdx === i && <i className="ti ti-check text-[10px]" />}
+              </button>
               <input
                 type="text"
                 value={op}
@@ -164,6 +178,9 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                 placeholder={`Opción ${i + 1}`}
                 className="flex-1 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
+              {correctaIdx === i && (
+                <span className="text-xs text-emerald-400 font-medium shrink-0">Correcta</span>
+              )}
             </div>
           ))}
         </div>
@@ -172,21 +189,36 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
       {/* Options — MULTIPLE_SELECT */}
       {tipo === "MULTIPLE_SELECT" && (
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-muted-foreground">
-            Opciones <span className="text-muted-foreground">(marca todas las correctas)</span>
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-xs font-medium text-muted-foreground">Opciones</label>
+            <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+              <i className="ti ti-star-filled text-[9px] mr-1" />
+              marca todas las correctas
+            </span>
+          </div>
           {opciones.map((op, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={multiSelect[i]}
-                onChange={(e) => {
+            <div
+              key={i}
+              className={`flex items-center gap-2 rounded-lg px-2 py-1 transition-colors ${
+                multiSelect[i] ? "bg-emerald-500/8 ring-1 ring-emerald-500/30" : ""
+              }`}
+            >
+              <button
+                type="button"
+                title="Marcar como respuesta correcta"
+                onClick={() => {
                   const n = [...multiSelect];
-                  n[i] = e.target.checked;
+                  n[i] = !n[i];
                   setMultiSelect(n);
                 }}
-                className="accent-indigo-600"
-              />
+                className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                  multiSelect[i]
+                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    : "border-slate-600 hover:border-emerald-500/60"
+                }`}
+              >
+                {multiSelect[i] && <i className="ti ti-check text-[10px]" />}
+              </button>
               <input
                 type="text"
                 value={op}
@@ -198,6 +230,9 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                 placeholder={`Opción ${i + 1}`}
                 className="flex-1 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
+              {multiSelect[i] && (
+                <span className="text-xs text-emerald-400 font-medium shrink-0">Correcta</span>
+              )}
             </div>
           ))}
         </div>

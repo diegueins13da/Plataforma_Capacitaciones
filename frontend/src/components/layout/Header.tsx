@@ -14,7 +14,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   notifications: "Notificaciones",
   admin: "Administración",
   users: "Usuarios",
-  reports: "Auditoría",
+  reports: "Reportes",
   certificates: "Certificados",
   config: "Configuración",
   groups: "Grupos",

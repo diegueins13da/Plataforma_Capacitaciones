@@ -33,6 +33,8 @@ const SELECT_CLS =
   "bg-card border border-border text-foreground rounded-lg px-3 py-2 text-sm " +
   "focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-colors";
 
+type SortKey = "titulo" | "estado" | "area_nombre" | "module_count" | "fecha_limite";
+
 export default function CourseListPage() {
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
@@ -41,6 +43,8 @@ export default function CourseListPage() {
   const [page, setPage] = useState(1);
   const [filterEstado, setFilterEstado] = useState<CourseEstado | "">("");
   const [filterArea, setFilterArea] = useState<number | "">("");
+  const [sortKey, setSortKey] = useState<SortKey>("titulo");
+  const [sortAsc, setSortAsc] = useState(true);
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -116,6 +120,24 @@ export default function CourseListPage() {
 
   const totalPages = Math.ceil(total / 20);
 
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortAsc((v) => !v);
+    else { setSortKey(key); setSortAsc(true); }
+  }
+
+  const sortedCourses = [...courses].sort((a, b) => {
+    const va = (a[sortKey] ?? "") as string | number;
+    const vb = (b[sortKey] ?? "") as string | number;
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <i className="ti ti-arrows-sort text-[10px] opacity-30 ml-1" />;
+    return <i className={`ti ${sortAsc ? "ti-sort-ascending" : "ti-sort-descending"} text-[10px] text-indigo-400 ml-1`} />;
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -172,17 +194,22 @@ export default function CourseListPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-background text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  <th className="px-4 py-3">Nombre</th>
+                  {(["titulo", "estado", "area_nombre", "module_count", "fecha_limite"] as SortKey[]).map((col, idx) => (
+                    <th
+                      key={col}
+                      onClick={() => toggleSort(col)}
+                      className={`px-4 py-3 cursor-pointer hover:text-foreground select-none transition-colors ${idx === 3 ? "text-center" : ""}`}
+                    >
+                      {col === "titulo" ? "Nombre" : col === "estado" ? "Estado" : col === "area_nombre" ? "Área" : col === "module_count" ? "Mód." : "Fecha límite"}
+                      <SortIcon col={col} />
+                    </th>
+                  ))}
                   <th className="px-4 py-3">Tipo</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Área</th>
-                  <th className="px-4 py-3 text-center">Mód.</th>
-                  <th className="px-4 py-3">Fecha límite</th>
                   <th className="px-4 py-3">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {courses.map((course) => {
+                {sortedCourses.map((course) => {
                   const badge = ESTADO_BADGE[course.estado];
                   return (
                     <tr key={course.id} className="hover:bg-background transition-colors">
@@ -191,9 +218,6 @@ export default function CourseListPage() {
                         {course.instructor_nombre && (
                           <p className="text-xs text-muted-foreground">{course.instructor_nombre}</p>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {TIPO_LABELS[course.tipo] ?? course.tipo}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>
@@ -210,6 +234,9 @@ export default function CourseListPage() {
                         {course.fecha_limite
                           ? new Date(course.fecha_limite + "T00:00:00").toLocaleDateString("es-EC")
                           : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {TIPO_LABELS[course.tipo] ?? course.tipo}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">

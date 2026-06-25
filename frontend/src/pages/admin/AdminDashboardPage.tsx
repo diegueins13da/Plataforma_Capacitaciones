@@ -16,6 +16,8 @@ interface AdminStats {
   trainerCount: number;
   adminCount: number;
   totalGroups: number;
+  publishedCourses: number;
+  totalCourses: number;
   coursesByStatus: { name: string; value: number; color: string }[];
   roleDistribution: { name: string; value: number }[];
 }
@@ -173,6 +175,8 @@ export default function AdminDashboardPage() {
           trainerCount: trainers.count,
           adminCount: admins.count,
           totalGroups: groups.length,
+          publishedCourses: publicado.count,
+          totalCourses: borrador.count + publicado.count + archivado.count,
           coursesByStatus: [
             { name: "Borrador", value: borrador.count, color: "#64748b" },
             { name: "Publicado", value: publicado.count, color: "#10B981" },
@@ -213,10 +217,10 @@ export default function AdminDashboardPage() {
               icon="ti-users" iconColor="#4F46E5" accent="border-indigo-500/20" />
             <KpiCard label="Usuarios activos" value={stats.activeUsers}
               icon="ti-user-check" iconColor="#10B981" accent="border-emerald-500/20" />
+            <KpiCard label="Cursos publicados" value={stats.publishedCourses}
+              icon="ti-books" iconColor="#F59E0B" accent="border-amber-500/20" />
             <KpiCard label="Capacitadores" value={stats.trainerCount}
-              icon="ti-school" iconColor="#F59E0B" accent="border-amber-500/20" />
-            <KpiCard label="Grupos" value={stats.totalGroups}
-              icon="ti-sitemap" iconColor="#8B5CF6" accent="border-violet-500/20" />
+              icon="ti-school" iconColor="#8B5CF6" accent="border-violet-500/20" />
           </div>
 
           {/* Charts */}
@@ -229,7 +233,7 @@ export default function AdminDashboardPage() {
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-3">Accesos rápidos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <QuickCard to="/admin/config" icon="ti-users" title="Gestión de usuarios"
+              <QuickCard to="/admin/config?tab=usuarios" icon="ti-users" title="Gestión de usuarios"
                 desc="Crear, editar y cambiar roles" color="#4F46E5" />
               <QuickCard to="/admin/courses" icon="ti-book" title="Gestión de cursos"
                 desc="Publicar y administrar cursos" color="#10B981" />

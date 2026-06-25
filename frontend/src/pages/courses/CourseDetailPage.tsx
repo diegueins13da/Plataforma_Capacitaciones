@@ -162,7 +162,6 @@ export default function CourseDetailPage() {
   if (!course) return null;
 
   const enrollment = course.enrollment;
-  const progreso = enrollment?.progreso_porcentaje ?? 0;
   const isAdmin = user?.role === "ADMIN";
   const isTrainer = user?.role === "TRAINER";
   const canEdit = isAdmin || (isTrainer && trainerMode === "INSTRUCTOR");
@@ -170,6 +169,8 @@ export default function CourseDetailPage() {
   const modules = course.modules_with_status;
   const totalModules = modules.length;
   const completedCount = modules.filter((m) => m.is_completed).length;
+  // Derive progress from completed modules so "X/Y módulos" and "Z%" always agree (F-AL1)
+  const progreso = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
 
   // Next module to continue, or first for "revisar"
   const nextModule = modules.find((m) => m.is_unlocked && !m.is_completed);
