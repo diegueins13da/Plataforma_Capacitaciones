@@ -40,9 +40,16 @@ export function UrgencyBadge({ fechaLimite, className = "" }: UrgencyBadgeProps)
       </span>
     );
   }
+  if (days <= 30) {
+    return (
+      <span className={`text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 ${className}`}>
+        Vence en {days} días
+      </span>
+    );
+  }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 ${className}`}>
-      {days} días restantes
+      Vence en {days} días
     </span>
   );
 }

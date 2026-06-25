@@ -8,7 +8,7 @@
  *   - Notifications (email toggles)
  *   - Areas (organizational area catalog)
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -247,6 +247,7 @@ function LogoSettingRow({ setting, onSave }: SettingRowProps) {
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(setting.valor);
   const [imgError, setImgError] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!editing) return;
@@ -254,6 +255,23 @@ function LogoSettingRow({ setting, onSave }: SettingRowProps) {
     const t = setTimeout(() => setPreviewUrl(value), 800);
     return () => clearTimeout(t);
   }, [value, editing]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 512 * 1024) {
+      toast.error("El archivo es demasiado grande. Máximo 512 KB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setValue(dataUrl);
+      setPreviewUrl(dataUrl);
+      setImgError(false);
+    };
+    reader.readAsDataURL(file);
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -283,13 +301,29 @@ function LogoSettingRow({ setting, onSave }: SettingRowProps) {
             <>
               <input
                 type="text"
-                value={value}
+                value={value.startsWith("data:") ? "(archivo cargado)" : value}
                 onChange={(e) => setValue(e.target.value)}
-                autoFocus
-                placeholder="https://..."
+                placeholder="https://... o sube un archivo"
                 onKeyDown={(e) => e.key === "Enter" && void handleSave()}
-                className={`${inputCls} w-56`}
+                className={`${inputCls} w-44`}
+                readOnly={value.startsWith("data:")}
               />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                title="Subir imagen desde disco"
+                onClick={() => fileRef.current?.click()}
+                className="h-9 px-3 border border-dashed border-indigo-500/50 text-indigo-400 text-xs rounded-lg hover:bg-indigo-500/10 transition-colors flex items-center gap-1.5"
+              >
+                <i className="ti ti-upload text-sm" aria-hidden="true" />
+                Archivo
+              </button>
               <button
                 onClick={() => void handleSave()}
                 disabled={saving}

@@ -5,6 +5,9 @@ import { NotificationDropdown } from "./NotificationDropdown";
 const BREADCRUMB_LABELS: Record<string, string> = {
   dashboard: "Inicio",
   courses: "Cursos",
+  modules: "Módulo",
+  instructor: "Instructor",
+  grades: "Calificaciones",
   "my-courses": "Mis cursos",
   "my-certificates": "Mis certificados",
   profile: "Mi perfil",
@@ -12,6 +15,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   admin: "Administración",
   users: "Usuarios",
   reports: "Auditoría",
+  certificates: "Certificados",
   config: "Configuración",
   groups: "Grupos",
   import: "Importación",

@@ -22,7 +22,8 @@ const NAV_ADMIN: NavItem[] = [
 
 const NAV_TRAINER_INSTRUCTOR: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: "ti-layout-dashboard", end: true },
-  { to: "/admin/courses", label: "Mis cursos creados", icon: "ti-school" },
+  { to: "/admin/courses", label: "Mis cursos", icon: "ti-school" },
+  { to: "/instructor/grades", label: "Calificaciones", icon: "ti-chart-bar" },
   { to: "/notifications", label: "Notificaciones", icon: "ti-bell", badge: true },
 ];
 
@@ -41,7 +42,7 @@ const NAV_USUARIO: NavItem[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Sidebar item
+// Sidebar item — icon + short label
 // ---------------------------------------------------------------------------
 function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string }) {
   return (
@@ -51,7 +52,7 @@ function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string
       title={item.label}
       className={({ isActive }) =>
         [
-          "relative w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-150 group",
+          "relative w-full flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 transition-all duration-150 group",
           isActive ? "" : "text-white/30 hover:text-white/70 hover:bg-white/5",
         ].join(" ")
       }
@@ -61,18 +62,16 @@ function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string
           : {}
       }
     >
-      <i className={`ti ${item.icon} text-[18px]`} aria-hidden="true" />
-      {item.badge && (
-        <span
-          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-          style={{ background: "#EF4444" }}
-        />
-      )}
-      {/* Tooltip */}
-      <span
-        className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
-        style={{ background: "#1e293b", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.1)" }}
-      >
+      <div className="relative">
+        <i className={`ti ${item.icon} text-[17px]`} aria-hidden="true" />
+        {item.badge && (
+          <span
+            className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full"
+            style={{ background: "#EF4444" }}
+          />
+        )}
+      </div>
+      <span className="text-[9px] font-medium leading-none tracking-wide truncate w-full text-center">
         {item.label}
       </span>
     </NavLink>
@@ -80,9 +79,9 @@ function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string
 }
 
 // ---------------------------------------------------------------------------
-// Context pill for TRAINER
+// Context toggle for TRAINER — visually clear mode switcher
 // ---------------------------------------------------------------------------
-function TrainerContextPill() {
+function TrainerContextToggle() {
   const { mode, toggle } = useTrainerModeStore();
   const navigate = useNavigate();
   const isInstructor = mode === "INSTRUCTOR";
@@ -95,30 +94,47 @@ function TrainerContextPill() {
   return (
     <button
       onClick={handleSwitch}
-      title={`Cambiar a modo ${isInstructor ? "Alumno" : "Instructor"}`}
+      aria-label={`Cambiar a modo ${isInstructor ? "Alumno" : "Instructor"}`}
+      title={`Vista actual: ${isInstructor ? "Instructor" : "Alumno"} — clic para cambiar`}
       style={{
-        background: isInstructor ? "rgba(79,70,229,0.28)" : "rgba(16,185,129,0.18)",
-        border: `1px solid ${isInstructor ? "rgba(129,140,248,0.35)" : "rgba(52,211,153,0.35)"}`,
-        color: isInstructor ? "#a5b4fc" : "#6ee7b7",
-        borderRadius: 20,
-        fontSize: 9,
-        fontWeight: 600,
-        padding: "3px 7px",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 10,
         cursor: "pointer",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         gap: 3,
-        letterSpacing: "0.3px",
-        whiteSpace: "nowrap",
+        padding: "6px 4px 4px",
+        width: "100%",
         transition: "all 0.2s ease",
       }}
+      className="hover:bg-white/8 group"
     >
+      {/* Active mode badge */}
+      <span
+        style={{
+          background: isInstructor ? "rgba(79,70,229,0.35)" : "rgba(16,185,129,0.25)",
+          color: isInstructor ? "#a5b4fc" : "#6ee7b7",
+          borderRadius: 6,
+          fontSize: 8,
+          fontWeight: 700,
+          padding: "2px 5px",
+          letterSpacing: "0.4px",
+          lineHeight: 1.4,
+        }}
+      >
+        {isInstructor ? "INST." : "ALU."}
+      </span>
+      {/* Arrows indicating it's switchable */}
       <i
-        className={`ti ${isInstructor ? "ti-school" : "ti-user"}`}
-        style={{ fontSize: 9 }}
+        className="ti ti-arrows-exchange text-white/30 group-hover:text-white/60 transition-colors"
+        style={{ fontSize: 11 }}
         aria-hidden="true"
       />
-      {isInstructor ? "Instructor" : "Alumno"}
+      <span style={{ fontSize: 8, color: "rgba(255,255,255,0.28)", lineHeight: 1 }}>
+        cambiar
+      </span>
     </button>
   );
 }
@@ -168,7 +184,7 @@ export function Sidebar() {
   return (
     <aside
       className="shrink-0 flex flex-col items-center py-3 min-h-screen gap-1 overflow-visible"
-      style={{ width: "52px", background: "#0a0f1e", borderRight: "1px solid #1e293b" }}
+      style={{ width: "68px", background: "#0a0f1e", borderRight: "1px solid #1e293b", padding: "12px 6px" }}
     >
       {/* Logo */}
       <div
@@ -178,19 +194,19 @@ export function Sidebar() {
         <i className="ti ti-certificate text-white text-sm" aria-hidden="true" />
       </div>
 
-      {/* Context pill — only for TRAINER */}
+      {/* Context toggle — only for TRAINER */}
       {role === "TRAINER" && (
         <>
-          <TrainerContextPill />
-          <div className="w-5 my-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+          <TrainerContextToggle />
+          <div className="w-full my-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
         </>
       )}
 
       {/* Role-specific nav */}
       {navItems.map((item) => (
-        <div key={item.to} className="flex flex-col items-center w-full gap-1">
+        <div key={item.to} className="flex flex-col items-center w-full gap-0.5">
           {item.dividerBefore && (
-            <div className="w-5 my-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+            <div className="w-full my-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
           )}
           <SidebarItem item={item} accentColor={accentColor} />
         </div>
@@ -204,15 +220,12 @@ export function Sidebar() {
         type="button"
         title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
         onClick={toggleTheme}
-        className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors group mb-1"
+        className="w-full flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 transition-colors hover:bg-white/5 mb-0.5"
         style={{ color: "rgba(255,255,255,0.35)" }}
       >
-        <i className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"} text-[18px]`} aria-hidden="true" />
-        <span
-          className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
-          style={{ background: "#1e293b", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.1)" }}
-        >
-          {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+        <i className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"} text-[17px]`} aria-hidden="true" />
+        <span className="text-[9px] font-medium leading-none">
+          {theme === "dark" ? "Claro" : "Oscuro"}
         </span>
       </button>
 
@@ -221,32 +234,21 @@ export function Sidebar() {
         type="button"
         title="Cerrar sesión"
         onClick={() => void handleLogout()}
-        className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors group mb-1"
+        className="w-full flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 transition-colors hover:bg-white/5 mb-1"
         style={{ color: "rgba(255,255,255,0.25)" }}
       >
-        <i className="ti ti-logout text-[18px]" aria-hidden="true" />
-        <span
-          className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
-          style={{ background: "#1e293b", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.1)" }}
-        >
-          Cerrar sesión
-        </span>
+        <i className="ti ti-logout text-[17px]" aria-hidden="true" />
+        <span className="text-[9px] font-medium leading-none">Salir</span>
       </button>
 
       {/* User avatar */}
       <NavLink
         to="/profile"
         title={user?.full_name ?? user?.email ?? "Perfil"}
-        className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-opacity hover:opacity-80 group"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-opacity hover:opacity-80"
         style={{ background: avatarBg, color: avatarColor, transition: "background 0.2s ease, color 0.2s ease" }}
       >
         {initials}
-        <span
-          className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity z-50"
-          style={{ background: "#1e293b", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.1)" }}
-        >
-          {user?.full_name ?? user?.email ?? "Perfil"}
-        </span>
       </NavLink>
     </aside>
   );

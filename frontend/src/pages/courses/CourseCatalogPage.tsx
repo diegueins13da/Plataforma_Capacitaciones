@@ -131,6 +131,7 @@ export default function CourseCatalogPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [filterEstado, setFilterEstado] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [editCourse, setEditCourse] = useState<CourseListItem | null>(null);
   const { user } = useAuthStore();
   const trainerMode = useTrainerModeStore((s) => s.mode);
@@ -157,10 +158,12 @@ export default function CourseCatalogPage() {
 
   useEffect(() => { void load(1); setPage(1); }, [load]);
 
-  // Client-side filter by enrollment estado
-  const filtered = filterEstado
-    ? courses.filter((c) => c.enrollment?.estado === filterEstado)
-    : courses;
+  // Client-side filter by enrollment estado and search query
+  const filtered = courses.filter((c) => {
+    const matchesEstado = !filterEstado || c.enrollment?.estado === filterEstado;
+    const matchesSearch = !searchQuery || c.titulo.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesEstado && matchesSearch;
+  });
 
   const totalPages = Math.ceil(total / 20);
 
@@ -177,6 +180,27 @@ export default function CourseCatalogPage() {
         <p className="text-sm text-muted-foreground mt-1">
           {total} curso{total !== 1 ? "s" : ""} disponible{total !== 1 ? "s" : ""}
         </p>
+      </div>
+
+      {/* Search bar */}
+      <div className="relative mb-4">
+        <i className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none" aria-hidden="true" />
+        <input
+          type="text"
+          placeholder="Buscar curso por nombre…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-sm bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-colors"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <i className="ti ti-x text-xs" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* Enrollment status filter (client-side) */}

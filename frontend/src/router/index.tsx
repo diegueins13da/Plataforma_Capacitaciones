@@ -28,6 +28,7 @@ const ExamIntroPage = lazy(() => import("../pages/assessments/ExamIntroPage"));
 const ExamQuestionPage = lazy(() => import("../pages/assessments/ExamQuestionPage"));
 const ExamResultPage = lazy(() => import("../pages/assessments/ExamResultPage"));
 const AIGeneratorPage = lazy(() => import("../pages/admin/courses/AIGeneratorPage"));
+const InstructorGradesPage = lazy(() => import("../pages/instructor/InstructorGradesPage"));
 const NotificationsPage = lazy(() => import("../pages/dashboard/NotificationsPage"));
 const AdminReportsPage = lazy(() => import("../pages/admin/reports/AdminReportsPage"));
 const MyCertificatesPage = lazy(() => import("../pages/certificates/MyCertificatesPage"));
@@ -78,6 +79,7 @@ export function AppRouter() {
             <Route path="/admin/courses/new" element={<CourseWizardPage />} />
             <Route path="/admin/courses/:id/edit" element={<CourseWizardPage />} />
             <Route path="/admin/courses/:id/ai-generator" element={<AIGeneratorPage />} />
+            <Route path="/instructor/grades" element={<InstructorGradesPage />} />
           </Route>
         </Route>
 

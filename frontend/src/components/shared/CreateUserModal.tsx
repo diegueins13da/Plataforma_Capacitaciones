@@ -58,9 +58,9 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
       onCreated(user);
       toast.success("Usuario creado. Se ha enviado un correo con la contraseña temporal.");
     } catch (err: unknown) {
-      const resp = (err as { response?: { data?: Record<string, string[]> } }).response;
-      const apiErrors = resp?.data;
-      if (apiErrors) {
+      const resp = (err as { response?: { data?: { errors?: Record<string, string[]> } } }).response;
+      const apiErrors = resp?.data?.errors;
+      if (apiErrors && Object.keys(apiErrors).length > 0) {
         (Object.entries(apiErrors) as [keyof FormData, string[]][]).forEach(([field, msgs]) => {
           setError(field, { message: msgs[0] });
         });

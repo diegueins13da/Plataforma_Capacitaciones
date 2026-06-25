@@ -142,6 +142,24 @@ export default function ProfilePage() {
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwErrors, setPwErrors] = useState<Record<string, string>>({});
+  const [showPwCurrent, setShowPwCurrent] = useState(false);
+  const [showPwNew, setShowPwNew] = useState(false);
+  const [showPwConfirm, setShowPwConfirm] = useState(false);
+
+  function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+    if (!pw) return { score: 0, label: "", color: "" };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (score <= 1) return { score, label: "Débil", color: "#ef4444" };
+    if (score <= 3) return { score, label: "Media", color: "#f59e0b" };
+    return { score, label: "Fuerte", color: "#10b981" };
+  }
+
+  const pwStrength = getPasswordStrength(pwNew);
 
   async function handlePasswordSave(e: React.FormEvent) {
     e.preventDefault();
@@ -389,35 +407,84 @@ export default function ProfilePage() {
         <form onSubmit={(e) => void handlePasswordSave(e)} className="space-y-3">
           <div>
             <label className={LABEL}>Contraseña actual</label>
-            <input
-              type="password"
-              value={pwCurrent}
-              onChange={(e) => setPwCurrent(e.target.value)}
-              autoComplete="current-password"
-              className={INPUT}
-            />
+            <div className="relative">
+              <input
+                type={showPwCurrent ? "text" : "password"}
+                value={pwCurrent}
+                onChange={(e) => setPwCurrent(e.target.value)}
+                autoComplete="current-password"
+                className={INPUT}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwCurrent((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+                aria-label={showPwCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                <i className={`ti ${showPwCurrent ? "ti-eye-off" : "ti-eye"} text-sm`} aria-hidden="true" />
+              </button>
+            </div>
             {pwErrors.current && <p className="text-xs text-red-400 mt-1">{pwErrors.current}</p>}
           </div>
           <div>
             <label className={LABEL}>Nueva contraseña</label>
-            <input
-              type="password"
-              value={pwNew}
-              onChange={(e) => setPwNew(e.target.value)}
-              autoComplete="new-password"
-              className={INPUT}
-            />
+            <div className="relative">
+              <input
+                type={showPwNew ? "text" : "password"}
+                value={pwNew}
+                onChange={(e) => setPwNew(e.target.value)}
+                autoComplete="new-password"
+                className={INPUT}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwNew((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+                aria-label={showPwNew ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                <i className={`ti ${showPwNew ? "ti-eye-off" : "ti-eye"} text-sm`} aria-hidden="true" />
+              </button>
+            </div>
+            {pwNew && (
+              <div className="mt-1.5 space-y-1">
+                <div className="flex gap-1 h-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-full transition-colors duration-300"
+                      style={{ background: i <= pwStrength.score ? pwStrength.color : "rgba(255,255,255,0.08)" }}
+                    />
+                  ))}
+                </div>
+                <p className="text-[11px]" style={{ color: pwStrength.color }}>
+                  {pwStrength.label}
+                </p>
+              </div>
+            )}
             {pwErrors.new && <p className="text-xs text-red-400 mt-1">{pwErrors.new}</p>}
           </div>
           <div>
             <label className={LABEL}>Confirmar nueva contraseña</label>
-            <input
-              type="password"
-              value={pwConfirm}
-              onChange={(e) => setPwConfirm(e.target.value)}
-              autoComplete="new-password"
-              className={INPUT}
-            />
+            <div className="relative">
+              <input
+                type={showPwConfirm ? "text" : "password"}
+                value={pwConfirm}
+                onChange={(e) => setPwConfirm(e.target.value)}
+                autoComplete="new-password"
+                className={INPUT}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwConfirm((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+                aria-label={showPwConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                <i className={`ti ${showPwConfirm ? "ti-eye-off" : "ti-eye"} text-sm`} aria-hidden="true" />
+              </button>
+            </div>
             {pwErrors.confirm && <p className="text-xs text-red-400 mt-1">{pwErrors.confirm}</p>}
           </div>
           <button

@@ -135,6 +135,59 @@ def instructor_dashboard(request):
     })
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def instructor_grades(request):
+    """Return per-student exam results for all courses owned by the requesting instructor."""
+    if request.user.role not in ("TRAINER", "ADMIN"):
+        return Response({"detail": "Forbidden."}, status=403)
+
+    from apps.assessments.models import UserAnswer
+
+    instructor = request.user
+    courses = (
+        Course.objects.filter(created_by=instructor)
+        .select_related("assessment")
+        .prefetch_related("enrollments", "enrollments__user")
+    )
+
+    rows = []
+    for course in courses:
+        try:
+            assessment = course.assessment
+        except Exception:
+            assessment = None
+
+        for enrollment in course.enrollments.all():
+            best = None
+            if assessment:
+                attempts = list(
+                    UserAnswer.objects.filter(
+                        assessment=assessment,
+                        user=enrollment.user,
+                        aprobado__isnull=False,
+                    ).order_by("-calificacion")[:1]
+                )
+                if attempts:
+                    best = attempts[0]
+
+            rows.append({
+                "user_id": enrollment.user.id,
+                "nombre": enrollment.user.get_full_name() or enrollment.user.email,
+                "email": enrollment.user.email,
+                "curso_id": course.id,
+                "curso_titulo": course.titulo,
+                "progreso": enrollment.progreso_porcentaje,
+                "estado": enrollment.estado,
+                "nota": float(best.calificacion) if best and best.calificacion is not None else None,
+                "aprobado": best.aprobado if best else None,
+                "fecha_examen": best.fecha_fin.isoformat() if best and best.fecha_fin else None,
+            })
+
+    rows.sort(key=lambda r: (r["curso_titulo"], r["nombre"]))
+    return Response({"results": rows, "count": len(rows)})
+
+
 class CourseViewSet(GenericViewSet):
     """
     Course management endpoints.
