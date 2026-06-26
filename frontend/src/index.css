@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 220 14% 96%;          /* gris-azulado suave — da jerarquía a las cards */
+    --background: 220 13% 91%;          /* gris-azulado — da jerarquía a las cards */
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;                  /* blanco puro — flotan sobre el fondo */
