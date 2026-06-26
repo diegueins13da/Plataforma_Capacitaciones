@@ -7,6 +7,8 @@ import type {
   CourseModule,
   CreateCoursePayload,
   CreateModulePayload,
+  CreateTemaPayload,
+  Tema,
 } from "../types/course";
 
 export interface InstructorCourseStats {
@@ -135,68 +137,91 @@ export const coursesService = {
     return res.data;
   },
 
-  async createModule(
-    courseId: number,
-    payload: CreateModulePayload,
-    pdfFile?: File,
-    onProgress?: (percent: number) => void
-  ): Promise<CourseModule> {
-    if (pdfFile) {
-      const form = new FormData();
-      Object.entries(payload).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) form.append(k, String(v));
-      });
-      form.append("archivo_pdf", pdfFile);
-      const res = await api.post<CourseModule>(`${BASE}/${courseId}/modules/`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (e) => {
-          if (onProgress && e.total) {
-            onProgress(Math.round((e.loaded / e.total) * 100));
-          }
-        },
-      });
-      return res.data;
-    }
+  async createModule(courseId: number, payload: CreateModulePayload): Promise<CourseModule> {
     const res = await api.post<CourseModule>(`${BASE}/${courseId}/modules/`, payload);
     return res.data;
   },
 
-  async updateModule(
-    courseId: number,
-    moduleId: number,
-    payload: Partial<CreateModulePayload>,
-    pdfFile?: File,
-    onProgress?: (percent: number) => void
-  ): Promise<CourseModule> {
-    if (pdfFile) {
-      const form = new FormData();
-      Object.entries(payload).forEach(([k, v]) => {
-        if (v !== undefined && v !== null) form.append(k, String(v));
-      });
-      form.append("archivo_pdf", pdfFile);
-      const res = await api.patch<CourseModule>(
-        `${BASE}/${courseId}/modules/${moduleId}/`,
-        form,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (e) => {
-            if (onProgress && e.total) {
-              onProgress(Math.round((e.loaded / e.total) * 100));
-            }
-          },
-        }
-      );
-      return res.data;
-    }
-    const res = await api.patch<CourseModule>(
-      `${BASE}/${courseId}/modules/${moduleId}/`,
-      payload
-    );
+  async updateModule(courseId: number, moduleId: number, payload: Partial<CreateModulePayload>): Promise<CourseModule> {
+    const res = await api.patch<CourseModule>(`${BASE}/${courseId}/modules/${moduleId}/`, payload);
     return res.data;
   },
 
   async deleteModule(courseId: number, moduleId: number): Promise<void> {
     await api.delete(`${BASE}/${courseId}/modules/${moduleId}/`);
+  },
+
+  // ------------------------------------------------------------------
+  // Temas
+  // ------------------------------------------------------------------
+
+  async createTema(
+    courseId: number,
+    moduleId: number,
+    payload: CreateTemaPayload,
+    files?: { pdfFile?: File; videoFile?: File; imagenFile?: File },
+    onProgress?: (percent: number) => void,
+  ): Promise<Tema> {
+    const hasFile = files?.pdfFile || files?.videoFile || files?.imagenFile;
+    if (hasFile) {
+      const form = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) form.append(k, String(v));
+      });
+      if (files?.pdfFile) form.append("archivo_pdf", files.pdfFile);
+      if (files?.videoFile) form.append("archivo_video", files.videoFile);
+      if (files?.imagenFile) form.append("archivo_imagen", files.imagenFile);
+      const res = await api.post<Tema>(
+        `${BASE}/${courseId}/modules/${moduleId}/temas/`,
+        form,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (e) => {
+            if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+          },
+        },
+      );
+      return res.data;
+    }
+    const res = await api.post<Tema>(`${BASE}/${courseId}/modules/${moduleId}/temas/`, payload);
+    return res.data;
+  },
+
+  async updateTema(
+    courseId: number,
+    moduleId: number,
+    temaId: number,
+    payload: Partial<CreateTemaPayload>,
+    files?: { pdfFile?: File; videoFile?: File; imagenFile?: File },
+    onProgress?: (percent: number) => void,
+  ): Promise<Tema> {
+    const hasFile = files?.pdfFile || files?.videoFile || files?.imagenFile;
+    if (hasFile) {
+      const form = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) form.append(k, String(v));
+      });
+      if (files?.pdfFile) form.append("archivo_pdf", files.pdfFile);
+      if (files?.videoFile) form.append("archivo_video", files.videoFile);
+      if (files?.imagenFile) form.append("archivo_imagen", files.imagenFile);
+      const res = await api.patch<Tema>(
+        `${BASE}/${courseId}/modules/${moduleId}/temas/${temaId}/`,
+        form,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (e) => {
+            if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+          },
+        },
+      );
+      return res.data;
+    }
+    const res = await api.patch<Tema>(`${BASE}/${courseId}/modules/${moduleId}/temas/${temaId}/`, payload);
+    return res.data;
+  },
+
+  async deleteTema(courseId: number, moduleId: number, temaId: number): Promise<void> {
+    await api.delete(`${BASE}/${courseId}/modules/${moduleId}/temas/${temaId}/`);
   },
 
   // ------------------------------------------------------------------

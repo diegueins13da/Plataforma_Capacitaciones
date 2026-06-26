@@ -10,7 +10,7 @@ import { assessmentsService } from "../../services/assessmentsService";
 import { RichTextEditor } from "./RichTextEditor";
 import { QuestionForm } from "./QuestionForm";
 import type { Area } from "../../types/area";
-import type { CourseModule, ModuleTipo } from "../../types/course";
+import type { CourseModule, CreateTemaPayload, Tema, TemaTipo } from "../../types/course";
 import type { Assessment, CreateQuestionPayload, Question } from "../../types/assessment";
 
 // ── Schema ──────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ const schema = z.object({
   }),
   area: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-    z.number({ required_error: "El área es obligatoria" }).int().positive("Selecciona un área")
+    z.number({ required_error: "El área es obligatoria", invalid_type_error: "El área es obligatoria" }).int().positive("Selecciona un área")
   ),
   version: z.string().min(1, "La versión es obligatoria"),
   fecha_limite: z.string().optional(),
@@ -39,23 +39,31 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const MOD_ICONS: Record<ModuleTipo, string> = {
-  VIDEO: "ti-player-play", PDF: "ti-file-text", TEXTO: "ti-file-description", SCORM: "ti-package",
-};
-const MOD_LABELS: Record<ModuleTipo, string> = {
-  VIDEO: "Video", PDF: "PDF", TEXTO: "Texto HTML", SCORM: "SCORM",
-};
 const Q_LABELS: Record<string, string> = {
   MULTIPLE_CHOICE: "Selección única", MULTIPLE_SELECT: "Selección múltiple", TRUE_FALSE: "V / F",
 };
 
-interface ModForm {
-  titulo: string; tipo_contenido: ModuleTipo; url_video: string;
-  contenido_html: string; duracion_minutos: string; pdfFile: File | null;
+const TEMA_TIPO_ICONS: Record<TemaTipo, string> = {
+  VIDEO: "ti-player-play", PDF: "ti-file-type-pdf", TEXTO: "ti-file-text",
+  IMAGEN: "ti-photo", IFRAME: "ti-world",
+};
+const TEMA_TIPO_LABELS: Record<TemaTipo, string> = {
+  VIDEO: "Video", PDF: "PDF", TEXTO: "Texto HTML",
+  IMAGEN: "Imagen", IFRAME: "Enlace externo (iFrame)",
+};
+
+interface TemaFormState {
+  titulo: string; tipo_contenido: TemaTipo; url_video: string;
+  contenido_html: string; url_iframe: string; duracion_minutos: string;
+  pdfFile: File | null; videoFile: File | null; imagenFile: File | null;
 }
-function emptyMod(): ModForm {
-  return { titulo: "", tipo_contenido: "TEXTO", url_video: "", contenido_html: "", duracion_minutos: "", pdfFile: null };
+function emptyTema(): TemaFormState {
+  return { titulo: "", tipo_contenido: "TEXTO", url_video: "", contenido_html: "",
+    url_iframe: "", duracion_minutos: "", pdfFile: null, videoFile: null, imagenFile: null };
 }
+
+interface ModForm { titulo: string; }
+function emptyMod(): ModForm { return { titulo: "" }; }
 
 // ── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -87,10 +95,16 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showModForm, setShowModForm] = useState(false);
-  const [editingModId, setEditingModId] = useState<number | null>(null);
   const [modForm, setModForm] = useState<ModForm>(emptyMod());
   const [modSaving, setModSaving] = useState(false);
+  const [expandedMods, setExpandedMods] = useState<Set<number>>(new Set());
+  const [expandedModTitles, setExpandedModTitles] = useState<Record<number, string>>({});
+  const [temaModuleId, setTemaModuleId] = useState<number | null>(null);
+  const [editingTemaId, setEditingTemaId] = useState<number | null>(null);
+  const [temaForm, setTemaForm] = useState<TemaFormState>(emptyTema());
+  const [temaSaving, setTemaSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  // temaFormRef removed — form lives in fixed right panel
   const [puntajeMin, setPuntajeMin] = useState("70");
   const [maxIntentos, setMaxIntentos] = useState("3");
   const [tiempoLimite, setTiempoLimite] = useState("");
@@ -196,36 +210,49 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
   }
 
   // ── Modules ──────────────────────────────────────────────────────────────
-  function openCreateMod() { setEditingModId(null); setModForm(emptyMod()); setShowModForm(true); }
-  function openEditMod(m: CourseModule) {
-    setEditingModId(m.id);
-    setModForm({ titulo: m.titulo, tipo_contenido: m.tipo_contenido, url_video: m.url_video ?? "",
-      contenido_html: m.contenido_html ?? "", duracion_minutos: m.duracion_minutos ? String(m.duracion_minutos) : "", pdfFile: null });
-    setShowModForm(true);
+  function openCreateMod() { setModForm(emptyMod()); setShowModForm(true); }
+
+  function toggleExpand(m: CourseModule) {
+    setExpandedMods((s) => {
+      const n = new Set(s);
+      if (n.has(m.id)) {
+        n.delete(m.id);
+        if (temaModuleId === m.id) { setTemaModuleId(null); setEditingTemaId(null); }
+      } else {
+        n.add(m.id);
+        setExpandedModTitles((t) => ({ ...t, [m.id]: m.titulo }));
+      }
+      return n;
+    });
+  }
+
+  async function saveModuleTitle(modId: number) {
+    if (!courseId) return;
+    const title = (expandedModTitles[modId] ?? "").trim();
+    if (!title) { toast.error("El título es obligatorio."); return; }
+    try {
+      const saved = await coursesService.updateModule(courseId, modId, { titulo: title });
+      setModules((ms) => ms.map((m) => m.id === modId ? { ...m, titulo: saved.titulo } : m));
+      toast.success("Título actualizado.");
+    } catch {
+      toast.error("No se pudo actualizar el título.");
+    }
   }
 
   async function handleSaveMod() {
     if (!courseId) return;
     if (!modForm.titulo.trim()) { toast.error("El título del módulo es obligatorio."); return; }
-    if (modForm.tipo_contenido === "VIDEO" && !modForm.url_video.trim()) { toast.error("La URL del video es obligatoria."); return; }
-    if (modForm.tipo_contenido === "PDF" && !editingModId && !modForm.pdfFile) { toast.error("Selecciona un archivo PDF."); return; }
-    setModSaving(true); setUploadProgress(0);
+    setModSaving(true);
     try {
-      const payload = { titulo: modForm.titulo.trim(), tipo_contenido: modForm.tipo_contenido,
-        url_video: modForm.url_video, contenido_html: modForm.contenido_html,
-        duracion_minutos: modForm.duracion_minutos ? parseInt(modForm.duracion_minutos) : null };
-      let saved: CourseModule;
-      if (editingModId) {
-        saved = await coursesService.updateModule(courseId, editingModId, payload, modForm.pdfFile ?? undefined, setUploadProgress);
-        setModules((ms) => ms.map((m) => (m.id === editingModId ? saved : m)));
-      } else {
-        saved = await coursesService.createModule(courseId, payload, modForm.pdfFile ?? undefined, setUploadProgress);
-        setModules((ms) => [...ms, saved]);
-      }
+      const saved = await coursesService.createModule(courseId, { titulo: modForm.titulo.trim() });
+      setModules((ms) => [...ms, { ...saved, temas: [] }]);
       setShowModForm(false);
-      toast.success(editingModId ? "Módulo actualizado." : "Módulo agregado.");
-    } catch { toast.error("No se pudo guardar el módulo."); }
-    finally { setModSaving(false); setUploadProgress(0); }
+      toast.success("Módulo creado. Ahora añade el primer tema.");
+      setExpandedMods((s) => new Set([...s, saved.id]));
+      setExpandedModTitles((t) => ({ ...t, [saved.id]: saved.titulo }));
+      setTemaModuleId(saved.id); setEditingTemaId(null); setTemaForm(emptyTema());
+    } catch { toast.error("No se pudo crear el módulo."); }
+    finally { setModSaving(false); }
   }
 
   async function handleDeleteMod(m: CourseModule) {
@@ -235,6 +262,78 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
       setModules((ms) => ms.filter((x) => x.id !== m.id));
       toast.success("Módulo eliminado.");
     } catch { toast.error("No se pudo eliminar el módulo."); }
+  }
+
+  // ── Tema handlers ────────────────────────────────────────────────────────
+  function openCreateTema(moduleId: number) {
+    setTemaModuleId(moduleId);
+    setEditingTemaId(null);
+    setTemaForm(emptyTema());
+    setShowModForm(false);
+    setExpandedMods((s) => new Set([...s, moduleId]));
+  }
+
+  function openEditTema(moduleId: number, tema: Tema) {
+    setTemaModuleId(moduleId);
+    setEditingTemaId(tema.id);
+    setTemaForm({
+      titulo: tema.titulo, tipo_contenido: tema.tipo_contenido,
+      url_video: tema.url_video, contenido_html: tema.contenido_html,
+      url_iframe: tema.url_iframe, duracion_minutos: tema.duracion_minutos ? String(tema.duracion_minutos) : "",
+      pdfFile: null, videoFile: null, imagenFile: null,
+    });
+    setShowModForm(false);
+  }
+
+  async function handleSaveTema() {
+    if (!courseId || !temaModuleId) return;
+    if (!temaForm.titulo.trim()) { toast.error("El título del tema es obligatorio."); return; }
+    if (temaForm.tipo_contenido === "VIDEO" && !temaForm.url_video.trim() && !temaForm.videoFile) {
+      toast.error("Ingresa una URL de video o sube un archivo."); return;
+    }
+    if (temaForm.tipo_contenido === "PDF" && !editingTemaId && !temaForm.pdfFile) {
+      toast.error("Selecciona un archivo PDF."); return;
+    }
+    if (temaForm.tipo_contenido === "IMAGEN" && !editingTemaId && !temaForm.imagenFile) {
+      toast.error("Selecciona una imagen."); return;
+    }
+    if (temaForm.tipo_contenido === "IFRAME" && !temaForm.url_iframe.trim()) {
+      toast.error("Ingresa la URL del contenido externo."); return;
+    }
+    setTemaSaving(true); setUploadProgress(0);
+    const payload: CreateTemaPayload = {
+      titulo: temaForm.titulo.trim(), tipo_contenido: temaForm.tipo_contenido,
+      url_video: temaForm.url_video, contenido_html: temaForm.contenido_html,
+      url_iframe: temaForm.url_iframe,
+      duracion_minutos: temaForm.duracion_minutos ? parseInt(temaForm.duracion_minutos) : null,
+    };
+    const files = { pdfFile: temaForm.pdfFile ?? undefined, videoFile: temaForm.videoFile ?? undefined, imagenFile: temaForm.imagenFile ?? undefined };
+    try {
+      let saved: Tema;
+      if (editingTemaId) {
+        saved = await coursesService.updateTema(courseId, temaModuleId, editingTemaId, payload, files, setUploadProgress);
+      } else {
+        saved = await coursesService.createTema(courseId, temaModuleId, payload, files, setUploadProgress);
+      }
+      setModules((ms) => ms.map((m) =>
+        m.id === temaModuleId
+          ? { ...m, temas: editingTemaId ? m.temas.map((t) => t.id === editingTemaId ? saved : t) : [...m.temas, saved] }
+          : m
+      ));
+      setTemaModuleId(null); setEditingTemaId(null);
+      toast.success(editingTemaId ? "Tema actualizado." : "Tema creado.");
+    } catch { toast.error("No se pudo guardar el tema."); }
+    finally { setTemaSaving(false); setUploadProgress(0); }
+  }
+
+  async function handleDeleteTema(moduleId: number, tema: Tema) {
+    if (!courseId) return;
+    if (!confirm(`¿Eliminar el tema "${tema.titulo}"?`)) return;
+    try {
+      await coursesService.deleteTema(courseId, moduleId, tema.id);
+      setModules((ms) => ms.map((m) => m.id === moduleId ? { ...m, temas: m.temas.filter((t) => t.id !== tema.id) } : m));
+      toast.success("Tema eliminado.");
+    } catch { toast.error("No se pudo eliminar el tema."); }
   }
 
   // ── Assessment ────────────────────────────────────────────────────────────
@@ -299,7 +398,7 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-4xl h-[90vh] max-h-[720px] min-h-[480px] flex flex-col shadow-2xl overflow-hidden">
 
         {/* ── Header ────────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background rounded-t-2xl shrink-0">
@@ -352,7 +451,7 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
 
         {/* ── Body ──────────────────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit(courseId ? onSubmitSave : onSubmitCreate)} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className={`flex-1 min-h-0 ${activeTab !== "modules" ? "overflow-y-auto px-6 py-5" : "overflow-hidden flex flex-col"}`}>
 
             {/* ─── INFORMACIÓN ─────────────────────────────────────────────── */}
             {activeTab === "info" && (
@@ -443,117 +542,274 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
               </div>
             )}
 
-            {/* ─── MÓDULOS ─────────────────────────────────────────────────── */}
+            {/* ─── MÓDULOS — split layout ───────────────────────────────── */}
             {activeTab === "modules" && courseId && (
-              <div className="space-y-3">
-                {modules.length === 0 && !showModForm && (
-                  <div className="text-center py-12 text-muted-foreground text-sm border-2 border-dashed border-border rounded-xl">
-                    <i className="ti ti-books text-3xl block mb-2 opacity-30" aria-hidden="true" />
-                    No hay módulos aún. Agrega el primero.
-                  </div>
-                )}
-                {modules.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
-                      <i className={`ti ${MOD_ICONS[m.tipo_contenido]} text-indigo-400`} aria-hidden="true" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{m.titulo}</p>
-                      <p className="text-xs text-muted-foreground">{MOD_LABELS[m.tipo_contenido]}{m.duracion_minutos ? ` · ${m.duracion_minutos} min` : ""}</p>
-                    </div>
-                    <button type="button" onClick={() => openEditMod(m)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors">
-                      <i className="ti ti-edit text-sm" aria-hidden="true" />
-                    </button>
-                    <button type="button" onClick={() => void handleDeleteMod(m)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
-                      <i className="ti ti-trash text-sm" aria-hidden="true" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex-1 flex min-h-0 overflow-hidden">
 
-                {showModForm ? (
-                  <div className="border border-border rounded-xl p-5 bg-background space-y-4 mt-2">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      {editingModId ? "Editar módulo" : "Nuevo módulo"}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                {/* ── LEFT: accordion list ── */}
+                <div className="w-3/5 min-w-0 overflow-y-auto px-5 py-4 space-y-2">
+                  {modules.length === 0 && !showModForm && (
+                    <div className="text-center py-12 text-muted-foreground text-sm border-2 border-dashed border-border rounded-xl">
+                      <i className="ti ti-books text-3xl block mb-2 opacity-30" aria-hidden="true" />
+                      No hay módulos aún. Agrega el primero.
+                    </div>
+                  )}
+
+                  {modules.map((m) => {
+                    const isOpen = expandedMods.has(m.id);
+                    const currentTitle = expandedModTitles[m.id] ?? m.titulo;
+                    const titleChanged = currentTitle.trim() !== m.titulo;
+                    return (
+                      <div key={m.id} className={`border rounded-xl overflow-hidden transition-colors ${isOpen ? "border-indigo-500/40 bg-card" : "border-border bg-card"}`}>
+
+                        {/* ── Module header ── */}
+                        <div className="flex items-center gap-1.5 px-3 py-2.5">
+                          <button type="button" onClick={() => toggleExpand(m)}
+                            className="flex items-center gap-2.5 flex-1 text-left min-w-0">
+                            <i className={`ti ${isOpen ? "ti-chevron-down" : "ti-chevron-right"} text-xs text-muted-foreground shrink-0`} aria-hidden="true" />
+                            <span className="text-sm font-semibold text-foreground truncate">{m.titulo}</span>
+                          </button>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${m.temas.length > 0 ? "bg-indigo-500/10 text-indigo-400" : "bg-muted/50 text-muted-foreground"}`}>
+                            {m.temas.length} tema{m.temas.length !== 1 ? "s" : ""}
+                          </span>
+                          <button type="button" onClick={() => toggleExpand(m)} title="Editar módulo"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors ml-0.5">
+                            <i className="ti ti-edit text-xs" aria-hidden="true" />
+                          </button>
+                          <button type="button" onClick={() => void handleDeleteMod(m)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                            <i className="ti ti-trash text-xs" aria-hidden="true" />
+                          </button>
+                        </div>
+
+                        {/* ── Expanded body ── */}
+                        {isOpen && (
+                          <div className="border-t border-border/50 bg-background/50">
+
+                            {/* Inline title edit */}
+                            <div className="px-4 pt-3 pb-2.5 flex gap-2 items-center">
+                              <input
+                                value={currentTitle}
+                                onChange={(e) => setExpandedModTitles((t) => ({ ...t, [m.id]: e.target.value }))}
+                                className={INPUT + " flex-1"}
+                                placeholder="Título del módulo"
+                              />
+                              {titleChanged && (
+                                <button type="button" onClick={() => void saveModuleTitle(m.id)}
+                                  className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors shrink-0">
+                                  Guardar
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Temas list */}
+                            {m.temas.length > 0 && (
+                              <div className="px-2 pb-1 space-y-0.5">
+                                {m.temas.map((tema) => (
+                                  <div key={tema.id}
+                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent/40 transition-colors group ${temaModuleId === m.id && editingTemaId === tema.id ? "bg-indigo-500/8 ring-1 ring-inset ring-indigo-500/25" : ""}`}>
+                                    <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center shrink-0">
+                                      <i className={`ti ${TEMA_TIPO_ICONS[tema.tipo_contenido]} text-[11px] text-indigo-400`} aria-hidden="true" />
+                                    </div>
+                                    <span className="text-xs text-foreground flex-1 truncate">{tema.titulo}</span>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">{TEMA_TIPO_LABELS[tema.tipo_contenido]}</span>
+                                    {tema.duracion_minutos && (
+                                      <span className="text-[10px] text-muted-foreground shrink-0">· {tema.duracion_minutos}m</span>
+                                    )}
+                                    <button type="button" onClick={() => openEditTema(m.id, tema)}
+                                      className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-indigo-400 hover:bg-indigo-500/15 transition-all shrink-0">
+                                      <i className="ti ti-edit text-xs" aria-hidden="true" />
+                                    </button>
+                                    <button type="button" onClick={() => void handleDeleteTema(m.id, tema)}
+                                      className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-red-400 hover:bg-red-500/15 transition-all shrink-0">
+                                      <i className="ti ti-trash text-xs" aria-hidden="true" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {m.temas.length === 0 && (
+                              <p className="text-xs text-muted-foreground px-5 pb-2 italic">Sin temas aún.</p>
+                            )}
+
+                            {/* Add tema */}
+                            <button type="button" onClick={() => openCreateTema(m.id)}
+                              className="w-full text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/5 py-2 px-5 text-left transition-colors flex items-center gap-1.5 border-t border-border/40 font-medium">
+                              <i className="ti ti-plus text-xs" aria-hidden="true" /> Añadir tema
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* New module form */}
+                  {showModForm && (
+                    <div className="border border-indigo-500/40 rounded-xl p-4 bg-background space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">Nuevo módulo</h3>
                       <div>
                         <label className={LABEL}>Título <span className="text-red-500">*</span></label>
-                        <input value={modForm.titulo} onChange={(e) => setModForm({ ...modForm, titulo: e.target.value })} className={INPUT} autoFocus />
+                        <input value={modForm.titulo} onChange={(e) => setModForm({ titulo: e.target.value })} className={INPUT} autoFocus placeholder="Ej: Introducción, Variables…" />
                       </div>
-                      <div>
-                        <label className={LABEL}>Tipo de contenido</label>
-                        <select value={modForm.tipo_contenido}
-                          onChange={(e) => setModForm({ ...modForm, tipo_contenido: e.target.value as ModuleTipo })}
-                          className={INPUT}>
-                          {(Object.keys(MOD_LABELS) as ModuleTipo[]).map((t) => (
-                            <option key={t} value={t}>{MOD_LABELS[t]}</option>
-                          ))}
-                        </select>
+                      <div className="flex gap-2 justify-end">
+                        <button type="button" onClick={() => setShowModForm(false)}
+                          className="px-4 py-1.5 border border-border text-muted-foreground text-sm rounded-lg hover:bg-accent/50 transition-colors">
+                          Cancelar
+                        </button>
+                        <button type="button" onClick={() => void handleSaveMod()} disabled={modSaving}
+                          className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+                          {modSaving
+                            ? <><div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Guardando...</>
+                            : <><i className="ti ti-device-floppy text-base" aria-hidden="true" />Crear módulo</>}
+                        </button>
                       </div>
                     </div>
-                    {modForm.tipo_contenido === "VIDEO" && (
-                      <div>
-                        <label className={LABEL}>URL del video <span className="text-red-500">*</span></label>
-                        <input type="url" value={modForm.url_video}
-                          onChange={(e) => setModForm({ ...modForm, url_video: e.target.value })}
-                          placeholder="https://youtube.com/watch?v=..." className={INPUT} />
+                  )}
+
+                  {/* Add module button */}
+                  {!showModForm && (
+                    <button type="button" onClick={openCreateMod}
+                      className="w-full border border-dashed border-border rounded-xl py-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-indigo-500/50 transition-colors flex items-center justify-center gap-2">
+                      <i className="ti ti-plus text-base" aria-hidden="true" /> Agregar módulo
+                    </button>
+                  )}
+                </div>{/* end left panel */}
+
+                {/* ── RIGHT: Tema form panel ── */}
+                <div className="w-2/5 border-l border-border flex flex-col overflow-hidden min-h-0">
+                  {temaModuleId === null ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+                        <i className="ti ti-file-plus text-2xl text-indigo-400/60" aria-hidden="true" />
                       </div>
-                    )}
-                    {modForm.tipo_contenido === "PDF" && (
                       <div>
-                        <label className={LABEL}>Archivo PDF {!editingModId && <span className="text-red-500">*</span>}</label>
-                        <input type="file" accept=".pdf,application/pdf"
-                          onChange={(e) => setModForm({ ...modForm, pdfFile: e.target.files?.[0] ?? null })}
-                          className="w-full text-sm text-muted-foreground" />
+                        <p className="text-sm font-medium text-foreground mb-1.5">Sin tema seleccionado</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Expande un módulo y pulsa <span className="text-indigo-400 font-medium">Añadir tema</span>, o el ícono ✎ de un tema existente.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Panel header */}
+                      <div className="px-4 py-3 border-b border-border flex items-start justify-between shrink-0">
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-muted-foreground truncate mb-0.5">
+                            {modules.find((mod) => mod.id === temaModuleId)?.titulo ?? "Módulo"}
+                          </p>
+                          <h3 className="text-sm font-semibold text-foreground">
+                            {editingTemaId ? "Editar tema" : "Nuevo tema"}
+                          </h3>
+                        </div>
+                        <button type="button"
+                          onClick={() => { setTemaModuleId(null); setEditingTemaId(null); setTemaForm(emptyTema()); }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-accent/50 text-muted-foreground transition-colors shrink-0 ml-2 mt-0.5">
+                          <i className="ti ti-x text-sm" aria-hidden="true" />
+                        </button>
+                      </div>
+
+                      {/* Form body */}
+                      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
+                        <div>
+                          <label className={LABEL}>Título <span className="text-red-500">*</span></label>
+                          <input value={temaForm.titulo} onChange={(e) => setTemaForm({ ...temaForm, titulo: e.target.value })}
+                            className={INPUT} placeholder="Nombre del tema" autoFocus />
+                        </div>
+                        <div>
+                          <label className={LABEL}>Tipo de contenido</label>
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {(Object.keys(TEMA_TIPO_LABELS) as TemaTipo[]).map((t) => (
+                              <button key={t} type="button"
+                                onClick={() => setTemaForm({ ...temaForm, tipo_contenido: t, pdfFile: null, videoFile: null, imagenFile: null })}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                  temaForm.tipo_contenido === t
+                                    ? "bg-indigo-600 text-white shadow-sm"
+                                    : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                                }`}>
+                                <i className={`ti ${TEMA_TIPO_ICONS[t]} text-[11px]`} aria-hidden="true" />
+                                {TEMA_TIPO_LABELS[t]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {temaForm.tipo_contenido === "VIDEO" && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className={LABEL}>URL (YouTube, Vimeo)</label>
+                              <input type="url" value={temaForm.url_video} onChange={(e) => setTemaForm({ ...temaForm, url_video: e.target.value })}
+                                placeholder="https://youtube.com/watch?v=…" className={INPUT} />
+                            </div>
+                            <div>
+                              <label className={LABEL}>O subir archivo MP4/WebM {editingTemaId && <span className="font-normal text-muted-foreground">(vacío = mantener)</span>}</label>
+                              <input type="file" accept="video/mp4,video/webm,video/ogg"
+                                onChange={(e) => setTemaForm({ ...temaForm, videoFile: e.target.files?.[0] ?? null })}
+                                className="w-full text-xs text-muted-foreground" />
+                            </div>
+                          </div>
+                        )}
+                        {temaForm.tipo_contenido === "PDF" && (
+                          <div>
+                            <label className={LABEL}>Archivo PDF {!editingTemaId && <span className="text-red-500">*</span>}{editingTemaId && <span className="font-normal text-muted-foreground"> (vacío = mantener)</span>}</label>
+                            <input type="file" accept=".pdf,application/pdf"
+                              onChange={(e) => setTemaForm({ ...temaForm, pdfFile: e.target.files?.[0] ?? null })}
+                              className="w-full text-xs text-muted-foreground" />
+                          </div>
+                        )}
+                        {temaForm.tipo_contenido === "TEXTO" && (
+                          <div>
+                            <label className={LABEL}>Contenido</label>
+                            <RichTextEditor value={temaForm.contenido_html} onChange={(html) => setTemaForm({ ...temaForm, contenido_html: html })} />
+                          </div>
+                        )}
+                        {temaForm.tipo_contenido === "IMAGEN" && (
+                          <div>
+                            <label className={LABEL}>Imagen {!editingTemaId && <span className="text-red-500">*</span>}{editingTemaId && <span className="font-normal text-muted-foreground"> (vacío = mantener)</span>}</label>
+                            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp"
+                              onChange={(e) => setTemaForm({ ...temaForm, imagenFile: e.target.files?.[0] ?? null })}
+                              className="w-full text-xs text-muted-foreground" />
+                          </div>
+                        )}
+                        {temaForm.tipo_contenido === "IFRAME" && (
+                          <div>
+                            <label className={LABEL}>URL del contenido externo <span className="text-red-500">*</span></label>
+                            <input type="url" value={temaForm.url_iframe} onChange={(e) => setTemaForm({ ...temaForm, url_iframe: e.target.value })}
+                              placeholder="https://docs.google.com/presentation/…" className={INPUT} />
+                            <p className="text-[10px] text-muted-foreground mt-1">Google Slides, Miro, Genially, simuladores web…</p>
+                          </div>
+                        )}
                         {uploadProgress > 0 && uploadProgress < 100 && (
-                          <div className="mt-2">
+                          <div>
                             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                               <div className="h-full bg-indigo-500 transition-all" style={{ width: `${uploadProgress}%` }} />
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">{uploadProgress}%</p>
                           </div>
                         )}
+                        <div>
+                          <label className={LABEL}>Duración estimada (min)</label>
+                          <input type="number" value={temaForm.duracion_minutos}
+                            onChange={(e) => setTemaForm({ ...temaForm, duracion_minutos: e.target.value })}
+                            placeholder="Ej: 15" min={1}
+                            className="w-28 border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-colors" />
+                        </div>
                       </div>
-                    )}
-                    {modForm.tipo_contenido === "TEXTO" && (
-                      <div>
-                        <label className={LABEL}>Contenido del módulo</label>
-                        <RichTextEditor value={modForm.contenido_html} onChange={(html) => setModForm({ ...modForm, contenido_html: html })} />
+
+                      {/* Form footer */}
+                      <div className="px-4 py-3 border-t border-border flex gap-2 justify-end shrink-0">
+                        <button type="button"
+                          onClick={() => { setTemaModuleId(null); setEditingTemaId(null); setTemaForm(emptyTema()); }}
+                          className="px-4 py-1.5 border border-border text-muted-foreground text-sm rounded-lg hover:bg-accent/50 transition-colors">
+                          Cancelar
+                        </button>
+                        <button type="button" onClick={() => void handleSaveTema()} disabled={temaSaving}
+                          className="px-4 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 shadow-sm shadow-emerald-500/20 transition-all active:scale-[0.98]">
+                          {temaSaving ? "Guardando…" : editingTemaId ? "Actualizar tema" : "Crear tema"}
+                        </button>
                       </div>
-                    )}
-                    {modForm.tipo_contenido === "SCORM" && (
-                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-400">
-                        SCORM estará disponible en la próxima versión.
-                      </div>
-                    )}
-                    <div>
-                      <label className={LABEL}>Duración estimada (minutos)</label>
-                      <input type="number" value={modForm.duracion_minutos}
-                        onChange={(e) => setModForm({ ...modForm, duracion_minutos: e.target.value })}
-                        placeholder="Ej: 30" min={1} className={INPUT} />
-                    </div>
-                    <div className="flex gap-2 justify-end pt-1">
-                      <button type="button" onClick={() => setShowModForm(false)}
-                        className="px-4 py-2 border border-border text-muted-foreground text-sm rounded-lg hover:bg-accent/50 transition-colors">
-                        Cancelar
-                      </button>
-                      <button type="button" onClick={() => void handleSaveMod()}
-                        disabled={modSaving || modForm.tipo_contenido === "SCORM"}
-                        className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2">
-                        {modSaving
-                          ? <><div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />Guardando...</>
-                          : <><i className="ti ti-device-floppy text-base" aria-hidden="true" />{editingModId ? "Actualizar" : "Agregar módulo"}</>}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button type="button" onClick={openCreateMod}
-                    className="w-full border border-dashed border-border rounded-xl py-3 text-sm text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors flex items-center justify-center gap-2 mt-1">
-                    <i className="ti ti-plus text-base" aria-hidden="true" /> Agregar módulo
-                  </button>
-                )}
+                    </>
+                  )}
+                </div>{/* end right panel */}
+
               </div>
             )}
 

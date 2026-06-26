@@ -315,11 +315,15 @@ export default function AIGeneratorPage() {
     let added = 0;
     for (const mod of approved) {
       try {
-        await coursesService.createModule(Number(courseId), {
+        const newMod = await coursesService.createModule(Number(courseId), {
           titulo: mod.data.title,
           descripcion: mod.data.descripcion,
-          tipo_contenido: "TEXTO",
           orden: mod.data.orden,
+        });
+        // Create a default TEXTO tema with the AI-generated summary
+        await coursesService.createTema(Number(courseId), newMod.id, {
+          titulo: mod.data.title,
+          tipo_contenido: "TEXTO",
           contenido_html: `<p><strong>Objetivo:</strong> ${mod.data.objetivo}</p><p>${mod.data.descripcion}</p>`,
         });
         added++;

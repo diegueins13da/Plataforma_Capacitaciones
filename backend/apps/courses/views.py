@@ -11,13 +11,15 @@ from apps.reports.audit import log_event
 from apps.users.permissions import IsAdmin, IsAdminOrTrainer
 
 from . import services
-from .models import Course, Enrollment, Module, ModuleProgress
+from .models import Course, Enrollment, Module, ModuleProgress, Tema
 from .serializers import (
     CourseCreateSerializer,
     CourseDetailSerializer,
     CourseListSerializer,
     ModuleCreateSerializer,
     ModuleSerializer,
+    TemaCreateSerializer,
+    TemaSerializer,
 )
 
 
@@ -145,8 +147,12 @@ def instructor_grades(request):
     from apps.assessments.models import UserAnswer
 
     instructor = request.user
+    if instructor.role == "ADMIN":
+        courses = Course.objects.all()
+    else:
+        courses = Course.objects.filter(instructor=instructor)
     courses = (
-        Course.objects.filter(created_by=instructor)
+        courses
         .select_related("assessment")
         .prefetch_related("enrollments", "enrollments__user")
     )
@@ -164,7 +170,7 @@ def instructor_grades(request):
                 attempts = list(
                     UserAnswer.objects.filter(
                         assessment=assessment,
-                        user=enrollment.user,
+                        enrollment=enrollment,
                         aprobado__isnull=False,
                     ).order_by("-calificacion")[:1]
                 )
@@ -395,11 +401,8 @@ class CourseViewSet(GenericViewSet):
         serializer = ModuleCreateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        pdf_file = request.FILES.get("archivo_pdf")
         try:
-            module = services.add_module(
-                int(pk), dict(serializer.validated_data), request.user, pdf_file=pdf_file
-            )
+            module = services.add_module(int(pk), dict(serializer.validated_data), request.user)
         except Course.DoesNotExist:
             return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except services.CoursePermissionDenied as exc:
@@ -407,25 +410,57 @@ class CourseViewSet(GenericViewSet):
         except services.CourseValidationError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         log_event(
-            accion="MODULE_CREATED",
-            request=request,
-            entidad_tipo="Module",
-            entidad_id=module.pk,
-            entidad_nombre=module.titulo,
-            detalle={"course_id": int(pk)},
+            accion="MODULE_CREATED", request=request,
+            entidad_tipo="Module", entidad_id=module.pk,
+            entidad_nombre=module.titulo, detalle={"course_id": int(pk)},
         )
         return Response(ModuleSerializer(module).data, status=status.HTTP_201_CREATED)
 
-    def _update_module(
-        self, request: Request, pk: str | None, module_id: str | None
-    ) -> Response:
+    def _update_module(self, request: Request, pk: str | None, module_id: str | None) -> Response:
         serializer = ModuleCreateSerializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        pdf_file = request.FILES.get("archivo_pdf")
         try:
-            module = services.update_module(
-                int(pk), int(module_id), dict(serializer.validated_data), request.user, pdf_file=pdf_file
+            module = services.update_module(int(pk), int(module_id), dict(serializer.validated_data), request.user)
+        except (Course.DoesNotExist, Module.DoesNotExist):
+            return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except services.CoursePermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        log_event(
+            accion="MODULE_UPDATED", request=request,
+            entidad_tipo="Module", entidad_id=module.pk,
+            entidad_nombre=module.titulo,
+            detalle={"course_id": int(pk), "campos": list(serializer.validated_data.keys())},
+        )
+        return Response(ModuleSerializer(module).data)
+
+    # ------------------------------------------------------------------
+    # Tema sub-resource  (nested: /courses/{pk}/modules/{module_id}/temas/)
+    # ------------------------------------------------------------------
+
+    @action(detail=True, methods=["get", "post"], url_path=r"modules/(?P<module_id>\d+)/temas")
+    def temas(self, request: Request, pk: str | None = None, module_id: str | None = None) -> Response:
+        if request.method == "GET":
+            try:
+                qs = services.list_temas(int(pk), int(module_id), request.user)
+            except (Course.DoesNotExist, Module.DoesNotExist):
+                return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            except services.CoursePermissionDenied as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+            return Response(TemaSerializer(qs, many=True).data)
+
+        # POST — create tema
+        serializer = TemaCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            tema = services.add_tema(
+                int(pk), int(module_id),
+                dict(serializer.validated_data),
+                request.user,
+                pdf_file=request.FILES.get("archivo_pdf"),
+                video_file=request.FILES.get("archivo_video"),
+                imagen_file=request.FILES.get("archivo_imagen"),
             )
         except (Course.DoesNotExist, Module.DoesNotExist):
             return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
@@ -434,14 +469,60 @@ class CourseViewSet(GenericViewSet):
         except services.CourseValidationError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         log_event(
-            accion="MODULE_UPDATED",
-            request=request,
-            entidad_tipo="Module",
-            entidad_id=module.pk,
-            entidad_nombre=module.titulo,
-            detalle={"course_id": int(pk), "campos": list(serializer.validated_data.keys())},
+            accion="TEMA_CREATED", request=request,
+            entidad_tipo="Tema", entidad_id=tema.pk,
+            entidad_nombre=tema.titulo,
+            detalle={"course_id": int(pk), "module_id": int(module_id)},
         )
-        return Response(ModuleSerializer(module).data)
+        return Response(TemaSerializer(tema).data, status=status.HTTP_201_CREATED)
+
+    @action(
+        detail=True, methods=["patch", "put", "delete"],
+        url_path=r"modules/(?P<module_id>\d+)/temas/(?P<tema_id>\d+)",
+    )
+    def tema_detail(
+        self, request: Request, pk: str | None = None,
+        module_id: str | None = None, tema_id: str | None = None,
+    ) -> Response:
+        if request.method in ("PATCH", "PUT"):
+            serializer = TemaCreateSerializer(data=request.data, partial=True)
+            if not serializer.is_valid():
+                return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                tema = services.update_tema(
+                    int(pk), int(module_id), int(tema_id),
+                    dict(serializer.validated_data),
+                    request.user,
+                    pdf_file=request.FILES.get("archivo_pdf"),
+                    video_file=request.FILES.get("archivo_video"),
+                    imagen_file=request.FILES.get("archivo_imagen"),
+                )
+            except (Course.DoesNotExist, Module.DoesNotExist, Tema.DoesNotExist):
+                return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            except services.CoursePermissionDenied as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+            except services.CourseValidationError as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            log_event(
+                accion="TEMA_UPDATED", request=request,
+                entidad_tipo="Tema", entidad_id=tema.pk, entidad_nombre=tema.titulo,
+                detalle={"course_id": int(pk), "module_id": int(module_id)},
+            )
+            return Response(TemaSerializer(tema).data)
+
+        # DELETE
+        try:
+            services.delete_tema(int(pk), int(module_id), int(tema_id), request.user)
+        except (Course.DoesNotExist, Module.DoesNotExist, Tema.DoesNotExist):
+            return Response({"error": "Recurso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except services.CoursePermissionDenied as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        log_event(
+            accion="TEMA_DELETED", request=request,
+            entidad_tipo="Tema", entidad_id=int(tema_id), entidad_nombre="",
+            detalle={"course_id": int(pk), "module_id": int(module_id)},
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _delete_module(
         self, request: Request, pk: str | None, module_id: str | None

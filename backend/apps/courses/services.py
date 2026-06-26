@@ -15,7 +15,7 @@ from django.db.models import QuerySet
 from apps.reports.audit import log_event
 from storage.factory import get_storage
 
-from .models import Course, Enrollment, Module, ModuleProgress
+from .models import Course, Enrollment, Module, ModuleProgress, Tema
 
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import InMemoryUploadedFile, UploadedFile
@@ -96,6 +96,36 @@ def _next_module_orden(course: "Course") -> int:
     return (last or 0) + 1
 
 
+def _next_tema_orden(module: "Module") -> int:
+    last = module.temas.aggregate(max_orden=django_models.Max("orden"))["max_orden"]
+    return (last or 0) + 1
+
+
+def _validate_video_file(file: Any) -> None:
+    ALLOWED = (b"ftyp", b"moov", b"mdat", b"free", b"wide")
+    file.seek(4)
+    box_type = file.read(4)
+    file.seek(0)
+    # Accept any file <= 500 MB — strict format check is optional
+    file.seek(0, 2)
+    size = file.tell()
+    file.seek(0)
+    if size > 500 * 1024 * 1024:
+        raise CourseValidationError("El video supera el límite de 500 MB.")
+
+
+def _validate_image_file(file: Any) -> None:
+    header = file.read(8)
+    file.seek(0)
+    MAGIC = [b"\xff\xd8\xff", b"\x89PNG", b"GIF8", b"RIFF", b"WEBP"]
+    if not any(header.startswith(m) for m in MAGIC):
+        raise CourseValidationError("El archivo no es una imagen válida (JPG, PNG, GIF, WebP).")
+    file.seek(0, 2)
+    if file.tell() > 10 * 1024 * 1024:
+        raise CourseValidationError("La imagen supera el límite de 10 MB.")
+    file.seek(0)
+
+
 # ---------------------------------------------------------------------------
 # Course CRUD
 # ---------------------------------------------------------------------------
@@ -111,10 +141,12 @@ def list_courses(
     qs = Course.objects.select_related("instructor", "area", "created_by").prefetch_related(
         "audiencia_grupos"
     )
-    if user.role == "TRAINER" and not as_student:
+    if user.role == "ADMIN" and not as_student:
+        pass  # Admin sees all courses without enrollment filter
+    elif user.role == "TRAINER" and not as_student:
         qs = qs.filter(created_by=user)
     else:
-        # USUARIO always, or TRAINER requesting their student view
+        # USUARIO always, or TRAINER/ADMIN requesting their student view
         enrolled_ids = Enrollment.objects.filter(user=user).values_list("course_id", flat=True)
         qs = qs.filter(pk__in=enrolled_ids)
     if estado:
@@ -169,64 +201,26 @@ def list_modules(course_id: int, user: "User") -> "QuerySet[Module]":
     return course.modules.all()
 
 
-def add_module(course_id: int, data: dict, user: "User", pdf_file: Any | None = None) -> "Module":
+def add_module(course_id: int, data: dict, user: "User") -> "Module":
     course = get_course(course_id, user)
     _assert_owner(course, user)
-
-    tipo = data.get("tipo_contenido")
-
-    if tipo == Module.TipoContenido.SCORM:
-        raise CourseValidationError("SCORM disponible en Fase 2.")
-
-    if tipo == Module.TipoContenido.PDF:
-        if not pdf_file:
-            raise CourseValidationError("Se requiere un archivo PDF para módulos de tipo PDF.")
-        _validate_pdf_file(pdf_file)
-        path = f"courses/{course_id}/modules/{uuid.uuid4()}.pdf"
-        storage = get_storage()
-        data["archivo_pdf"] = storage.save(path, pdf_file)
-
-    if tipo == Module.TipoContenido.TEXTO:
-        data["contenido_html"] = _sanitize_html(data.get("contenido_html", ""))
-
     if "orden" not in data or data["orden"] is None:
         data["orden"] = _next_module_orden(course)
-
+    # Strip any stale content fields if passed from old clients
+    for f in ("tipo_contenido", "url_video", "archivo_pdf", "contenido_html", "duracion_minutos"):
+        data.pop(f, None)
     return Module.objects.create(course=course, **data)
 
 
-def update_module(
-    course_id: int,
-    module_id: int,
-    data: dict,
-    user: "User",
-    pdf_file: Any | None = None,
-) -> "Module":
+def update_module(course_id: int, module_id: int, data: dict, user: "User") -> "Module":
     course = get_course(course_id, user)
     _assert_owner(course, user)
-
     try:
         module = course.modules.get(pk=module_id)
     except Module.DoesNotExist:
         raise Module.DoesNotExist(module_id)
-
-    tipo = data.get("tipo_contenido", module.tipo_contenido)
-
-    if tipo == Module.TipoContenido.SCORM:
-        raise CourseValidationError("SCORM disponible en Fase 2.")
-
-    if pdf_file:
-        if tipo != Module.TipoContenido.PDF:
-            raise CourseValidationError("Solo se puede subir un archivo para módulos de tipo PDF.")
-        _validate_pdf_file(pdf_file)
-        if module.archivo_pdf:
-            get_storage().delete(module.archivo_pdf)
-        path = f"courses/{course_id}/modules/{uuid.uuid4()}.pdf"
-        data["archivo_pdf"] = get_storage().save(path, pdf_file)
-
-    if "contenido_html" in data:
-        data["contenido_html"] = _sanitize_html(data["contenido_html"])
-
+    for f in ("tipo_contenido", "url_video", "archivo_pdf", "contenido_html", "duracion_minutos"):
+        data.pop(f, None)
     for field, value in data.items():
         setattr(module, field, value)
     module.save()
@@ -236,16 +230,156 @@ def update_module(
 def delete_module(course_id: int, module_id: int, user: "User") -> None:
     course = get_course(course_id, user)
     _assert_owner(course, user)
+    try:
+        module = course.modules.get(pk=module_id)
+    except Module.DoesNotExist:
+        raise Module.DoesNotExist(module_id)
+    # Cascade deletes temas; clean up stored files first
+    storage = get_storage()
+    for tema in module.temas.all():
+        if tema.archivo_pdf:
+            storage.delete(tema.archivo_pdf)
+        if tema.archivo_video:
+            storage.delete(tema.archivo_video.name)
+        if tema.archivo_imagen:
+            storage.delete(tema.archivo_imagen.name)
+    module.delete()
 
+
+# ---------------------------------------------------------------------------
+# Tema management
+# ---------------------------------------------------------------------------
+
+
+def list_temas(course_id: int, module_id: int, user: "User") -> "QuerySet[Tema]":
+    course = get_course(course_id, user)
+    try:
+        module = course.modules.get(pk=module_id)
+    except Module.DoesNotExist:
+        raise Module.DoesNotExist(module_id)
+    return module.temas.all()
+
+
+def add_tema(
+    course_id: int,
+    module_id: int,
+    data: dict,
+    user: "User",
+    pdf_file: Any | None = None,
+    video_file: Any | None = None,
+    imagen_file: Any | None = None,
+) -> "Tema":
+    course = get_course(course_id, user)
+    _assert_owner(course, user)
     try:
         module = course.modules.get(pk=module_id)
     except Module.DoesNotExist:
         raise Module.DoesNotExist(module_id)
 
-    if module.archivo_pdf:
-        get_storage().delete(module.archivo_pdf)
+    tipo = data.get("tipo_contenido")
+    storage = get_storage()
 
-    module.delete()
+    if tipo == Tema.TipoContenido.PDF:
+        if not pdf_file:
+            raise CourseValidationError("Se requiere un archivo PDF para temas de tipo PDF.")
+        _validate_pdf_file(pdf_file)
+        path = f"courses/{course_id}/modules/{module_id}/temas/{uuid.uuid4()}.pdf"
+        data["archivo_pdf"] = storage.save(path, pdf_file)
+
+    if tipo == Tema.TipoContenido.VIDEO and video_file:
+        _validate_video_file(video_file)
+        ext = video_file.name.rsplit(".", 1)[-1].lower() if "." in video_file.name else "mp4"
+        path = f"courses/{course_id}/modules/{module_id}/temas/{uuid.uuid4()}.{ext}"
+        data["archivo_video"] = storage.save(path, video_file)
+
+    if tipo == Tema.TipoContenido.IMAGEN:
+        if not imagen_file:
+            raise CourseValidationError("Se requiere una imagen para temas de tipo IMAGEN.")
+        _validate_image_file(imagen_file)
+        ext = imagen_file.name.rsplit(".", 1)[-1].lower() if "." in imagen_file.name else "jpg"
+        path = f"courses/{course_id}/modules/{module_id}/temas/{uuid.uuid4()}.{ext}"
+        data["archivo_imagen"] = storage.save(path, imagen_file)
+
+    if tipo == Tema.TipoContenido.TEXTO:
+        data["contenido_html"] = _sanitize_html(data.get("contenido_html", ""))
+
+    if "orden" not in data or data["orden"] is None:
+        data["orden"] = _next_tema_orden(module)
+
+    return Tema.objects.create(module=module, **data)
+
+
+def update_tema(
+    course_id: int,
+    module_id: int,
+    tema_id: int,
+    data: dict,
+    user: "User",
+    pdf_file: Any | None = None,
+    video_file: Any | None = None,
+    imagen_file: Any | None = None,
+) -> "Tema":
+    course = get_course(course_id, user)
+    _assert_owner(course, user)
+    try:
+        module = course.modules.get(pk=module_id)
+        tema = module.temas.get(pk=tema_id)
+    except (Module.DoesNotExist, Tema.DoesNotExist):
+        raise Tema.DoesNotExist(tema_id)
+
+    tipo = data.get("tipo_contenido", tema.tipo_contenido)
+    storage = get_storage()
+
+    if pdf_file:
+        _validate_pdf_file(pdf_file)
+        if tema.archivo_pdf:
+            storage.delete(tema.archivo_pdf)
+        path = f"courses/{course_id}/modules/{module_id}/temas/{uuid.uuid4()}.pdf"
+        data["archivo_pdf"] = storage.save(path, pdf_file)
+
+    if video_file:
+        _validate_video_file(video_file)
+        if tema.archivo_video:
+            storage.delete(tema.archivo_video.name)
+        ext = video_file.name.rsplit(".", 1)[-1].lower() if "." in video_file.name else "mp4"
+        path = f"courses/{course_id}/modules/{module_id}/temas/{uuid.uuid4()}.{ext}"
+        data["archivo_video"] = storage.save(path, video_file)
+
+    if imagen_file:
+        _validate_image_file(imagen_file)
+        if tema.archivo_imagen:
+            storage.delete(tema.archivo_imagen.name)
+        ext = imagen_file.name.rsplit(".", 1)[-1].lower() if "." in imagen_file.name else "jpg"
+        path = f"courses/{course_id}/modules/{module_id}/temas/{uuid.uuid4()}.{ext}"
+        data["archivo_imagen"] = storage.save(path, imagen_file)
+
+    if "contenido_html" in data:
+        data["contenido_html"] = _sanitize_html(data["contenido_html"])
+
+    for field, value in data.items():
+        setattr(tema, field, value)
+    tema.save()
+    return tema
+
+
+def delete_tema(course_id: int, module_id: int, tema_id: int, user: "User") -> None:
+    course = get_course(course_id, user)
+    _assert_owner(course, user)
+    try:
+        module = course.modules.get(pk=module_id)
+        tema = module.temas.get(pk=tema_id)
+    except (Module.DoesNotExist, Tema.DoesNotExist):
+        raise Tema.DoesNotExist(tema_id)
+
+    storage = get_storage()
+    if tema.archivo_pdf:
+        storage.delete(tema.archivo_pdf)
+    if tema.archivo_video:
+        storage.delete(tema.archivo_video.name)
+    if tema.archivo_imagen:
+        storage.delete(tema.archivo_imagen.name)
+
+    tema.delete()
 
 
 # ---------------------------------------------------------------------------
@@ -268,6 +402,19 @@ def publish_course(course_id: int, user: "User", ip: str | None = None) -> "Cour
         raise CourseValidationError(
             "No se puede publicar un curso sin módulos. Agrega al menos un módulo."
         )
+
+    for module in course.modules.prefetch_related("temas").all():
+        if not module.temas.exists():
+            raise CourseValidationError(
+                f"El módulo '{module.titulo}' no tiene temas. Agrega al menos un tema antes de publicar."
+            )
+        for tema in module.temas.all():
+            if tema.tipo_contenido == Tema.TipoContenido.VIDEO:
+                if not tema.url_video and not tema.archivo_video:
+                    raise CourseValidationError(
+                        f"El tema '{tema.titulo}' es de tipo Video pero no tiene URL ni archivo. "
+                        "Añade una URL o sube un archivo de video."
+                    )
 
     course.publish()  # raises ValueError if already published/archived
 

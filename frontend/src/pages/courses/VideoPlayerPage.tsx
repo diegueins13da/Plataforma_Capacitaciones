@@ -5,10 +5,11 @@
  * Saves resume position (seconds elapsed) every 10 s and on unmount.
  */
 import { useEffect, useRef, useState } from "react";
-import type { CourseModuleWithStatus } from "../../types/course";
+import type { Tema } from "../../types/course";
 
 interface VideoPlayerProps {
-  module: CourseModuleWithStatus;
+  tema: Tema;
+  isCompleted: boolean;
   enrollmentId: number;
   initialSecond: number;
   onComplete: () => void;
@@ -40,16 +41,17 @@ function buildEmbedUrl(url: string, startSecond: number): string {
 }
 
 export function VideoPlayerPage({
-  module,
+  tema,
+  isCompleted,
   initialSecond,
   onComplete,
   onPositionUpdate,
 }: VideoPlayerProps) {
-  const totalSeconds = (module.duracion_minutos ?? 5) * 60;
+  const totalSeconds = (tema.duracion_minutos ?? 5) * 60;
   const completeThreshold = Math.floor(totalSeconds * 0.9);
 
   const [elapsed, setElapsed] = useState(initialSecond);
-  const [completed, setCompleted] = useState(module.is_completed);
+  const [completed, setCompleted] = useState(isCompleted);
   const elapsedRef = useRef(initialSecond);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const posIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -87,20 +89,31 @@ export function VideoPlayerPage({
     }
   }, [elapsed, completed, completeThreshold, onComplete]);
 
-  const embedUrl = buildEmbedUrl(module.url_video, initialSecond);
+  // Native video (uploaded file) or external embed
+  const isNativeVideo = Boolean(tema.archivo_video && !tema.url_video);
+  const embedUrl = isNativeVideo ? tema.archivo_video : buildEmbedUrl(tema.url_video, initialSecond);
   const percent = Math.min(100, Math.round((elapsed / totalSeconds) * 100));
 
   return (
     <div className="space-y-4">
-      {/* Video iframe */}
+      {/* Video player */}
       <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden">
-        <iframe
-          src={embedUrl}
-          className="w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title={module.titulo}
-        />
+        {isNativeVideo ? (
+          <video
+            src={embedUrl}
+            className="w-full h-full"
+            controls
+            title={tema.titulo}
+          />
+        ) : (
+          <iframe
+            src={embedUrl}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={tema.titulo}
+          />
+        )}
       </div>
 
       {/* Progress and completion */}

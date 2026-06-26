@@ -6,10 +6,11 @@
  * Saves scroll position every 10 seconds and on unmount.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CourseModuleWithStatus } from "../../types/course";
+import type { Tema } from "../../types/course";
 
 interface TextPlayerProps {
-  module: CourseModuleWithStatus;
+  tema: Tema;
+  isCompleted: boolean;
   initialScrollY: number;
   onComplete: () => void;
   onPositionUpdate: (position: Record<string, number>) => void;
@@ -18,18 +19,19 @@ interface TextPlayerProps {
 const MIN_SECONDS = 30;
 
 export function TextPlayerPage({
-  module,
+  tema,
+  isCompleted,
   initialScrollY,
   onComplete,
   onPositionUpdate,
 }: TextPlayerProps) {
   const [elapsed, setElapsed] = useState(0);
   const [reachedEnd, setReachedEnd] = useState(false);
-  const [completed, setCompleted] = useState(module.is_completed);
+  const [completed, setCompleted] = useState(isCompleted);
   const contentRef = useRef<HTMLDivElement>(null);
   const elapsedRef = useRef(0);
   const scrollRef = useRef(0);
-  const completedRef = useRef(module.is_completed);
+  const completedRef = useRef(isCompleted);
 
   // Restore scroll position
   useEffect(() => {
@@ -95,7 +97,7 @@ export function TextPlayerPage({
         className="bg-card border border-border rounded-xl p-6 overflow-y-auto prose prose-invert prose-sm max-w-none"
         style={{ maxHeight: "65vh" }}
         // Content is sanitized server-side by bleach before storage
-        dangerouslySetInnerHTML={{ __html: module.contenido_html }}
+        dangerouslySetInnerHTML={{ __html: tema.contenido_html }}
       />
 
       {/* Progress indicator */}

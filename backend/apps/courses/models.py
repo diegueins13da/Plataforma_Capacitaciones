@@ -116,11 +116,7 @@ class Course(models.Model):
 
 
 class Module(models.Model):
-    class TipoContenido(models.TextChoices):
-        VIDEO = "VIDEO", "Video"
-        PDF = "PDF", "PDF"
-        TEXTO = "TEXTO", "Texto"
-        SCORM = "SCORM", "SCORM"
+    """A module is a section container. Actual content lives in Tema children."""
 
     course = models.ForeignKey(
         Course,
@@ -130,26 +126,12 @@ class Module(models.Model):
     )
     titulo = models.CharField(max_length=255, verbose_name="título")
     descripcion = models.TextField(blank=True, verbose_name="descripción")
-    tipo_contenido = models.CharField(
-        max_length=10,
-        choices=TipoContenido.choices,
-        verbose_name="tipo de contenido",
-    )
     orden = models.PositiveSmallIntegerField(default=1, verbose_name="orden")
     es_secuencial = models.BooleanField(
         default=True,
         verbose_name="es secuencial",
         help_text="Si es True, el usuario debe completar el módulo N antes de abrir el N+1.",
     )
-    duracion_minutos = models.PositiveSmallIntegerField(
-        null=True, blank=True, verbose_name="duración (minutos)"
-    )
-    # VIDEO content
-    url_video = models.URLField(blank=True, verbose_name="URL de video")
-    # PDF content
-    archivo_pdf = models.CharField(max_length=500, blank=True, verbose_name="archivo PDF")
-    # TEXTO content
-    contenido_html = models.TextField(blank=True, verbose_name="contenido HTML")
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="última modificación")
@@ -163,6 +145,62 @@ class Module(models.Model):
 
     def __str__(self) -> str:
         return f"{self.course} — módulo {self.orden}: {self.titulo}"
+
+
+class Tema(models.Model):
+    """A topic/lesson inside a module. Holds the actual content."""
+
+    class TipoContenido(models.TextChoices):
+        VIDEO = "VIDEO", "Video"
+        PDF = "PDF", "PDF"
+        TEXTO = "TEXTO", "Texto HTML"
+        IMAGEN = "IMAGEN", "Imagen"
+        IFRAME = "IFRAME", "Contenido externo (iFrame)"
+
+    module = models.ForeignKey(
+        Module,
+        on_delete=models.CASCADE,
+        related_name="temas",
+        verbose_name="módulo",
+    )
+    titulo = models.CharField(max_length=255, verbose_name="título")
+    orden = models.PositiveSmallIntegerField(default=1, verbose_name="orden")
+    tipo_contenido = models.CharField(
+        max_length=10,
+        choices=TipoContenido.choices,
+        verbose_name="tipo de contenido",
+    )
+    duracion_minutos = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name="duración (minutos)"
+    )
+    # VIDEO
+    url_video = models.URLField(blank=True, verbose_name="URL de video")
+    archivo_video = models.FileField(
+        upload_to="temas/videos/", blank=True, null=True, verbose_name="archivo de video"
+    )
+    # PDF
+    archivo_pdf = models.CharField(max_length=500, blank=True, verbose_name="archivo PDF")
+    # TEXTO
+    contenido_html = models.TextField(blank=True, verbose_name="contenido HTML")
+    # IMAGEN
+    archivo_imagen = models.FileField(
+        upload_to="temas/imagenes/", blank=True, null=True, verbose_name="imagen"
+    )
+    # IFRAME
+    url_iframe = models.URLField(blank=True, verbose_name="URL del iframe")
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="última modificación")
+
+    class Meta:
+        db_table = "course_temas"
+        verbose_name = "tema"
+        verbose_name_plural = "temas"
+        ordering = ["module", "orden"]
+        unique_together = [("module", "orden")]
+
+    def __str__(self) -> str:
+        return f"{self.module} — tema {self.orden}: {self.titulo}"
 
 
 class Enrollment(models.Model):

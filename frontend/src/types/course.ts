@@ -1,18 +1,30 @@
 export type CourseEstado = "BORRADOR" | "PUBLICADO" | "ARCHIVADO";
 export type CourseTipo = "ONLINE" | "PRESENCIAL" | "HIBRIDO" | "AUTOAPRENDIZAJE";
-export type ModuleTipo = "VIDEO" | "PDF" | "TEXTO" | "SCORM";
+export type TemaTipo = "VIDEO" | "PDF" | "TEXTO" | "IMAGEN" | "IFRAME";
+
+export interface Tema {
+  id: number;
+  titulo: string;
+  orden: number;
+  tipo_contenido: TemaTipo;
+  duracion_minutos: number | null;
+  url_video: string;
+  archivo_video: string;
+  archivo_pdf: string;
+  contenido_html: string;
+  archivo_imagen: string;
+  url_iframe: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface CourseModule {
   id: number;
   titulo: string;
   descripcion: string;
-  tipo_contenido: ModuleTipo;
   orden: number;
   es_secuencial: boolean;
-  duracion_minutos: number | null;
-  url_video: string;
-  archivo_pdf: string;
-  contenido_html: string;
+  temas: Tema[];
   created_at: string;
   updated_at: string;
 }
@@ -96,12 +108,18 @@ export interface CreateCoursePayload {
 export interface CreateModulePayload {
   titulo: string;
   descripcion?: string;
-  tipo_contenido: ModuleTipo;
   orden?: number;
   es_secuencial?: boolean;
+}
+
+export interface CreateTemaPayload {
+  titulo: string;
+  tipo_contenido: TemaTipo;
+  orden?: number;
   duracion_minutos?: number | null;
   url_video?: string;
   contenido_html?: string;
+  url_iframe?: string;
 }
 
 export interface CourseFilters {

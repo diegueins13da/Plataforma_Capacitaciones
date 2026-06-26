@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Certificate, Course, Enrollment, Module, ModuleProgress
+from .models import Certificate, Course, Enrollment, Module, ModuleProgress, Tema
 
 
 class UserEnrollmentSerializer(serializers.Serializer):
@@ -13,29 +13,58 @@ class UserEnrollmentSerializer(serializers.Serializer):
     fecha_completado = serializers.DateTimeField(allow_null=True)
 
 
-class ModuleSerializer(serializers.ModelSerializer):
+class TemaSerializer(serializers.ModelSerializer):
     archivo_pdf = serializers.SerializerMethodField()
+    archivo_video = serializers.SerializerMethodField()
+    archivo_imagen = serializers.SerializerMethodField()
 
-    def get_archivo_pdf(self, obj: "Module") -> str:
-        if not obj.archivo_pdf:
-            return ""
-        return f"/media/{obj.archivo_pdf}"
+    def get_archivo_pdf(self, obj: "Tema") -> str:
+        return f"/media/{obj.archivo_pdf}" if obj.archivo_pdf else ""
+
+    def get_archivo_video(self, obj: "Tema") -> str:
+        return obj.archivo_video.url if obj.archivo_video else ""
+
+    def get_archivo_imagen(self, obj: "Tema") -> str:
+        return obj.archivo_imagen.url if obj.archivo_imagen else ""
+
+    class Meta:
+        model = Tema
+        fields = [
+            "id", "titulo", "orden", "tipo_contenido", "duracion_minutos",
+            "url_video", "archivo_video", "archivo_pdf",
+            "contenido_html", "archivo_imagen", "url_iframe",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class TemaCreateSerializer(serializers.Serializer):
+    titulo = serializers.CharField(max_length=255)
+    orden = serializers.IntegerField(required=False, min_value=1)
+    tipo_contenido = serializers.ChoiceField(choices=Tema.TipoContenido.choices)
+    duracion_minutos = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    url_video = serializers.URLField(required=False, allow_blank=True, default="")
+    contenido_html = serializers.CharField(required=False, allow_blank=True, default="")
+    url_iframe = serializers.URLField(required=False, allow_blank=True, default="")
+
+    def validate(self, data: dict) -> dict:
+        tipo = data.get("tipo_contenido")
+        if tipo == Tema.TipoContenido.VIDEO and not data.get("url_video"):
+            # video file upload is handled separately — URL is optional if file provided
+            pass
+        if tipo == Tema.TipoContenido.IFRAME and not data.get("url_iframe"):
+            raise serializers.ValidationError({"url_iframe": "Se requiere una URL para temas de tipo iFrame."})
+        return data
+
+
+class ModuleSerializer(serializers.ModelSerializer):
+    temas = TemaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Module
         fields = [
-            "id",
-            "titulo",
-            "descripcion",
-            "tipo_contenido",
-            "orden",
-            "es_secuencial",
-            "duracion_minutos",
-            "url_video",
-            "archivo_pdf",
-            "contenido_html",
-            "created_at",
-            "updated_at",
+            "id", "titulo", "descripcion", "orden", "es_secuencial",
+            "temas", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
@@ -43,23 +72,8 @@ class ModuleSerializer(serializers.ModelSerializer):
 class ModuleCreateSerializer(serializers.Serializer):
     titulo = serializers.CharField(max_length=255)
     descripcion = serializers.CharField(required=False, default="", allow_blank=True)
-    tipo_contenido = serializers.ChoiceField(choices=Module.TipoContenido.choices)
     orden = serializers.IntegerField(required=False, min_value=1)
     es_secuencial = serializers.BooleanField(required=False, default=True)
-    duracion_minutos = serializers.IntegerField(required=False, allow_null=True, min_value=1)
-    # VIDEO
-    url_video = serializers.URLField(required=False, allow_blank=True, default="")
-    # TEXTO
-    contenido_html = serializers.CharField(required=False, allow_blank=True, default="")
-    # PDF is provided as a multipart file — not a serializer field
-
-    def validate(self, data: dict) -> dict:
-        tipo = data.get("tipo_contenido")
-        if tipo == Module.TipoContenido.VIDEO and not data.get("url_video"):
-            raise serializers.ValidationError(
-                {"url_video": "Se requiere una URL de video para módulos de tipo VIDEO."}
-            )
-        return data
 
 
 class CourseListSerializer(serializers.ModelSerializer):
@@ -129,6 +143,8 @@ class CourseDetailSerializer(CourseListSerializer):
 
     class Meta(CourseListSerializer.Meta):
         fields = CourseListSerializer.Meta.fields + [
+            "area",
+            "instructor",
             "modules_with_status",
             "audiencia_grupos",
             "cert_expira_meses",
@@ -159,7 +175,7 @@ class CourseDetailSerializer(CourseListSerializer):
                 position_map[mp.module_id] = mp.last_position_json
 
         result = []
-        modules_ordered = list(obj.modules.order_by("orden"))
+        modules_ordered = list(obj.modules.prefetch_related("temas").order_by("orden"))
         for module in modules_ordered:
             is_completed = module.pk in completed_ids
             is_unlocked = True

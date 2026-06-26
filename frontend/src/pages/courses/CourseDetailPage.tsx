@@ -15,11 +15,12 @@ const TIPO_LABEL: Record<string, string> = {
   AUTOAPRENDIZAJE: "Autoaprendizaje",
 };
 
-const MODULE_TIPO_ICON: Record<string, string> = {
-  VIDEO: "ti-brand-youtube",
+const TEMA_TIPO_ICON: Record<string, string> = {
+  VIDEO: "ti-player-play",
   PDF: "ti-file-type-pdf",
   TEXTO: "ti-file-text",
-  SCORM: "ti-device-gamepad-2",
+  IMAGEN: "ti-photo",
+  IFRAME: "ti-world",
 };
 
 function ExamRow({
@@ -103,17 +104,17 @@ function ModuleRow({
         )}
       </div>
 
-      {/* Content type icon */}
+      {/* Content type icon (from first tema) */}
       <i
-        className={`ti ${MODULE_TIPO_ICON[mod.tipo_contenido] ?? "ti-file"} text-base text-muted-foreground shrink-0`}
+        className={`ti ${TEMA_TIPO_ICON[mod.temas[0]?.tipo_contenido ?? ""] ?? "ti-layout-list"} text-base text-muted-foreground shrink-0`}
       />
 
-      {/* Title + duration */}
+      {/* Title + tema count */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{mod.titulo}</p>
-        {mod.duracion_minutos && (
-          <p className="text-xs text-muted-foreground mt-0.5">{mod.duracion_minutos} min</p>
-        )}
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {mod.temas.length} tema{mod.temas.length !== 1 ? "s" : ""}
+        </p>
       </div>
 
       {/* Right status */}

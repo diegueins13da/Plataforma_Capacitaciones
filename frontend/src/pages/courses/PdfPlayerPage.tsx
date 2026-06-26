@@ -23,13 +23,14 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import * as pdfjsLib from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
-import type { CourseModuleWithStatus } from "../../types/course";
+import type { Tema } from "../../types/course";
 
 // Point PDF.js at its web worker (bundled by Vite via the ?url import).
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 interface PdfPlayerProps {
-  module: CourseModuleWithStatus;
+  tema: Tema;
+  isCompleted: boolean;
   initialPage?: number;
   onComplete: () => void;
   onPositionUpdate: (position: Record<string, number>) => void;
@@ -41,7 +42,8 @@ const MAX_DPR = 2;
 const STAGE_PADDING = 24;
 
 export function PdfPlayerPage({
-  module,
+  tema,
+  isCompleted,
   initialPage = 1,
   onComplete,
   onPositionUpdate,
@@ -54,7 +56,7 @@ export function PdfPlayerPage({
   const [error, setError] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [completed, setCompleted] = useState(module.is_completed);
+  const [completed, setCompleted] = useState(isCompleted);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const slideWrapRef = useRef<HTMLDivElement>(null);
@@ -68,14 +70,14 @@ export function PdfPlayerPage({
 
   // ── Load the document once ──────────────────────────────────────────────
   useEffect(() => {
-    if (!module.archivo_pdf) {
+    if (!tema.archivo_pdf) {
       setError(true);
       setLoading(false);
       return;
     }
     let cancelled = false;
     const task = pdfjsLib.getDocument({
-      url: module.archivo_pdf,
+      url: tema.archivo_pdf,
       isEvalSupported: false, // security: never eval() font/CMap programs
     });
     task.promise
@@ -101,7 +103,7 @@ export function PdfPlayerPage({
     };
     // initialPage is only meaningful on first load
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [module.archivo_pdf]);
+  }, [tema.archivo_pdf]);
 
   // ── Render a single page to the canvas, fit to the stage ────────────────
   const renderPage = useCallback(
@@ -202,11 +204,11 @@ export function PdfPlayerPage({
       // Analytics hook — consumers can listen on window for slide telemetry.
       window.dispatchEvent(
         new CustomEvent("lms:slide_view", {
-          detail: { moduleId: module.id, page: next, total },
+          detail: { temaId: tema.id, page: next, total },
         })
       );
     },
-    [numPages, onPositionUpdate, module.id]
+    [numPages, onPositionUpdate, tema.id]
   );
 
   const goNext = useCallback(() => go(pageRef.current + 1, 1), [go]);
