@@ -41,8 +41,15 @@ const NAV_USUARIO: NavItem[] = [
   { to: "/notifications", label: "Notificaciones", icon: "ti-bell", badge: true },
 ];
 
+// Label that fades + wipes in when the sidebar group is hovered
+const LABEL_CLS =
+  "text-[13px] font-medium whitespace-nowrap overflow-hidden " +
+  "opacity-0 max-w-0 " +
+  "group-hover:opacity-100 group-hover:max-w-[150px] " +
+  "transition-[opacity,max-width] duration-[200ms] ease-in-out";
+
 // ---------------------------------------------------------------------------
-// Sidebar item — icon + short label
+// Sidebar item — icon centered when collapsed, icon + label when expanded
 // ---------------------------------------------------------------------------
 function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string }) {
   return (
@@ -52,17 +59,19 @@ function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string
       title={item.label}
       className={({ isActive }) =>
         [
-          "relative w-full flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 transition-all duration-150 group",
+          "relative w-full flex items-center rounded-lg",
+          // px-[19px] centers the 17px icon in the 56px collapsed content area
+          "py-[7px] px-[19px] group-hover:px-3",
+          "gap-0 group-hover:gap-[10px]",
+          "transition-all duration-[220ms] ease-in-out",
           isActive ? "" : "text-white/30 hover:text-white/70 hover:bg-white/5",
         ].join(" ")
       }
       style={({ isActive }) =>
-        isActive
-          ? { background: `${accentColor}28`, color: accentColor }
-          : {}
+        isActive ? { background: `${accentColor}28`, color: accentColor } : {}
       }
     >
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         <i className={`ti ${item.icon} text-[17px]`} aria-hidden="true" />
         {item.badge && (
           <span
@@ -71,9 +80,7 @@ function SidebarItem({ item, accentColor }: { item: NavItem; accentColor: string
           />
         )}
       </div>
-      <span className="text-[9px] font-medium leading-none tracking-wide truncate w-full text-center">
-        {item.label}
-      </span>
+      <span className={LABEL_CLS}>{item.label}</span>
     </NavLink>
   );
 }
@@ -109,9 +116,8 @@ function TrainerContextToggle() {
         width: "100%",
         transition: "all 0.2s ease",
       }}
-      className="hover:bg-white/8 group"
+      className="hover:bg-white/8 group/toggle"
     >
-      {/* Active mode badge */}
       <span
         style={{
           background: isInstructor ? "rgba(79,70,229,0.35)" : "rgba(16,185,129,0.25)",
@@ -126,9 +132,8 @@ function TrainerContextToggle() {
       >
         {isInstructor ? "INST." : "ALU."}
       </span>
-      {/* Arrows indicating it's switchable */}
       <i
-        className="ti ti-arrows-exchange text-white/30 group-hover:text-white/60 transition-colors"
+        className="ti ti-arrows-exchange text-white/30 group-hover/toggle:text-white/60 transition-colors"
         style={{ fontSize: 11 }}
         aria-hidden="true"
       />
@@ -183,8 +188,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className="shrink-0 flex flex-col items-center py-3 min-h-screen gap-1 overflow-visible"
-      style={{ width: "68px", background: "#0a0f1e", borderRight: "1px solid #1e293b", padding: "12px 6px" }}
+      className={[
+        "group shrink-0 flex flex-col items-center min-h-screen gap-1 overflow-hidden",
+        "w-[68px] hover:w-[210px]",
+        "py-3 px-[6px] hover:px-[8px]",
+        "transition-[width,padding] duration-[220ms] ease-in-out",
+      ].join(" ")}
+      style={{ background: "#0a0f1e", borderRight: "1px solid #1e293b" }}
     >
       {/* Logo */}
       <div
@@ -220,12 +230,20 @@ export function Sidebar() {
         type="button"
         title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
         onClick={toggleTheme}
-        className="w-full flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 transition-colors hover:bg-white/5 mb-0.5"
+        className={[
+          "w-full flex items-center rounded-lg",
+          "py-[7px] px-[19px] group-hover:px-3",
+          "gap-0 group-hover:gap-[10px]",
+          "transition-all duration-[220ms] ease-in-out hover:bg-white/5 mb-0.5",
+        ].join(" ")}
         style={{ color: "rgba(255,255,255,0.35)" }}
       >
-        <i className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"} text-[17px]`} aria-hidden="true" />
-        <span className="text-[9px] font-medium leading-none">
-          {theme === "dark" ? "Claro" : "Oscuro"}
+        <i
+          className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"} text-[17px] flex-shrink-0`}
+          aria-hidden="true"
+        />
+        <span className={LABEL_CLS}>
+          {theme === "dark" ? "Modo claro" : "Modo oscuro"}
         </span>
       </button>
 
@@ -234,11 +252,16 @@ export function Sidebar() {
         type="button"
         title="Cerrar sesión"
         onClick={() => void handleLogout()}
-        className="w-full flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 transition-colors hover:bg-white/5 mb-1"
+        className={[
+          "w-full flex items-center rounded-lg",
+          "py-[7px] px-[19px] group-hover:px-3",
+          "gap-0 group-hover:gap-[10px]",
+          "transition-all duration-[220ms] ease-in-out hover:bg-white/5 mb-1",
+        ].join(" ")}
         style={{ color: "rgba(255,255,255,0.25)" }}
       >
-        <i className="ti ti-logout text-[17px]" aria-hidden="true" />
-        <span className="text-[9px] font-medium leading-none">Salir</span>
+        <i className="ti ti-logout text-[17px] flex-shrink-0" aria-hidden="true" />
+        <span className={LABEL_CLS}>Cerrar sesión</span>
       </button>
 
       {/* User avatar */}
