@@ -310,6 +310,9 @@ def submit_exam(assessment_id: int, user: "User", answers: dict) -> dict:
     else:
         notify_examen_reprobado(user, enrollment, float(calificacion), remaining)
 
+    from apps.notifications.tasks import send_examen_result_email  # noqa: PLC0415
+    send_examen_result_email.delay(user.pk, enrollment.pk, float(calificacion), aprobado, remaining)
+
     # Notify the course instructor about the exam result
     from apps.notifications.services import (  # noqa: PLC0415
         notify_instructor_alumno_aprobado,

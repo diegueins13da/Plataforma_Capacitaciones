@@ -186,7 +186,12 @@ CELERY_RESULT_EXPIRES = 3600
 from celery.schedules import crontab  # noqa: E402
 
 CELERY_BEAT_SCHEDULE = {
-    # LDAP sync runs daily at 02:00 UTC (only active when LDAP_ENABLED=True)
+    # Catalog sync (Area/Group/Cargo from AD) at 01:00 UTC — runs BEFORE user sync
+    "catalog-sync-daily": {
+        "task": "apps.users.tasks.catalog_sync_task",
+        "schedule": crontab(hour=1, minute=0),
+    },
+    # LDAP user sync at 02:00 UTC — catalogs must already be updated
     "ldap-sync-daily": {
         "task": "apps.users.tasks.ldap_sync_task",
         "schedule": crontab(hour=2, minute=0),

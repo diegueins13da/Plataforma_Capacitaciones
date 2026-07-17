@@ -3,6 +3,7 @@ export interface Area {
   nombre: string;
   descripcion: string;
   activo: boolean;
+  from_ad: boolean;
   created_at: string;
   user_count: number;
 }

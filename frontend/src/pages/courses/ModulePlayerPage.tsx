@@ -31,6 +31,7 @@ export default function ModulePlayerPage() {
   const [initialPosition, setInitialPosition] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set());
+  const [iframeAllDone, setIframeAllDone] = useState(false);
 
   useEffect(() => {
     if (!courseId || !moduleId) return;
@@ -54,6 +55,7 @@ export default function ModulePlayerPage() {
         setCourse(c);
         setModule(mod);
         setExpandedModules(new Set([mId]));
+        if (mod.is_completed) setIframeAllDone(true);
 
         let savedPosition: Record<string, number> = {};
         if (c.enrollment) {
@@ -412,6 +414,7 @@ export default function ModulePlayerPage() {
             isCompleted={isModuleCompleted}
             onComplete={handleTemaComplete}
             onPositionUpdate={handlePositionUpdate}
+            onAllSlidesVisited={() => setIframeAllDone(true)}
           />
         )}
 
@@ -438,7 +441,7 @@ export default function ModulePlayerPage() {
               <button
                 type="button"
                 onClick={handleTemaComplete}
-                disabled={isModuleCompleted}
+                disabled={isModuleCompleted || (currentTema?.tipo_contenido === "IFRAME" && !iframeAllDone)}
                 className="flex items-center gap-1.5 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
               >
                 {isModuleCompleted ? "Módulo completado ✓" : "Completar módulo →"}
@@ -464,7 +467,7 @@ export default function ModulePlayerPage() {
             <button
               type="button"
               onClick={handleTemaComplete}
-              disabled={isModuleCompleted}
+              disabled={isModuleCompleted || (currentTema.tipo_contenido === "IFRAME" && !iframeAllDone)}
               className="flex items-center gap-1.5 px-5 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
             >
               {isModuleCompleted ? "Módulo completado ✓" : "Completar módulo →"}

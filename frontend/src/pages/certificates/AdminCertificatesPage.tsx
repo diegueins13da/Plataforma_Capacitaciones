@@ -53,7 +53,7 @@ function CertRow({ cert }: { cert: CertEntry }) {
       <td className="py-3 px-4 text-center">
         {cert.has_pdf ? (
           <a
-            href={cert.download_url}
+            href={`/api/v1/certificates/${cert.id}/download/`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors"

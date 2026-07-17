@@ -4,6 +4,7 @@ export interface Cargo {
   area: number | null;
   area_nombre: string | null;
   activo: boolean;
+  from_ad: boolean;
   created_at: string;
 }
 

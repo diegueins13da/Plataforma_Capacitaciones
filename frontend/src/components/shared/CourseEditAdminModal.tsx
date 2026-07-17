@@ -9,7 +9,7 @@ import { configService } from "../../services/configService";
 import { assessmentsService } from "../../services/assessmentsService";
 import { RichTextEditor } from "./RichTextEditor";
 import { QuestionForm } from "./QuestionForm";
-import type { Area } from "../../types/area";
+import type { Group } from "../../types/groups";
 import type { Course, CourseModule, CreateTemaPayload, Tema, TemaTipo } from "../../types/course";
 import type { Assessment, CreateQuestionPayload, Question } from "../../types/assessment";
 
@@ -79,7 +79,7 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>("info");
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<CourseModule[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<Group[]>([]);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +121,7 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
     Promise.all([
       coursesService.getCourse(courseId),
       coursesService.getModules(courseId),
-      configService.getAreas(),
+      configService.getGroups(),
       assessmentsService.getAssessmentForCourse(courseId),
     ])
       .then(async ([c, mods, ar, ass]) => {
@@ -458,9 +458,7 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
                     <div className="col-span-2 flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-400">
                       <i className="ti ti-lock text-sm shrink-0 mt-0.5" aria-hidden="true" />
                       <span>
-                        Curso <strong>{course?.estado === "PUBLICADO" ? "publicado" : "archivado"}</strong>: el campo <em>Tipo de entrega</em> está bloqueado
-                        {course?.estado === "PUBLICADO" ? " para no afectar a usuarios ya inscritos" : ""}.
-                        El resto de campos son editables.
+                        Curso <strong>{course?.estado === "PUBLICADO" ? "publicado" : "archivado"}</strong>: los cambios en la información se aplicarán a todos los usuarios inscritos.
                       </span>
                     </div>
                   )}
@@ -474,26 +472,21 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
                     <label className={LABEL}>Descripción</label>
                     <textarea {...register("descripcion")} rows={3} className={INPUT + " resize-none"} />
                   </div>
+                  {/* Tipo — fijo: Virtual */}
                   <div>
-                    <label className={LABEL}>
-                      Tipo <span className="text-red-500">*</span>
-                      {isPublished && <span className="ml-1 text-muted-foreground font-normal">(bloqueado)</span>}
-                    </label>
-                    <select
-                      {...register("tipo")}
-                      disabled={isPublished || course?.estado === "ARCHIVADO"}
-                      className={INPUT + (isPublished || course?.estado === "ARCHIVADO" ? " opacity-50 cursor-not-allowed" : "")}
-                    >
-                      <option value="ONLINE">Online</option>
-                      <option value="PRESENCIAL">Presencial</option>
-                      <option value="HIBRIDO">Híbrido</option>
-                      <option value="AUTOAPRENDIZAJE">Autoaprendizaje</option>
-                    </select>
+                    <label className={LABEL}>Tipo de entrega</label>
+                    <input type="hidden" {...register("tipo")} value="ONLINE" />
+                    <div className="flex gap-1.5 mt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white select-none">
+                        <i className="ti ti-world text-[11px]" aria-hidden="true" />
+                        Virtual
+                      </span>
+                    </div>
                   </div>
                   <div>
-                    <label className={LABEL}>Área <span className="text-red-500">*</span></label>
+                    <label className={LABEL}>Departamento <span className="text-red-500">*</span></label>
                     <select {...register("area")} className={INPUT}>
-                      <option value="">— Selecciona un área —</option>
+                      <option value="">— Selecciona un departamento —</option>
                       {areas.map((a) => (
                         <option key={a.id} value={a.id}>{a.nombre}</option>
                       ))}
@@ -591,7 +584,8 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
                               <div className="px-2 pb-1 space-y-0.5">
                                 {m.temas.map((tema) => (
                                   <div key={tema.id}
-                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent/40 transition-colors group ${temaModuleId === m.id && editingTemaId === tema.id ? "bg-indigo-500/8 ring-1 ring-inset ring-indigo-500/25" : ""}`}>
+                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent/40 transition-colors group cursor-pointer ${temaModuleId === m.id && editingTemaId === tema.id ? "bg-indigo-500/8 ring-1 ring-inset ring-indigo-500/25" : ""}`}
+                                    onClick={() => openEditTema(m.id, tema)}>
                                     <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center shrink-0">
                                       <i className={`ti ${TEMA_TIPO_ICONS[tema.tipo_contenido]} text-[11px] text-indigo-400`} aria-hidden="true" />
                                     </div>
@@ -600,11 +594,11 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
                                     {tema.duracion_minutos && (
                                       <span className="text-[10px] text-muted-foreground shrink-0">· {tema.duracion_minutos}m</span>
                                     )}
-                                    <button type="button" onClick={() => openEditTema(m.id, tema)}
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); openEditTema(m.id, tema); }}
                                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-indigo-400 hover:bg-indigo-500/15 transition-all shrink-0">
                                       <i className="ti ti-edit text-xs" aria-hidden="true" />
                                     </button>
-                                    <button type="button" onClick={() => void handleDeleteTema(m.id, tema)}
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); void handleDeleteTema(m.id, tema); }}
                                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-red-400 hover:bg-red-500/15 transition-all shrink-0">
                                       <i className="ti ti-trash text-xs" aria-hidden="true" />
                                     </button>

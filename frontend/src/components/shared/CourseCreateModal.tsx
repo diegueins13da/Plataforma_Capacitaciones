@@ -9,7 +9,7 @@ import { configService } from "../../services/configService";
 import { assessmentsService } from "../../services/assessmentsService";
 import { RichTextEditor } from "./RichTextEditor";
 import { QuestionForm } from "./QuestionForm";
-import type { Area } from "../../types/area";
+import type { Group } from "../../types/groups";
 import type { CourseModule, CreateTemaPayload, Tema, TemaTipo } from "../../types/course";
 import type { Assessment, CreateQuestionPayload, Question } from "../../types/assessment";
 
@@ -17,9 +17,7 @@ import type { Assessment, CreateQuestionPayload, Question } from "../../types/as
 const schema = z.object({
   titulo: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   descripcion: z.string().optional(),
-  tipo: z.enum(["ONLINE", "PRESENCIAL", "HIBRIDO", "AUTOAPRENDIZAJE"], {
-    required_error: "Selecciona el tipo de entrega",
-  }),
+  tipo: z.enum(["ONLINE", "PRESENCIAL", "HIBRIDO", "AUTOAPRENDIZAJE"]).default("ONLINE"),
   area: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
     z.number({ required_error: "El área es obligatoria", invalid_type_error: "El área es obligatoria" }).int().positive("Selecciona un área")
@@ -86,7 +84,7 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
   const [courseEstado, setCourseEstado] = useState<"BORRADOR" | "PUBLICADO">("BORRADOR");
 
   // Data
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<Group[]>([]);
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -114,7 +112,7 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { version: "1.0", tipo: "ONLINE" },
+    defaultValues: { version: "1.0", tipo: "ONLINE", cert_expira_meses: 12 },
   });
 
   // Lock scroll
@@ -125,7 +123,7 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
 
   // Load areas
   useEffect(() => {
-    configService.getAreas().then(setAreas).catch(() => void 0);
+    configService.getGroups().then(setAreas).catch(() => void 0);
   }, []);
 
   // Load assessment once course exists
@@ -483,23 +481,23 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
                       placeholder="¿Qué aprenderá el participante?" />
                   </div>
 
-                  {/* Tipo */}
+                  {/* Tipo — fijo: Virtual */}
                   <div>
-                    <label className={LABEL}>Tipo de entrega <span className="text-red-500">*</span></label>
-                    <select {...register("tipo")} className={INPUT}>
-                      <option value="ONLINE">Online</option>
-                      <option value="PRESENCIAL">Presencial</option>
-                      <option value="HIBRIDO">Híbrido</option>
-                      <option value="AUTOAPRENDIZAJE">Autoaprendizaje</option>
-                    </select>
-                    {errors.tipo && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><i className="ti ti-alert-circle text-xs" aria-hidden="true" />{errors.tipo.message}</p>}
+                    <label className={LABEL}>Tipo de entrega</label>
+                    <input type="hidden" {...register("tipo")} value="ONLINE" />
+                    <div className="flex gap-1.5 mt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white select-none">
+                        <i className="ti ti-world text-[11px]" aria-hidden="true" />
+                        Virtual
+                      </span>
+                    </div>
                   </div>
 
                   {/* Área */}
                   <div>
-                    <label className={LABEL}>Área <span className="text-red-500">*</span></label>
+                    <label className={LABEL}>Departamento <span className="text-red-500">*</span></label>
                     <select {...register("area")} className={INPUT}>
-                      <option value="">— Selecciona un área —</option>
+                      <option value="">— Selecciona un departamento —</option>
                       {areas.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                     </select>
                     {errors.area && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><i className="ti ti-alert-circle text-xs" aria-hidden="true" />{errors.area.message}</p>}
@@ -528,7 +526,7 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
                   {/* Cert expira */}
                   <div>
                     <label className={LABEL}>Certificado vigente <span className="text-muted-foreground font-normal">(meses)</span></label>
-                    <input {...register("cert_expira_meses")} type="number" min={1} className={INPUT} placeholder="Ej: 12" />
+                    <input {...register("cert_expira_meses")} type="number" min={1} className={INPUT} placeholder="12" />
                     {errors.cert_expira_meses && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><i className="ti ti-alert-circle text-xs" aria-hidden="true" />{errors.cert_expira_meses.message}</p>}
                   </div>
 
@@ -607,7 +605,8 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
                               <div className="px-2 pb-1 space-y-0.5">
                                 {m.temas.map((tema) => (
                                   <div key={tema.id}
-                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent/40 transition-colors group ${temaModuleId === m.id && editingTemaId === tema.id ? "bg-indigo-500/8 ring-1 ring-inset ring-indigo-500/25" : ""}`}>
+                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent/40 transition-colors group cursor-pointer ${temaModuleId === m.id && editingTemaId === tema.id ? "bg-indigo-500/8 ring-1 ring-inset ring-indigo-500/25" : ""}`}
+                                    onClick={() => openEditTema(m.id, tema)}>
                                     <div className="w-6 h-6 rounded-md bg-indigo-500/10 flex items-center justify-center shrink-0">
                                       <i className={`ti ${TEMA_TIPO_ICONS[tema.tipo_contenido]} text-[11px] text-indigo-400`} aria-hidden="true" />
                                     </div>
@@ -616,11 +615,11 @@ export function CourseCreateModal({ onClose, onCreated }: Props) {
                                     {tema.duracion_minutos && (
                                       <span className="text-[10px] text-muted-foreground shrink-0">· {tema.duracion_minutos}m</span>
                                     )}
-                                    <button type="button" onClick={() => openEditTema(m.id, tema)}
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); openEditTema(m.id, tema); }}
                                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-indigo-400 hover:bg-indigo-500/15 transition-all shrink-0">
                                       <i className="ti ti-edit text-xs" aria-hidden="true" />
                                     </button>
-                                    <button type="button" onClick={() => void handleDeleteTema(m.id, tema)}
+                                    <button type="button" onClick={(e) => { e.stopPropagation(); void handleDeleteTema(m.id, tema); }}
                                       className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-red-400 hover:bg-red-500/15 transition-all shrink-0">
                                       <i className="ti ti-trash text-xs" aria-hidden="true" />
                                     </button>

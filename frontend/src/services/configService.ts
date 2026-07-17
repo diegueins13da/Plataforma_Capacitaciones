@@ -1,6 +1,7 @@
 import api from "./api";
 import type { Area, CreateAreaPayload, UpdateAreaPayload } from "../types/area";
 import type { Cargo, CreateCargoPayload, UpdateCargoPayload } from "../types/cargo";
+import type { Group } from "../types/groups";
 import type { GroupedSettings, SystemSetting } from "../types/config";
 import type { PaginatedResponse } from "../types";
 
@@ -56,6 +57,16 @@ export const configService = {
 
   async deleteArea(id: number): Promise<void> {
     await api.delete(`/v1/areas/${id}/`);
+  },
+
+  // ---------------------------------------------------------------------------
+  // Groups (departamentos desde AD)
+  // ---------------------------------------------------------------------------
+
+  async getGroups(): Promise<Group[]> {
+    const res = await api.get<PaginatedResponse<Group> | Group[]>("/v1/groups/");
+    const data = res.data;
+    return Array.isArray(data) ? data : data.results;
   },
 
   // ---------------------------------------------------------------------------

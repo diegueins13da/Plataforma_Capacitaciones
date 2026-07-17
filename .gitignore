@@ -67,3 +67,7 @@ Desktop.ini
 agent-skills/
 # Claude Code local settings
 .claude/
+
+# ---- Media / course assets (large binaries, mounted via volume in prod) ----
+datos/
+backend/datos/

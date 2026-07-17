@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curso 1 · Introducción a la Seguridad de la Información</title>
+<style>
+  :root{
+    --navy:#1F3864;
+    --navy-dark:#152A4A;
+    --navy-darker:#0F1F38;
+    --gold:#B08D57;
+    --gold-light:#D9C9A8;
+    --card:#F3F5F9;
+    --card-border:#E3E7EF;
+    --ink:#232A35;
+    --muted:#66707F;
+    --white:#FFFFFF;
+    --green:#1F6E32;
+    --green-bg:#EAF5EC;
+    --red:#9B2C2C;
+    --red-bg:#FBEBEB;
+    --radius:10px;
+    --sidebar-w:308px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Calibri","Segoe UI",Arial,sans-serif;
+    color:var(--ink);
+    background:var(--white);
+    line-height:1.55;
+  }
+  h1,h2,h3,h4{
+    font-family:"Cambria","Georgia",serif;
+    color:var(--navy);
+    margin:0 0 .5em 0;
+    line-height:1.25;
+  }
+  .app{display:flex;min-height:100vh;}
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:var(--sidebar-w);
+    flex:0 0 var(--sidebar-w);
+    background:linear-gradient(180deg,var(--navy-darker),var(--navy-dark));
+    color:#DCE3F0;
+    padding:26px 20px 20px;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:22px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(255,255,255,0.12);
+  }
+  .brand-mark{
+    width:40px;height:40px;border-radius:50%;
+    background:var(--navy);
+    border:1.5px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--gold);font-family:"Cambria",serif;font-weight:700;font-size:15px;
+    flex:0 0 40px;
+  }
+  .brand-text{font-size:12.5px;line-height:1.35;color:#B9C4DB;}
+  .brand-text strong{display:block;color:var(--white);font-size:14px;font-family:"Cambria",serif;}
+
+  .progress-wrap{margin-bottom:20px;}
+  .progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:#9FB0CC;letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px;}
+  .progress-bar{height:7px;border-radius:5px;background:rgba(255,255,255,0.12);overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));width:0%;transition:width .4s ease;}
+
+  nav.navlist{flex:1;overflow-y:auto;}
+  .nav-group{margin-bottom:4px;}
+  .nav-group-title{
+    font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+    color:#7C89A6;padding:14px 10px 6px;font-weight:700;
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 10px;margin:1px 0;border-radius:8px;
+    cursor:pointer;font-size:13.5px;color:#C7D0E3;
+    border:1px solid transparent;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.06);color:var(--white);}
+  .nav-item.active{background:rgba(176,141,87,0.18);color:var(--white);border-color:rgba(176,141,87,0.4);}
+  .nav-dot{
+    width:8px;height:8px;border-radius:50%;flex:0 0 8px;
+    background:rgba(255,255,255,0.25);
+  }
+  .nav-item.done .nav-dot{background:var(--gold);}
+  .nav-item.active .nav-dot{background:var(--white);}
+
+  .sidebar-footer{
+    padding-top:14px;margin-top:10px;border-top:1px solid rgba(255,255,255,0.12);
+    font-size:11px;color:#7C89A6;line-height:1.5;
+  }
+
+  /* ---------- MAIN ---------- */
+  main.content{flex:1;min-width:0;padding:0;}
+  .page{display:none;padding:52px 64px 90px;max-width:920px;margin:0 auto;animation:fadeIn .35s ease;}
+  .page.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .eyebrow{
+    font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--gold);font-weight:700;margin-bottom:10px;
+  }
+  .page h1{font-size:32px;margin-bottom:6px;}
+  .page-sub{color:var(--muted);font-size:15.5px;margin-bottom:34px;max-width:640px;}
+
+  h2.block-h{font-size:22px;margin-top:38px;padding-top:6px;border-top:1px solid var(--card-border);}
+  h2.block-h:first-of-type{border-top:none;margin-top:0;}
+  h3.block-h3{font-size:16.5px;color:var(--gold);font-style:italic;font-family:"Cambria",serif;margin-top:24px;}
+
+  p.block-p{margin:0 0 14px;font-size:15.5px;color:var(--ink);}
+  p.block-p strong{color:var(--navy);}
+  ul.block-list{margin:0 0 16px;padding-left:0;list-style:none;}
+  ul.block-list li{
+    position:relative;padding-left:22px;margin-bottom:10px;font-size:15.5px;
+  }
+  ul.block-list li::before{
+    content:"";position:absolute;left:2px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--gold);
+  }
+
+  .definition-card{
+    background:var(--navy);color:var(--white);border-radius:var(--radius);
+    padding:22px 26px;margin:22px 0;display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;
+  }
+  .definition-term{
+    font-family:"Cambria",serif;color:var(--gold);font-weight:700;font-size:17px;
+    flex:0 0 180px;line-height:1.3;
+  }
+  .definition-body{flex:1;min-width:240px;font-size:14.5px;color:#EDF0F7;}
+  .definition-points{margin-top:14px;}
+  .definition-points ul{margin:0;padding-left:18px;}
+  .definition-points li{margin-bottom:8px;font-size:14.5px;color:var(--ink);}
+
+  .case-card{
+    background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+    padding:20px 24px;margin:22px 0;
+  }
+  .case-label{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--navy);font-size:14.5px;margin-bottom:10px;}
+  .case-icon{
+    width:26px;height:26px;border-radius:50%;background:var(--navy);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;font-style:italic;font-family:"Cambria",serif;font-weight:700;font-size:13px;flex:0 0 26px;
+  }
+  .case-text{font-size:14.5px;color:var(--ink);}
+
+  .tip-card{
+    background:#FFF7EC;border-left:4px solid var(--gold);border-radius:6px;
+    padding:16px 20px;margin:20px 0;font-size:14.5px;
+  }
+  .tip-card b{color:var(--navy);}
+
+  table.data-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;}
+  table.data-table th{
+    background:var(--navy);color:var(--white);text-align:left;padding:10px 14px;font-weight:700;
+  }
+  table.data-table td{padding:10px 14px;border-bottom:1px solid var(--card-border);}
+  table.data-table tr:nth-child(even) td{background:var(--card);}
+
+  .checklist{list-style:none;padding:0;margin:18px 0;}
+  .checklist li{
+    display:flex;gap:12px;align-items:flex-start;padding:9px 0;font-size:14.5px;border-bottom:1px dashed var(--card-border);
+  }
+  .checklist li::before{
+    content:"";flex:0 0 18px;width:18px;height:18px;border:2px solid var(--gold);border-radius:4px;margin-top:1px;
+  }
+
+  /* ---------- QUIZ ---------- */
+  .quiz-block{
+    background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);
+    padding:24px 26px;margin:22px 0 30px;
+  }
+  .quiz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .quiz-title{font-family:"Cambria",serif;font-size:18px;color:var(--navy);font-weight:700;}
+  .quiz-score{font-size:13px;color:var(--muted);}
+  .quiz-q{margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid var(--card-border);}
+  .quiz-q:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .quiz-qnum{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px;}
+  .quiz-question{font-size:15.5px;font-weight:700;color:var(--navy);margin-bottom:14px;}
+  .quiz-options{display:flex;flex-direction:column;gap:8px;}
+  .quiz-opt{
+    display:flex;align-items:center;gap:12px;
+    text-align:left;background:var(--white);border:1.5px solid var(--card-border);
+    border-radius:8px;padding:11px 14px;cursor:pointer;font-size:14px;color:var(--ink);
+    font-family:inherit;transition:border-color .15s, background .15s;
+  }
+  .quiz-opt:hover:not(:disabled){border-color:var(--gold);}
+  .quiz-opt .opt-letter{
+    flex:0 0 24px;height:24px;border-radius:50%;background:var(--card);border:1px solid var(--card-border);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--navy);
+  }
+  .quiz-opt:disabled{cursor:default;}
+  .quiz-opt.correct{background:var(--green-bg);border-color:var(--green);}
+  .quiz-opt.correct .opt-letter{background:var(--green);color:var(--white);border-color:var(--green);}
+  .quiz-opt.incorrect{background:var(--red-bg);border-color:var(--red);}
+  .quiz-opt.incorrect .opt-letter{background:var(--red);color:var(--white);border-color:var(--red);}
+  .quiz-explain{
+    display:none;margin-top:12px;padding:12px 16px;background:var(--white);border-radius:8px;
+    font-size:13.5px;border:1px solid var(--card-border);
+  }
+  .quiz-explain b{color:var(--navy);}
+  .quiz-explain.show{display:block;}
+
+  /* ---------- EXAM ---------- */
+  .exam-toolbar{
+    position:sticky;top:0;background:var(--white);padding:14px 0;margin-bottom:10px;
+    border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;z-index:5;
+  }
+  .btn{
+    background:var(--navy);color:var(--white);border:none;border-radius:8px;
+    padding:12px 24px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .btn:hover{background:var(--navy-dark);}
+  .btn:disabled{background:#B7BFCC;cursor:not-allowed;}
+  .btn.ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
+  .exam-result{
+    display:none;background:var(--navy);color:var(--white);border-radius:var(--radius);
+    padding:28px 30px;margin:20px 0 30px;text-align:center;
+  }
+  .exam-result.show{display:block;}
+  .exam-result .score-num{font-family:"Cambria",serif;font-size:44px;color:var(--gold);font-weight:700;}
+  .exam-result .score-msg{font-size:15px;margin-top:6px;}
+
+  .nav-buttons{display:flex;justify-content:space-between;margin-top:46px;padding-top:26px;border-top:1px solid var(--card-border);}
+
+  .cover-hero{
+    background:linear-gradient(160deg,var(--navy-darker),var(--navy-dark));
+    color:var(--white);border-radius:14px;padding:52px 48px;margin-bottom:10px;position:relative;overflow:hidden;
+  }
+  .cover-hero::after{
+    content:"";position:absolute;right:-60px;bottom:-90px;width:260px;height:260px;border-radius:50%;
+    border:1px solid rgba(176,141,87,0.35);
+  }
+  .cover-hero::before{
+    content:"";position:absolute;right:20px;bottom:-40px;width:170px;height:170px;border-radius:50%;
+    border:1px solid rgba(176,141,87,0.5);
+  }
+  .cover-hero .eyebrow{color:var(--gold);}
+  .cover-hero h1{color:var(--white);font-size:34px;max-width:640px;}
+  .cover-hero p{color:#C9D3E5;max-width:560px;font-size:15px;}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:20px 0;}
+  .mini-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px 20px;}
+  .mini-card h4{font-size:14px;color:var(--navy);margin-bottom:8px;font-family:"Cambria",serif;}
+  .mini-card ul{margin:0;padding-left:18px;}
+  .mini-card li{font-size:13.5px;margin-bottom:7px;}
+
+  .badge-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;background:var(--navy);color:var(--gold);
+    font-weight:700;font-size:13px;margin-right:10px;font-family:"Cambria",serif;
+  }
+
+  .mobile-toggle{display:none;}
+
+  @media (max-width:880px){
+    .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);z-index:50;transition:transform .25s ease;box-shadow:0 0 30px rgba(0,0,0,0.3);}
+    .sidebar.open{transform:translateX(0);}
+    .page{padding:80px 22px 70px;}
+    .mobile-toggle{
+      display:flex;position:fixed;top:14px;left:14px;z-index:60;
+      width:42px;height:42px;border-radius:50%;background:var(--navy);color:var(--gold);
+      align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.2);
+    }
+    .grid-2{grid-template-columns:1fr;}
+    .definition-card{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="mobile-toggle" id="mobileToggle">☰</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">SI</div>
+      <div class="brand-text"><strong>Curso 1</strong>Introducción a la Seguridad de la Información</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Tu progreso</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <nav class="navlist" id="navList"></nav>
+    <div class="sidebar-footer">Programa Oficial de Concienciación en Seguridad de la Información<br>Cooperativa de Ahorro y Crédito</div>
+  </aside>
+
+  <main class="content" id="content"></main>
+</div>
+
+<script>
+/* =========================================================
+   COURSE DATA — filled in below (COURSE.pages)
+   ========================================================= */
+var COURSE = { pages: [] };
+COURSE.pages.push(
+{
+  id:"inicio", group:"Inicio", navLabel:"Portada", hero:true,
+  eyebrow:"Programa Oficial de Concienciación en Seguridad de la Información",
+  title:"Curso 1 · Introducción a la Seguridad de la Información",
+  subtitle:"Curso base autodirigido para todos los colaboradores de la Cooperativa de Ahorro y Crédito. Elaborado por la Oficialía de Seguridad de la Información.",
+  blocks:[
+    {type:"p", text:"Este curso está diseñado para que aprendas de forma completamente autónoma, sin instructor presencial. Avanza a tu ritmo usando el menú de la izquierda: cada tema incluye explicaciones, ejemplos reales del sector cooperativo ecuatoriano y preguntas para poner a prueba lo aprendido."},
+    {type:"grid2", cards:[
+      {title:"¿Cómo navegar?", items:["Usa el menú lateral para moverte entre módulos.","Tu progreso se guarda automáticamente mientras navegas.","Al final de cada módulo encontrarás una autoevaluación."]},
+      {title:"¿Qué necesitas?", items:["Ningún conocimiento técnico previo.","Aproximadamente 60–90 minutos para completarlo.","Completar el examen final de 20 preguntas."]},
+    ]},
+    {type:"tip", text:"No es una carrera. Lee cada sección con calma y relaciona los ejemplos con tu propio puesto de trabajo."},
+  ]
+},
+{
+  id:"bienvenida", group:"Inicio", navLabel:"Bienvenida",
+  eyebrow:"Carta de bienvenida",
+  title:"La información también es un activo que cuidamos",
+  blocks:[
+    {type:"p", text:"Bienvenido o bienvenida al primer curso del <strong>Programa Oficial de Concienciación en Seguridad de la Información</strong> de nuestra Cooperativa."},
+    {type:"p", text:"Antes de empezar, piensa un momento en tu día de trabajo. Si trabajas en <strong>Cajas</strong>, cada transacción que registras contiene datos de un socio. Si trabajas en <strong>Crédito</strong> o <strong>Cobranza</strong>, manejas cédulas, ingresos, historial de pagos y números de teléfono. Si trabajas en <strong>Talento Humano</strong>, tienes acceso a contratos, sueldos y datos médicos de tus compañeros. Si trabajas en <strong>Tecnología</strong>, administras los sistemas donde vive toda esa información. Incluso si tu rol parece \"no técnico\" —limpieza, mensajería, atención en ventanilla—, en algún momento del día ves, escuchas o tocas información que pertenece a otra persona."},
+    {type:"p", text:"Eso es exactamente lo que este curso busca que comprendas: <strong>la seguridad de la información no es un tema exclusivo del área de Tecnología</strong>. Es una responsabilidad compartida por cada persona que trabaja en la Cooperativa, sin importar su cargo."},
+    {type:"p", text:"Una Cooperativa de Ahorro y Crédito vive de la confianza. Nuestros socios nos entregan sus ahorros, sus datos personales y su tranquilidad financiera porque confían en que los protegeremos. Un solo incidente de seguridad puede dañar esa confianza de forma irreversible."},
+    {type:"tip", text:"Este curso no pretende convertirte en un experto en ciberseguridad. Pretende darte el conocimiento y los hábitos necesarios para proteger a los socios, a tus compañeros y a la institución."},
+  ]
+},
+{
+  id:"objetivos", group:"Inicio", navLabel:"Objetivos y estructura",
+  eyebrow:"Objetivos del curso",
+  title:"Qué esperamos lograr contigo",
+  blocks:[
+    {type:"h2", text:"Objetivo general"},
+    {type:"p", text:"Proporcionar a todos los colaboradores de la Cooperativa los conocimientos fundamentales sobre seguridad de la información, el marco normativo aplicable y las prácticas de autoprotección necesarias, para actuar con criterio en el puesto de trabajo."},
+    {type:"h2", text:"Objetivos específicos"},
+    {type:"list", items:[
+      "Explicar qué es la información como activo y sus atributos de confidencialidad, integridad y disponibilidad.",
+      "Describir amenaza, vulnerabilidad, riesgo e impacto, y su relación en la gestión de riesgos.",
+      "Presentar ISO/IEC 27001:2022, ISO/IEC 27002:2022, NIST CSF, LOPDP y normativa SEPS en lenguaje comprensible.",
+      "Reconocer amenazas comunes: phishing, ingeniería social, malware, contraseñas débiles.",
+      "Identificar responsabilidades frente a políticas internas y el reporte de incidentes.",
+      "Comprender las consecuencias del incumplimiento.",
+    ]},
+    {type:"h2", text:"Estructura del curso"},
+    {type:"grid2", cards:[
+      {title:"Módulo 1", items:["Fundamentos de la Seguridad de la Información"]},
+      {title:"Módulo 2", items:["Marco Normativo y Regulatorio"]},
+      {title:"Módulo 3", items:["Amenazas Comunes y Cómo Protegernos"]},
+      {title:"Módulo 4", items:["Responsabilidades del Colaborador y Cultura de Seguridad"]},
+    ]},
+  ]
+},
+{
+  id:"competencias", group:"Inicio", navLabel:"Competencias",
+  eyebrow:"Competencias",
+  title:"Lo que serás capaz de hacer al finalizar",
+  blocks:[
+    {type:"list", items:[
+      "<strong>Reconocer</strong> qué información requiere protección especial y clasificarla según su sensibilidad.",
+      "<strong>Aplicar</strong> buenas prácticas básicas: contraseñas seguras, bloqueo de pantalla, manejo correcto de documentos.",
+      "<strong>Detectar</strong> señales de alerta de phishing, ingeniería social y otros intentos de fraude.",
+      "<strong>Explicar</strong>, en tus propias palabras, qué es confidencialidad, integridad y disponibilidad.",
+      "<strong>Ubicar</strong> las normas y políticas internas relacionadas con tu puesto.",
+      "<strong>Reportar</strong> correctamente un incidente o una sospecha, por el canal oficial de la Cooperativa.",
+      "<strong>Actuar</strong> con responsabilidad y criterio ante situaciones cotidianas de manejo de información sensible.",
+    ]},
+    {type:"tip", text:"Al final de cada módulo encontrarás una autoevaluación de 5 preguntas, y al cierre del curso, un examen final de 20 preguntas."},
+  ]
+}
+);
+COURSE.pages.push(
+{
+  id:"m1-intro", group:"Módulo 1 · Fundamentos", navLabel:"Introducción y objetivo", hero:true,
+  eyebrow:"Módulo 1",
+  title:"Fundamentos de la Seguridad de la Información",
+  subtitle:"La información es uno de los activos más valiosos de la Cooperativa. Este módulo te da las bases conceptuales para entender por qué —y cómo— debemos protegerla.",
+  blocks:[
+    {type:"p", text:"Todos hemos escuchado la frase \"la información es poder\". En una Cooperativa de Ahorro y Crédito esa frase es literal: la información sobre nuestros socios —sus ahorros, sus créditos, sus datos personales— es uno de los bienes más valiosos que administramos, junto con el dinero mismo."},
+    {type:"h2", text:"Objetivo del módulo"},
+    {type:"list", items:[
+      "Explicar qué es la información como activo institucional.",
+      "Identificar los tres atributos fundamentales que se deben proteger: confidencialidad, integridad y disponibilidad.",
+      "Distinguir entre amenaza, vulnerabilidad, riesgo e impacto.",
+      "Aplicar estos conceptos a ejemplos concretos de tu puesto de trabajo.",
+    ]},
+  ]
+},
+{
+  id:"m1-activo", group:"Módulo 1 · Fundamentos", navLabel:"La información como activo",
+  eyebrow:"1.1  La información como activo",
+  title:"¿Por qué la información es un activo?",
+  blocks:[
+    {type:"definition", term:"Activo", definition:"Cualquier recurso que tiene valor para la organización y que, por lo tanto, debe protegerse.",
+      points:[
+        "La información institucional incluye datos personales de socios, saldos y movimientos, historiales crediticios, contratos, correos corporativos, contraseñas y políticas internas.",
+        "A diferencia del dinero en efectivo, la información se puede copiar o alterar sin que a simple vista notemos que algo falta.",
+        "Puede existir en distintos soportes: digital (bases de datos, correos, archivos), físico (papeles, formularios firmados) o verbal (una conversación).",
+      ]},
+    {type:"case", label:"Ejemplo", text:"Una asesora de crédito imprime la cédula y el rol de pagos de un socio para armar su carpeta de crédito. Ese papel, mientras está sobre el escritorio, es tan sensible como el archivo digital del que salió. Si alguien no autorizado lo lee, toma una foto o lo saca de la oficina, ya ocurrió una exposición de información, aunque ningún sistema haya sido \"hackeado\"."},
+    {type:"tip", text:"La seguridad de la información no protege solamente computadoras: protege la información sin importar en qué forma se encuentre — digital, en papel o hablada."},
+  ]
+},
+{
+  id:"m1-definicion", group:"Módulo 1 · Fundamentos", navLabel:"¿Qué es Seguridad de la Información?",
+  eyebrow:"1.2  Seguridad de la información",
+  title:"¿Qué es la Seguridad de la Información?",
+  blocks:[
+    {type:"definition", term:"Seguridad de la Información", definition:"Conjunto de políticas, procesos, controles tecnológicos y comportamientos humanos orientados a proteger la información frente a accesos no autorizados, alteraciones indebidas o pérdida de disponibilidad, sea cual sea el formato en que se encuentre."},
+    {type:"p", text:"Es importante diferenciarla de un término con el que suele confundirse: la <strong>ciberseguridad</strong>. La ciberseguridad es una parte de la seguridad de la información enfocada específicamente en proteger sistemas, redes y dispositivos digitales. La seguridad de la información es más amplia: incluye la ciberseguridad, pero también el manejo de documentos físicos, la seguridad de las instalaciones, la gestión de proveedores y, sobre todo, el comportamiento de las personas."},
+    {type:"tip", text:"Toda la ciberseguridad es seguridad de la información, pero no toda la seguridad de la información es ciberseguridad. Un documento impreso dejado sobre un escritorio es un problema de seguridad de la información, aunque no tenga nada que ver con computadoras."},
+    {type:"p", text:"Las cooperativas de ahorro y crédito son, junto con los bancos, uno de los objetivos preferidos de los delincuentes, precisamente porque administran ahorros de miles de familias. Una falla de seguridad no solo genera una pérdida económica: puede derivar en sanciones regulatorias y, lo más grave, en la pérdida de confianza de la membresía."},
+  ]
+},
+{
+  id:"m1-cia", group:"Módulo 1 · Fundamentos", navLabel:"El triángulo CIA",
+  eyebrow:"1.3  El triángulo CIA",
+  title:"Los tres pilares de la seguridad de la información",
+  blocks:[
+    {type:"p", text:"La seguridad de la información se organiza alrededor de tres atributos que toda información valiosa debe conservar: la <strong>\"CIA Triad\"</strong> (Confidentiality, Integrity, Availability). Cuando alguno de estos tres atributos falla, decimos que ha ocurrido un incidente de seguridad de la información."},
+    {type:"h3", text:"Confidencialidad"},
+    {type:"definition", term:"Confidencialidad", definition:"Garantía de que la información solo es accesible para las personas, procesos o sistemas autorizados a conocerla.",
+      points:[
+        "Se protege mediante controles de acceso, permisos por rol y cifrado de información sensible.",
+        "Errores comunes: compartir contraseñas, dejar sesiones abiertas, enviar información de socios a correos personales.",
+      ]},
+    {type:"case", label:"Ejemplo cotidiano", text:"Un asesor de crédito comenta en voz alta, frente a otros socios en la sala de espera, los ingresos y deudas de un cliente que está tramitando un préstamo. Aunque no hubo ningún \"hackeo\", se rompió la confidencialidad."},
+    {type:"h3", text:"Integridad"},
+    {type:"definition", term:"Integridad", definition:"Garantía de que la información es exacta, completa y no ha sido alterada de forma no autorizada o accidental.",
+      points:[
+        "Se protege mediante auditoría de cambios, validaciones automáticas y doble verificación en operaciones críticas.",
+        "Errores comunes: modificar registros sin dejar rastro; corregir errores \"por fuera del sistema\" en hojas paralelas.",
+      ]},
+    {type:"case", label:"Ejemplo cotidiano", text:"Un error de digitación registra un depósito de $1,000 como $10,000 en la cuenta de un socio. Los controles de conciliación diaria existen precisamente para detectar y corregir este tipo de fallas."},
+    {type:"h3", text:"Disponibilidad"},
+    {type:"definition", term:"Disponibilidad", definition:"Garantía de que la información y los sistemas están accesibles y operativos para las personas autorizadas, en el momento en que los necesitan.",
+      points:[
+        "Se protege mediante respaldos periódicos, planes de continuidad del negocio y mantenimiento preventivo.",
+        "Errores comunes: no respaldar información guardada solo en el computador personal; ignorar fallas recurrentes.",
+      ]},
+    {type:"case", label:"Ejemplo cotidiano", text:"El sistema de créditos se cae un lunes en la mañana, justo cuando hay fila de socios esperando ser atendidos. Para los socios, la experiencia es la misma que si sus datos hubieran desaparecido."},
+    {type:"table", headers:["Atributo","Pregunta que responde","Ejemplo de falla"], rows:[
+      ["Confidencialidad","¿Quién puede ver esta información?","Un correo con datos de socios enviado a la persona equivocada"],
+      ["Integridad","¿Esta información es correcta y no fue alterada?","Un saldo modificado por error o de forma fraudulenta"],
+      ["Disponibilidad","¿Puedo acceder a esta información cuando la necesito?","El sistema transaccional se cae y no se puede atender a los socios"],
+    ]},
+  ]
+},
+{
+  id:"m1-riesgo", group:"Módulo 1 · Fundamentos", navLabel:"Amenaza, vulnerabilidad, riesgo",
+  eyebrow:"1.4  Conceptos clave",
+  title:"Amenaza, vulnerabilidad, riesgo e impacto",
+  blocks:[
+    {type:"p", text:"Estos cuatro conceptos se usan constantemente en seguridad de la información. Suelen confundirse entre sí, así que los definimos con cuidado y los conectamos con un solo ejemplo."},
+    {type:"definition", term:"Amenaza", definition:"Evento, persona o circunstancia con el potencial de causar daño a la información o a los sistemas que la contienen. Puede ser intencional o accidental.",
+      points:["Ejemplos: un delincuente que envía correos de phishing; un empleado descontento; una falla eléctrica; un virus informático; una inundación."]},
+    {type:"definition", term:"Vulnerabilidad", definition:"Debilidad o brecha que puede ser aprovechada por una amenaza para causar daño. No causa daño por sí sola: es la \"puerta abierta\".",
+      points:["Ejemplos: una contraseña débil; un colaborador sin capacitación; un equipo sin actualizaciones; una puerta que no cierra bien."]},
+    {type:"definition", term:"Riesgo", definition:"Probabilidad de que una amenaza aproveche una vulnerabilidad, combinada con la magnitud del daño potencial. Riesgo = Amenaza × Vulnerabilidad × Impacto potencial (relación conceptual, no fórmula exacta)."},
+    {type:"definition", term:"Impacto", definition:"Consecuencia o daño real que se produce cuando el riesgo se materializa. Se mide en términos económicos, operativos, legales/regulatorios y reputacionales."},
+    {type:"case", label:"Ejemplo integrado — de la amenaza al impacto", text:"Amenaza: un grupo delictivo envía correos de phishing suplantando a la Cooperativa. Vulnerabilidad: un colaborador no capacitado hace clic e ingresa su usuario y contraseña en una página falsa. Riesgo: alto, porque la amenaza es activa y la vulnerabilidad está presente. Impacto: acceso no autorizado a datos de cientos de socios, posible fraude, sanciones regulatorias y una noticia negativa sobre la Cooperativa."},
+    {type:"tip", text:"Entender esta cadena explica por qué este mismo curso es, en sí mismo, un control de seguridad: reduce la vulnerabilidad humana, la más aprovechada por los atacantes en el sector financiero."},
+  ]
+},
+{
+  id:"m1-activos", group:"Módulo 1 · Fundamentos", navLabel:"Activos en la Cooperativa",
+  eyebrow:"1.5  Activos de información",
+  title:"¿Qué protegemos en la Cooperativa?",
+  blocks:[
+    {type:"list", items:[
+      "Datos de identificación de los socios: cédula, nombres, dirección, teléfono, correo electrónico.",
+      "Información financiera: saldos, movimientos, historial crediticio, garantías, ingresos declarados.",
+      "Documentación de crédito: solicitudes, contratos, pagarés, avalúos, referencias.",
+      "Información de Talento Humano: contratos laborales, sueldos, evaluaciones, datos médicos.",
+      "Credenciales de acceso: usuarios y contraseñas de los sistemas transaccionales y el correo corporativo.",
+      "Información estratégica: planes de negocio, informes de auditoría, actas de directorio, políticas internas.",
+      "Infraestructura tecnológica: servidores, bases de datos, respaldos, configuraciones de red.",
+    ]},
+    {type:"p", text:"Cada uno de estos activos tiene un nivel de sensibilidad distinto, y por eso la Cooperativa cuenta con una política de clasificación de la información, que veremos en detalle en el Módulo 4."},
+  ]
+},
+{
+  id:"m1-resumen", group:"Módulo 1 · Fundamentos", navLabel:"Resumen y buenas prácticas",
+  eyebrow:"Cierre del módulo",
+  title:"Buenas prácticas, errores comunes y resumen",
+  blocks:[
+    {type:"grid2", cards:[
+      {title:"Buenas prácticas", items:[
+        "Trata cualquier dato de un socio con el mismo cuidado que tu propia información.",
+        "Antes de compartir información, pregúntate si la otra persona está autorizada a conocerla.",
+        "Reporta de inmediato cualquier sistema caído, lento o con comportamiento extraño.",
+      ]},
+      {title:"Errores comunes", items:[
+        "Pensar que la seguridad de la información \"es tema de Sistemas\".",
+        "Subestimar los datos \"pequeños\" como si no fueran sensibles.",
+        "No reportar incidentes menores por miedo a ser sancionado.",
+      ]},
+    ]},
+    {type:"h2", text:"Resumen del módulo"},
+    {type:"p", text:"La información es uno de los activos más valiosos de la Cooperativa y protegerla es responsabilidad de todos. El triángulo CIA —confidencialidad, integridad y disponibilidad— resume los tres atributos que buscamos preservar. Amenaza, vulnerabilidad, riesgo e impacto forman una cadena que explica cómo ocurre un incidente."},
+  ]
+},
+{
+  id:"m1-quiz", group:"Módulo 1 · Fundamentos", navLabel:"Autoevaluación",
+  eyebrow:"Autoevaluación · Módulo 1",
+  title:"Pon a prueba lo aprendido",
+  subtitle:"Responde las 5 preguntas. Recibirás retroalimentación inmediata en cada una.",
+  blocks:[
+    {type:"quiz", title:"Autoevaluación — Módulo 1", questions:[
+      {question:"Un colaborador comenta en voz alta, en un área pública de la agencia, los datos de ingresos de un socio que solicita un crédito. ¿Qué atributo se está viendo comprometido?",
+        options:["Disponibilidad","Confidencialidad","Integridad","Ninguno, porque no fue un ataque informático"], correct:1,
+        explanation:"Se compromete la confidencialidad porque personas no autorizadas acceden a información que no deberían conocer, sin necesidad de un ataque informático."},
+      {question:"Un error de digitación cambia el monto de un depósito registrado en el sistema. ¿Qué atributo se ve afectado?",
+        options:["Confidencialidad","Disponibilidad","Integridad","Ciberseguridad"], correct:2,
+        explanation:"La integridad se refiere a que la información sea exacta y no haya sido alterada, de forma accidental o intencional."},
+      {question:"El sistema transaccional de la Cooperativa deja de funcionar durante tres horas y los socios no pueden ser atendidos. ¿Qué atributo se vio comprometido?",
+        options:["Integridad","Confidencialidad","Disponibilidad","Clasificación"], correct:2,
+        explanation:"La disponibilidad garantiza que la información y los sistemas estén accesibles cuando se necesitan."},
+      {question:"Una computadora de la agencia tiene una contraseña débil que nunca fue cambiada desde su instalación. En términos de seguridad de la información, esto es:",
+        options:["Una amenaza","Una vulnerabilidad","Un impacto","Un riesgo aceptado por la SEPS"], correct:1,
+        explanation:"Una contraseña débil es una debilidad que puede ser aprovechada por una amenaza; por sí sola no causa daño."},
+      {question:"¿Cuál de las siguientes afirmaciones describe mejor la relación entre riesgo e impacto?",
+        options:["El riesgo y el impacto son sinónimos","El impacto es la probabilidad de que ocurra un incidente","El riesgo es la probabilidad de que una amenaza aproveche una vulnerabilidad; el impacto es la consecuencia real cuando eso ocurre","El impacto siempre es menor que el riesgo"], correct:2,
+        explanation:"El riesgo es una estimación de probabilidad y magnitud potencial; el impacto es el daño concreto una vez que el riesgo se materializa."},
+    ]}
+  ]
+}
+);
+COURSE.pages.push(
+{
+  id:"m2-intro", group:"Módulo 2 · Marco Normativo", navLabel:"Introducción y objetivo", hero:true,
+  eyebrow:"Módulo 2",
+  title:"Marco Normativo y Regulatorio",
+  subtitle:"Explicamos en lenguaje sencillo qué es cada norma que rige la seguridad de la información en la Cooperativa, y qué significa para tu trabajo diario.",
+  blocks:[
+    {type:"h2", text:"Objetivo del módulo"},
+    {type:"list", items:[
+      "Comprender el propósito general de ISO/IEC 27001:2022, ISO/IEC 27002:2022 y el NIST CSF.",
+      "Conocer los principios y derechos de la Ley Orgánica de Protección de Datos Personales del Ecuador.",
+      "Entender el rol de la SEPS como organismo de control de las cooperativas de ahorro y crédito.",
+      "Relacionar cada marco normativo con prácticas concretas de tu puesto de trabajo.",
+    ]},
+  ]
+},
+{
+  id:"m2-iso27001", group:"Módulo 2 · Marco Normativo", navLabel:"ISO/IEC 27001:2022",
+  eyebrow:"2.1  ISO/IEC 27001:2022",
+  title:"El sistema de gestión de la seguridad de la información",
+  blocks:[
+    {type:"definition", term:"ISO/IEC 27001:2022", definition:"Norma internacional que establece los requisitos para implementar, mantener y mejorar continuamente un Sistema de Gestión de Seguridad de la Información (SGSI).",
+      points:[
+        "No es un manual técnico de configuración: es un marco de gestión, es decir, describe cómo la organización debe organizarse, planificar, controlar y revisar todo lo relacionado con la protección de su información.",
+        "Exige un ciclo de mejora continua conocido como PHVA (Planificar – Hacer – Verificar – Actuar).",
+      ]},
+    {type:"grid2", cards:[
+      {title:"Planificar → Hacer", items:["Se identifican riesgos y se definen controles.","Se implementan las políticas y controles definidos."]},
+      {title:"Verificar → Actuar", items:["Se revisa si los controles funcionan.","Se corrige y mejora, reiniciando el ciclo."]},
+    ]},
+    {type:"p", text:"El SGSI se traduce en las políticas internas que probablemente ya conoces: la política de contraseñas, de uso aceptable, de clasificación de la información, y los procedimientos de reporte de incidentes. Cuando sigues esas políticas, participas activamente en el SGSI de la Cooperativa."},
+  ]
+},
+{
+  id:"m2-iso27002", group:"Módulo 2 · Marco Normativo", navLabel:"ISO/IEC 27002:2022",
+  eyebrow:"2.2  ISO/IEC 27002:2022",
+  title:"El catálogo de controles",
+  blocks:[
+    {type:"definition", term:"ISO/IEC 27002:2022", definition:"Guía complementaria a ISO/IEC 27001 que detalla un catálogo de controles de seguridad recomendados, organizado en cuatro categorías."},
+    {type:"table", headers:["Categoría","Qué abarca","Ejemplo en la Cooperativa"], rows:[
+      ["Organizacionales","Políticas, roles, gestión de proveedores e incidentes","Política de clasificación de la información"],
+      ["De personas","Contratación, capacitación, comportamiento humano","Este mismo curso de concienciación"],
+      ["Físicos","Protección de instalaciones, equipos y documentos","Cámaras de seguridad, control de acceso a la bóveda"],
+      ["Tecnológicos","Controles técnicos en sistemas y redes","Antivirus, cifrado, copias de respaldo, MFA"],
+    ]},
+    {type:"tip", text:"Esta clasificación en cuatro categorías recuerda algo esencial: la seguridad de la información no se resuelve solo con tecnología. Este curso es, formalmente, un control de la categoría \"de personas\"."},
+  ]
+},
+{
+  id:"m2-nist", group:"Módulo 2 · Marco Normativo", navLabel:"NIST Cybersecurity Framework",
+  eyebrow:"2.3  NIST Cybersecurity Framework",
+  title:"Un lenguaje práctico de gestión del riesgo",
+  blocks:[
+    {type:"definition", term:"NIST CSF", definition:"Marco de referencia del Instituto Nacional de Estándares y Tecnología de EE. UU., ampliamente adoptado por su enfoque práctico orientado a la gestión del riesgo."},
+    {type:"list", items:[
+      "<strong>Gobernar:</strong> definir estrategia, roles, responsabilidades y políticas de ciberseguridad.",
+      "<strong>Identificar:</strong> entender qué activos existen, qué riesgos enfrentan y su criticidad.",
+      "<strong>Proteger:</strong> implementar salvaguardas (accesos, capacitación, cifrado).",
+      "<strong>Detectar:</strong> identificar oportunamente que un incidente está ocurriendo.",
+      "<strong>Responder:</strong> actuar de forma organizada para contener un incidente.",
+      "<strong>Recuperar:</strong> restablecer servicios y aprender del incidente.",
+    ]},
+    {type:"case", label:"Aplicación práctica", text:"Cuando reportas de inmediato un correo sospechoso, participas en la función \"Detectar\". Cuando sigues el procedimiento tras haber hecho clic accidentalmente en un enlace malicioso (avisar, cambiar la contraseña, no ocultarlo), participas en \"Responder\" y \"Recuperar\". Ambas son tan importantes como \"Proteger\"."},
+  ]
+},
+{
+  id:"m2-lopdp", group:"Módulo 2 · Marco Normativo", navLabel:"LOPDP Ecuador",
+  eyebrow:"2.4  LOPDP Ecuador",
+  title:"Ley Orgánica de Protección de Datos Personales",
+  blocks:[
+    {type:"definition", term:"LOPDP", definition:"Publicada en el Registro Oficial el 26 de mayo de 2021 (sanciones administrativas vigentes desde el 26 de mayo de 2023). Regula cómo las organizaciones recolectan, usan y protegen los datos personales en Ecuador.",
+      points:["Aplica al tratamiento de datos de nuestros socios, colaboradores y proveedores, sin importar si están en un sistema, en papel o en una hoja de cálculo.",
+      "Autoridad de control: la Superintendencia de Protección de Datos Personales (SPDP)."]},
+    {type:"h2", text:"Principios clave"},
+    {type:"list", items:[
+      "<strong>Licitud (juridicidad):</strong> solo se tratan datos cuando existe una base legal válida.",
+      "<strong>Finalidad:</strong> los datos se usan únicamente para el propósito informado al titular.",
+      "<strong>Minimización:</strong> solo se solicitan y conservan los datos estrictamente necesarios.",
+      "<strong>Confidencialidad y seguridad:</strong> medidas técnicas y organizativas adecuadas de protección.",
+      "<strong>Calidad y exactitud:</strong> los datos deben mantenerse exactos y actualizados.",
+      "<strong>Responsabilidad proactiva:</strong> la organización debe poder demostrar su cumplimiento.",
+    ]},
+    {type:"h2", text:"Derechos ARCO"},
+    {type:"list", items:[
+      "<strong>Acceso:</strong> el socio puede solicitar conocer qué datos suyos tiene la Cooperativa.",
+      "<strong>Rectificación:</strong> puede solicitar la corrección de datos inexactos o desactualizados.",
+      "<strong>Cancelación:</strong> puede solicitar la eliminación de sus datos cuando ya no exista base legal para conservarlos.",
+      "<strong>Oposición:</strong> puede oponerse a que sus datos se usen para determinados fines.",
+    ]},
+    {type:"tip", text:"Si un socio te pide ejercer alguno de sus derechos ARCO, no intentes resolverlo por tu cuenta: dirígelo al canal formal designado por la Cooperativa, dentro de los plazos legales."},
+  ]
+},
+{
+  id:"m2-seps", group:"Módulo 2 · Marco Normativo", navLabel:"Normativa SEPS",
+  eyebrow:"2.5  Normativa SEPS",
+  title:"El organismo de control de las cooperativas",
+  blocks:[
+    {type:"definition", term:"SEPS", definition:"Superintendencia de Economía Popular y Solidaria: organismo de control de las cooperativas de ahorro y crédito en Ecuador.",
+      points:[
+        "Ha emitido normativa específica de gestión de riesgos y seguridad de la información, con exigencias según el segmento de cada cooperativa.",
+        "Un hallazgo de auditoría en seguridad de la información puede derivar en observaciones o sanciones para la institución.",
+      ]},
+    {type:"tip", text:"Completar este curso y sus evaluaciones es, en sí mismo, evidencia del cumplimiento normativo de la Cooperativa ante la SEPS."},
+    {type:"h2", text:"¿Cómo se relacionan estas normas entre sí?"},
+    {type:"table", headers:["Norma","Qué aporta"], rows:[
+      ["ISO/IEC 27001","Define el sistema de gestión: la estructura que sostiene todo lo demás"],
+      ["ISO/IEC 27002","Aporta el catálogo detallado de controles"],
+      ["NIST CSF","Aporta un lenguaje práctico de gestión del riesgo"],
+      ["LOPDP","Ley ecuatoriana que exige proteger los datos personales"],
+      ["Normativa SEPS","Exigencia regulatoria específica para cooperativas"],
+    ]},
+  ]
+},
+{
+  id:"m2-resumen", group:"Módulo 2 · Marco Normativo", navLabel:"Resumen y buenas prácticas",
+  eyebrow:"Cierre del módulo",
+  title:"Buenas prácticas, errores comunes y resumen",
+  blocks:[
+    {type:"grid2", cards:[
+      {title:"Buenas prácticas", items:[
+        "Familiarízate con las políticas internas relacionadas con tu puesto.",
+        "Dirige las solicitudes ARCO al canal formal de la Cooperativa.",
+        "Completa tus capacitaciones: son evidencia de cumplimiento regulatorio.",
+      ]},
+      {title:"Errores comunes", items:[
+        "Pensar que estas normas \"son solo para el área legal\".",
+        "Recolectar más datos de los socios de los estrictamente necesarios.",
+        "Intentar resolver informalmente una solicitud de un socio sobre sus datos.",
+      ]},
+    ]},
+    {type:"h2", text:"Resumen del módulo"},
+    {type:"p", text:"ISO/IEC 27001 define el sistema de gestión; ISO/IEC 27002 detalla el catálogo de controles. El NIST CSF organiza la gestión de la ciberseguridad en seis funciones. La LOPDP protege los datos personales mediante principios y derechos ARCO. La SEPS supervisa que todo esto se cumpla en la práctica dentro de las cooperativas."},
+  ]
+},
+{
+  id:"m2-quiz", group:"Módulo 2 · Marco Normativo", navLabel:"Autoevaluación",
+  eyebrow:"Autoevaluación · Módulo 2",
+  title:"Pon a prueba lo aprendido",
+  subtitle:"Responde las 5 preguntas. Recibirás retroalimentación inmediata en cada una.",
+  blocks:[
+    {type:"quiz", title:"Autoevaluación — Módulo 2", questions:[
+      {question:"¿Qué describe mejor a ISO/IEC 27001:2022?",
+        options:["Un catálogo detallado de controles técnicos","Una norma que establece los requisitos de un sistema de gestión de seguridad de la información","Una ley ecuatoriana de protección de datos","Un antivirus recomendado internacionalmente"], correct:1,
+        explanation:"ISO/IEC 27001:2022 define el \"qué\": los requisitos para implementar y mantener un SGSI. El catálogo detallado de controles corresponde a ISO/IEC 27002."},
+      {question:"Las cuatro categorías de controles de ISO/IEC 27002:2022 son:",
+        options:["Preventivos, detectivos, correctivos y disuasivos","Organizacionales, de personas, físicos y tecnológicos","Legales, financieros, operativos y estratégicos","Nacionales, internacionales, sectoriales y locales"], correct:1,
+        explanation:"La versión 2022 organiza los controles en estas cuatro categorías, recordando que la seguridad de la información no depende solo de la tecnología."},
+      {question:"Dentro del NIST Cybersecurity Framework, ¿a qué función corresponde reportar de inmediato un correo sospechoso?",
+        options:["Gobernar","Identificar","Detectar","Recuperar"], correct:2,
+        explanation:"Reportar oportunamente una señal de alerta corresponde a la función \"Detectar\"."},
+      {question:"Según la LOPDP, ¿cuál de los siguientes es un derecho ARCO?",
+        options:["Anonimato","Rectificación","Retención","Anulación fiscal"], correct:1,
+        explanation:"Los derechos ARCO son Acceso, Rectificación, Cancelación y Oposición."},
+      {question:"Un colaborador consulta los datos de un socio con quien no tiene ninguna relación operativa, solo por curiosidad. Esto es:",
+        options:["Una práctica aceptable porque trabaja dentro de la institución","Una posible infracción a los principios de finalidad y minimización de la LOPDP","Un ejercicio válido del derecho de acceso","Una función correspondiente al NIST CSF"], correct:1,
+        explanation:"Acceder a datos sin una razón operativa legítima vulnera los principios de finalidad y minimización."},
+    ]}
+  ]
+}
+);
+COURSE.pages.push(
+{
+  id:"m3-intro", group:"Módulo 3 · Amenazas", navLabel:"Introducción y objetivo", hero:true,
+  eyebrow:"Módulo 3",
+  title:"Amenazas Comunes y Cómo Protegernos",
+  subtitle:"Las amenazas que más afectan al sector financiero no atacan a las computadoras: atacan a las personas. Aprender a reconocerlas es la mejor defensa.",
+  blocks:[
+    {type:"h2", text:"Objetivo del módulo"},
+    {type:"list", items:[
+      "Identificar las principales técnicas de ingeniería social y phishing dirigidas al sector financiero.",
+      "Reconocer los distintos tipos de malware y sus efectos.",
+      "Aplicar buenas prácticas para la creación y gestión de contraseñas.",
+      "Adoptar hábitos seguros en el uso de dispositivos, redes y aplicaciones.",
+    ]},
+  ]
+},
+{
+  id:"m3-ingsocial", group:"Módulo 3 · Amenazas", navLabel:"Ingeniería social",
+  eyebrow:"3.1  Ingeniería social",
+  title:"El arte de manipular personas, no sistemas",
+  blocks:[
+    {type:"definition", term:"Ingeniería social", definition:"Conjunto de técnicas psicológicas que un atacante utiliza para manipular a una persona y lograr que revele información confidencial, realice una acción indebida o le otorgue acceso a sistemas o instalaciones.",
+      points:["Explota emociones y comportamientos naturales: urgencia, autoridad, confianza, miedo y el deseo genuino de ayudar.",
+      "No requiere conocimientos técnicos avanzados: requiere entender cómo piensan las personas."]},
+    {type:"case", label:"Caso: el \"auditor\" que llama por teléfono", text:"Un colaborador recibe una llamada de alguien que se identifica como \"auditor externo de la SEPS\" y solicita, con tono firme y urgente, confirmar por teléfono el número de cédula y el saldo de una cuenta \"para verificar una alerta de lavado de activos\". Un auditor real jamás solicitaría esta información así, sin un proceso formal verificable."},
+    {type:"tip", text:"Ninguna autoridad legítima —interna o externa— te pedirá jamás tu contraseña, ni te presionará para entregar información confidencial de forma inmediata por un canal no verificado. Ante la duda, cuelga o cierra la comunicación y verifica por un canal oficial conocido."},
+  ]
+},
+{
+  id:"m3-phishing", group:"Módulo 3 · Amenazas", navLabel:"Phishing y variantes",
+  eyebrow:"3.2  Phishing",
+  title:"Correos que suplantan una identidad confiable",
+  blocks:[
+    {type:"definition", term:"Phishing", definition:"Ataque de ingeniería social realizado mediante correos, mensajes de texto o llamadas que suplantan la identidad de una entidad confiable con el fin de obtener credenciales, datos personales o financieros."},
+    {type:"table", headers:["Variante","Canal","Ejemplo"], rows:[
+      ["Phishing","Correo electrónico","Correo que pide \"validar tu contraseña\" en un enlace"],
+      ["Smishing","Mensajes de texto (SMS)","\"Su tarjeta fue bloqueada, ingrese aquí para reactivarla\""],
+      ["Vishing","Llamada telefónica","Llamada que se hace pasar por soporte técnico"],
+      ["Spear phishing","Correo dirigido","Correo personalizado con tu nombre real y detalles de tu cargo"],
+    ]},
+    {type:"h2", text:"Señales de alerta"},
+    {type:"list", items:[
+      "El remitente tiene un dominio parecido pero no idéntico al oficial.",
+      "El mensaje genera una sensación de urgencia extrema.",
+      "El enlace, al pasar el cursor, no coincide con el texto mostrado.",
+      "Solicita directamente una contraseña, código de verificación o datos financieros.",
+      "Contiene errores de ortografía o un saludo genérico (\"Estimado cliente\").",
+      "Incluye archivos adjuntos inesperados, sobre todo ejecutables o comprimidos.",
+    ]},
+    {type:"tip", text:"Regla de oro: ninguna entidad seria solicitará tu contraseña completa por correo, mensaje o llamada, bajo ninguna circunstancia. Si te la piden, es phishing."},
+    {type:"h2", text:"Qué hacer si sospechas de un correo"},
+    {type:"list", items:[
+      "No hagas clic en enlaces ni descargues archivos adjuntos.",
+      "No respondas al mensaje.",
+      "Repórtalo de inmediato por el canal oficial de la Cooperativa.",
+      "Si ya ingresaste tus credenciales, repórtalo igualmente y cambia tu contraseña de inmediato.",
+    ]},
+  ]
+},
+{
+  id:"m3-malware", group:"Módulo 3 · Amenazas", navLabel:"Malware",
+  eyebrow:"3.3  Malware",
+  title:"Software diseñado para dañar, alterar o espiar",
+  blocks:[
+    {type:"list", items:[
+      "<strong>Virus:</strong> se adhiere a archivos legítimos y se replica cuando esos archivos se ejecutan o comparten.",
+      "<strong>Ransomware:</strong> cifra los archivos de la víctima y exige un pago para \"liberarlos\". Una de las amenazas más graves para instituciones financieras.",
+      "<strong>Troyano:</strong> se presenta como un programa legítimo, pero al ejecutarse abre una puerta trasera al atacante.",
+      "<strong>Spyware:</strong> espía la actividad del usuario, capturando pulsaciones de teclado, incluyendo contraseñas.",
+      "<strong>Gusano:</strong> se propaga automáticamente de un equipo a otro a través de redes.",
+    ]},
+    {type:"case", label:"Caso: ransomware en una entidad financiera", text:"Un colaborador abre un archivo adjunto aparentemente inofensivo (una \"factura pendiente\"). El archivo instala silenciosamente un ransomware; horas después, los archivos del área de crédito aparecen cifrados con un mensaje exigiendo un rescate. La operación se detiene por días mientras Tecnología restaura los sistemas desde respaldos, si existen."},
+    {type:"tip", text:"La mejor defensa contra el ransomware no es solo el antivirus: es no abrir archivos adjuntos ni enlaces de remitentes desconocidos, y que la Cooperativa mantenga respaldos actualizados y probados."},
+  ]
+},
+{
+  id:"m3-passwords", group:"Módulo 3 · Amenazas", navLabel:"Contraseñas y MFA",
+  eyebrow:"3.4  Contraseñas y autenticación",
+  title:"Tu llave de acceso a los sistemas",
+  blocks:[
+    {type:"definition", term:"Contraseña segura", definition:"Una contraseña débil o mal gestionada es una de las vulnerabilidades más aprovechadas por los atacantes.",
+      points:[
+        "Longitud mínima recomendada de 12 caracteres, combinando mayúsculas, minúsculas, números y símbolos.",
+        "Evita datos personales fácilmente deducibles y patrones obvios de teclado.",
+        "Debe ser única para cada sistema: nunca reutilices la misma contraseña del trabajo en cuentas personales.",
+      ]},
+    {type:"tip", text:"Técnica práctica: usa una \"frase de contraseña\" fácil de recordar para ti pero difícil de adivinar, combinada con números y símbolos. Ejemplo: \"MiPerroCorre2Km!\" es mucho más segura y memorable que \"Ab7$xQ2\"."},
+    {type:"definition", term:"Autenticación multifactor (MFA)", definition:"Añade una segunda capa de verificación además de la contraseña, normalmente un código temporal enviado a tu celular o generado por una aplicación.",
+      points:["Aunque un atacante consiga tu contraseña, no podrá acceder al sistema sin ese segundo factor.",
+      "Una solicitud de MFA que tú no generaste es una señal de alerta: alguien más tiene tu contraseña e intenta ingresar. Recházala, cambia tu contraseña y repórtalo."]},
+  ]
+},
+{
+  id:"m3-dispositivos", group:"Módulo 3 · Amenazas", navLabel:"Dispositivos y redes",
+  eyebrow:"3.5  Uso seguro",
+  title:"Dispositivos, redes y redes sociales",
+  blocks:[
+    {type:"grid2", cards:[
+      {title:"Dispositivos", items:[
+        "Bloquea siempre tu computadora al alejarte de tu puesto.",
+        "No conectes USB de origen desconocido a equipos institucionales.",
+        "No instales software no autorizado.",
+        "Reporta de inmediato la pérdida o robo de cualquier dispositivo institucional.",
+      ]},
+      {title:"Redes", items:[
+        "Evita operaciones sensibles en redes wifi públicas o no confiables.",
+        "Usa únicamente los canales remotos autorizados por la Cooperativa (VPN).",
+        "Verifica conexión segura (\"https\") antes de ingresar información sensible.",
+      ]},
+    ]},
+    {type:"h2", text:"Redes sociales y mensajería"},
+    {type:"list", items:[
+      "Nunca compartas capturas de pantalla de sistemas internos o documentos de socios, ni en grupos \"privados\".",
+      "Ten cuidado con la información laboral que publicas públicamente.",
+      "Desconfía de mensajes de \"compañeros\" que soliciten información inusual o urgente por WhatsApp o redes sociales; verifica por otro canal.",
+    ]},
+  ]
+},
+{
+  id:"m3-resumen", group:"Módulo 3 · Amenazas", navLabel:"Resumen y buenas prácticas",
+  eyebrow:"Cierre del módulo",
+  title:"Buenas prácticas, errores comunes y resumen",
+  blocks:[
+    {type:"grid2", cards:[
+      {title:"Buenas prácticas", items:[
+        "Antes de hacer clic en cualquier enlace, verifica remitente y contexto.",
+        "Activa la autenticación multifactor donde esté disponible.",
+        "Usa una contraseña única y robusta para cada sistema.",
+      ]},
+      {title:"Errores comunes", items:[
+        "Confiar en un mensaje solo porque parece de un conocido.",
+        "Reutilizar la misma contraseña en distintos sistemas.",
+        "Conectar dispositivos USB desconocidos \"solo para ver qué contienen\".",
+      ]},
+    ]},
+    {type:"h2", text:"Resumen del módulo"},
+    {type:"p", text:"La ingeniería social y el phishing explotan emociones humanas, no fallas técnicas. El malware —virus, ransomware, troyanos, spyware y gusanos— puede paralizar la operación. Contraseñas robustas y únicas, más autenticación multifactor, son tu primera línea de defensa. El uso responsable de dispositivos, redes y redes sociales reduce enormemente el riesgo."},
+  ]
+},
+{
+  id:"m3-quiz", group:"Módulo 3 · Amenazas", navLabel:"Autoevaluación",
+  eyebrow:"Autoevaluación · Módulo 3",
+  title:"Pon a prueba lo aprendido",
+  subtitle:"Responde las 5 preguntas. Recibirás retroalimentación inmediata en cada una.",
+  blocks:[
+    {type:"quiz", title:"Autoevaluación — Módulo 3", questions:[
+      {question:"Recibes una llamada de alguien que dice ser \"soporte técnico\" y te pide tu contraseña para \"resolver una falla urgente\". ¿Qué deberías hacer?",
+        options:["Dársela de inmediato porque parece una emergencia","Negarte y verificar por un canal oficial conocido","Darle solo la mitad de la contraseña","Pedirle que te la confirme él primero"], correct:1,
+        explanation:"Ninguna entidad legítima solicitará tu contraseña por teléfono. Es una técnica clásica de ingeniería social."},
+      {question:"Un correo con un enlace \"para verificar tu cuenta\" muestra, al pasar el cursor, una dirección distinta a la del texto mostrado. Esto es señal típica de:",
+        options:["Un correo institucional normal","Phishing","Autenticación multifactor","Un control de ISO/IEC 27002"], correct:1,
+        explanation:"Que el destino real de un enlace no coincida con el texto mostrado es una señal clásica de phishing."},
+      {question:"Un tipo de malware que cifra los archivos de la víctima y exige un pago para liberarlos se llama:",
+        options:["Spyware","Gusano","Ransomware","Firewall"], correct:2,
+        explanation:"El ransomware cifra los archivos y exige un rescate para restaurar el acceso."},
+      {question:"¿Cuál de las siguientes es una característica de una contraseña segura?",
+        options:["Usar el nombre de tu mascota seguido de tu año de nacimiento","Reutilizar la misma contraseña en varias cuentas","Ser larga, única para cada sistema y combinar mayúsculas, minúsculas, números y símbolos","Anotarla en una nota adhesiva junto al monitor"], correct:2,
+        explanation:"Una contraseña segura debe ser larga, única por sistema y combinar distintos tipos de caracteres."},
+      {question:"Recibes en tu celular una notificación de MFA que tú no solicitaste. ¿Qué significa esto probablemente?",
+        options:["Un error sin importancia","Que alguien más ya tiene tu contraseña y está intentando ingresar","Que debes aprobarla de inmediato","Que tu contraseña se actualizó automáticamente"], correct:1,
+        explanation:"Una solicitud de MFA no generada por ti indica que un tercero ya obtuvo tu contraseña. Recházala, cambia tu contraseña y repórtalo."},
+    ]}
+  ]
+}
+);
+COURSE.pages.push(
+{
+  id:"m4-intro", group:"Módulo 4 · Responsabilidades", navLabel:"Introducción y objetivo", hero:true,
+  eyebrow:"Módulo 4",
+  title:"Responsabilidades del Colaborador y Cultura de Seguridad",
+  subtitle:"Este último módulo responde a la pregunta más práctica de todas: ¿qué se espera exactamente de mí, todos los días, en mi puesto de trabajo?",
+  blocks:[
+    {type:"h2", text:"Objetivo del módulo"},
+    {type:"list", items:[
+      "Conocer las políticas internas más relevantes de seguridad de la información.",
+      "Saber manejar correctamente la información confidencial de los socios.",
+      "Ser capaz de reportar oportunamente un incidente de seguridad.",
+      "Comprender las consecuencias del incumplimiento, para ti, para el socio y para la Cooperativa.",
+    ]},
+  ]
+},
+{
+  id:"m4-politicas", group:"Módulo 4 · Responsabilidades", navLabel:"Políticas internas",
+  eyebrow:"4.1  Políticas internas",
+  title:"Cómo se traducen las normas en reglas concretas",
+  blocks:[
+    {type:"h2", text:"Clasificación de la información"},
+    {type:"table", headers:["Nivel","Ejemplo","Tratamiento"], rows:[
+      ["Pública","Folletos, tasas publicadas, página web","Sin restricciones especiales"],
+      ["Interna","Manuales y comunicados internos","No compartir fuera de la institución"],
+      ["Confidencial","Datos personales de socios, historial crediticio","Acceso restringido, cifrado, necesidad de conocer"],
+      ["Restringida","Contraseñas maestras, planes estratégicos","Acceso mínimo indispensable, controles reforzados"],
+    ]},
+    {type:"h2", text:"Escritorio y pantalla limpios"},
+    {type:"p", text:"Los documentos con información confidencial no deben quedar visibles cuando te ausentas, y las pantallas deben bloquearse tras un breve periodo de inactividad. Previene una de las formas más comunes de exposición de información."},
+    {type:"h2", text:"Uso aceptable y contraseñas"},
+    {type:"list", items:[
+      "No usar los recursos institucionales para fines que comprometan la seguridad.",
+      "No instalar software no autorizado en los equipos.",
+      "No usar el correo corporativo para registrarte en servicios personales.",
+      "Prohibición absoluta de compartir contraseñas, con nadie, bajo ninguna circunstancia.",
+    ]},
+  ]
+},
+{
+  id:"m4-datos-socios", group:"Módulo 4 · Responsabilidades", navLabel:"Información de los socios",
+  eyebrow:"4.2  Información de los socios",
+  title:"Cómo manejar datos confidenciales en tu día a día",
+  blocks:[
+    {type:"list", items:[
+      "Solicita solo la información estrictamente necesaria para el trámite (minimización).",
+      "Verifica siempre la identidad de la persona antes de entregar información de una cuenta, incluso si dice ser familiar del socio.",
+      "No comentes casos de socios con compañeros sin relación directa, ni fuera del entorno laboral.",
+      "Guarda de inmediato los documentos físicos en un lugar seguro al finalizar el trámite.",
+      "Destruye documentos con información de socios mediante los mecanismos autorizados, nunca en el basurero común.",
+      "No tomes fotografías ni capturas de pantalla de información de socios para uso personal.",
+    ]},
+    {type:"case", label:"Caso: la carpeta olvidada", text:"Un asesor de crédito deja una carpeta física con documentos de tres socios sobre su escritorio durante el almuerzo. Un proveedor externo que visita la agencia alcanza a ver los nombres y montos de crédito. No hubo intención maliciosa de nadie, pero ocurrió una exposición evitable guardando la carpeta antes de ausentarse."},
+  ]
+},
+{
+  id:"m4-incidentes", group:"Módulo 4 · Responsabilidades", navLabel:"Reporte de incidentes",
+  eyebrow:"4.3  Reporte de incidentes",
+  title:"Reportar es proteger, no delatar",
+  blocks:[
+    {type:"definition", term:"Incidente de seguridad", definition:"Cualquier evento que compromete o pone en riesgo la confidencialidad, integridad o disponibilidad de la información: desde un correo de phishing recibido hasta un dispositivo perdido o un sistema con comportamiento extraño."},
+    {type:"p", text:"Un incidente reportado a tiempo casi siempre puede contenerse antes de causar un daño grave. Un incidente no reportado sigue creciendo en silencio: el daño se extiende y, cuando se descubre, suele ser mucho más grave y costoso de resolver."},
+    {type:"tip", text:"Reportar un incidente —incluso uno que tú mismo causaste, como hacer clic en un enlace de phishing— nunca debería darte miedo. Lo que realmente perjudica a la Cooperativa es ocultarlo, no el error humano."},
+    {type:"h2", text:"¿Cómo reportar?"},
+    {type:"list", items:[
+      "Usa el canal oficial establecido por la Oficialía de Seguridad de la Información.",
+      "Indica qué ocurrió, cuándo, y qué sistemas o información podrían estar involucrados.",
+      "Menciona si ya tomaste alguna acción, como cambiar tu contraseña.",
+      "Ante la duda razonable, siempre es mejor reportar que quedarse callado.",
+    ]},
+  ]
+},
+{
+  id:"m4-consecuencias", group:"Módulo 4 · Responsabilidades", navLabel:"Consecuencias del incumplimiento",
+  eyebrow:"4.4  Consecuencias del incumplimiento",
+  title:"Lo que está en juego cuando algo falla",
+  blocks:[
+    {type:"grid2", cards:[
+      {title:"Para el socio", items:[
+        "Exposición de datos personales o financieros, con riesgo de fraude.",
+        "Pérdida económica directa en casos de fraude consumado.",
+        "Pérdida de confianza en la institución.",
+      ]},
+      {title:"Para el colaborador", items:[
+        "Medidas disciplinarias internas, según gravedad y reincidencia.",
+        "Responsabilidad civil o penal en casos de uso indebido intencional.",
+        "Impacto en su desarrollo profesional.",
+      ]},
+    ]},
+    {type:"h2", text:"Para la Cooperativa"},
+    {type:"list", items:[
+      "Sanciones administrativas de la Superintendencia de Protección de Datos Personales y observaciones de la SEPS.",
+      "Pérdidas económicas directas por fraude, interrupción operativa o costos de recuperación.",
+      "Daño reputacional: salida de socios y dificultad para atraer nuevos.",
+      "Posibles demandas o reclamos legales de los socios afectados.",
+    ]},
+    {type:"h2", text:"Cultura de seguridad: todos somos responsables"},
+    {type:"p", text:"La seguridad de la información no depende de un solo departamento. Se construye con hábitos sostenidos: bloquear la pantalla siempre, verificar antes de compartir, reportar sin miedo. Cada acción repetida por cientos de colaboradores protege a la Cooperativa mucho más que cualquier sistema tecnológico por sí solo."},
+  ]
+},
+{
+  id:"m4-quiz", group:"Módulo 4 · Responsabilidades", navLabel:"Autoevaluación",
+  eyebrow:"Autoevaluación · Módulo 4",
+  title:"Pon a prueba lo aprendido",
+  subtitle:"Responde las 5 preguntas. Recibirás retroalimentación inmediata en cada una.",
+  blocks:[
+    {type:"quiz", title:"Autoevaluación — Módulo 4", questions:[
+      {question:"Según un esquema típico de clasificación, el historial crediticio de un socio normalmente se clasifica como:",
+        options:["Pública","Interna","Confidencial","No clasificada"], correct:2,
+        explanation:"El historial crediticio es información confidencial: su acceso debe estar restringido a quienes lo necesitan para una función legítima."},
+      {question:"La política de \"escritorio y pantalla limpios\" busca principalmente:",
+        options:["Mantener una oficina estéticamente ordenada","Evitar que información confidencial quede expuesta ante personas no autorizadas","Reducir el uso de papel","Cumplir horarios de limpieza"], correct:1,
+        explanation:"El objetivo central es de seguridad: impedir que documentos o pantallas queden visibles a personas no autorizadas."},
+      {question:"Un colaborador hace clic accidentalmente en un enlace de phishing. ¿Cuál es la actitud correcta?",
+        options:["No decir nada para evitar problemas","Reportarlo de inmediato y cambiar su contraseña","Reenviarlo a varios compañeros","Esperar a ver si ocurre algo"], correct:1,
+        explanation:"Reportar de inmediato permite contener el incidente a tiempo. Ocultar el error suele agravar las consecuencias."},
+      {question:"¿Cuál es una posible consecuencia del incumplimiento para la Cooperativa?",
+        options:["Aumento automático de la tasa de interés activa","Sanciones regulatorias, pérdidas económicas y daño reputacional","Reducción del número de socios exigida por la SEPS","Ninguna, las sanciones solo aplican al colaborador"], correct:1,
+        explanation:"El incumplimiento puede derivar en sanciones regulatorias, pérdidas económicas y daño a la reputación institucional."},
+      {question:"La idea central de este módulo es que la seguridad de la información:",
+        options:["Es responsabilidad exclusiva de Tecnología","Es responsabilidad exclusiva de la Gerencia","Es una responsabilidad compartida por todos los colaboradores","Solo aplica a quienes manejan efectivo"], correct:2,
+        explanation:"La seguridad de la información depende de las decisiones cotidianas de cada colaborador, sin importar su cargo."},
+    ]}
+  ]
+},
+{
+  id:"glosario", group:"Cierre del curso", navLabel:"Glosario",
+  eyebrow:"Material de referencia",
+  title:"Glosario de términos",
+  subtitle:"En orden alfabético, los términos técnicos usados a lo largo del curso.",
+  blocks:[
+    {type:"list", items:[
+      "<strong>Activo de información:</strong> cualquier dato, sistema o recurso que tiene valor para la organización.",
+      "<strong>Amenaza:</strong> evento, persona o circunstancia con potencial de causar daño.",
+      "<strong>Autenticación multifactor (MFA):</strong> mecanismo que combina dos o más factores de verificación de identidad.",
+      "<strong>Ciberseguridad:</strong> rama de la seguridad de la información enfocada en sistemas y redes digitales.",
+      "<strong>Confidencialidad:</strong> garantía de que la información solo la conocen quienes están autorizados.",
+      "<strong>Disponibilidad:</strong> garantía de acceso a la información cuando se necesita.",
+      "<strong>Ingeniería social:</strong> técnicas psicológicas para manipular a una persona.",
+      "<strong>Integridad:</strong> garantía de que la información es exacta y no ha sido alterada.",
+      "<strong>Impacto:</strong> consecuencia real cuando un riesgo se materializa.",
+      "<strong>ISO/IEC 27001:2022:</strong> norma que establece los requisitos de un SGSI.",
+      "<strong>ISO/IEC 27002:2022:</strong> catálogo de controles de seguridad organizados en 4 categorías.",
+      "<strong>LOPDP:</strong> Ley Orgánica de Protección de Datos Personales del Ecuador (2021).",
+      "<strong>Malware:</strong> software malicioso diseñado para dañar, alterar o espiar.",
+      "<strong>NIST CSF:</strong> marco que organiza la ciberseguridad en 6 funciones.",
+      "<strong>Phishing:</strong> ataque que suplanta una identidad confiable para obtener información.",
+      "<strong>Ransomware:</strong> malware que cifra archivos y exige un rescate.",
+      "<strong>Riesgo:</strong> probabilidad de que una amenaza aproveche una vulnerabilidad.",
+      "<strong>SEPS:</strong> Superintendencia de Economía Popular y Solidaria.",
+      "<strong>SGSI:</strong> Sistema de Gestión de Seguridad de la Información.",
+      "<strong>Smishing / Vishing:</strong> variantes de phishing por SMS y por llamada telefónica.",
+      "<strong>Spyware / Troyano:</strong> malware que espía o abre acceso remoto no autorizado.",
+      "<strong>Vulnerabilidad:</strong> debilidad que puede ser aprovechada por una amenaza.",
+    ]},
+  ]
+},
+{
+  id:"material", group:"Cierre del curso", navLabel:"Guía rápida y checklist",
+  eyebrow:"Material de apoyo",
+  title:"Guía rápida y checklist diario",
+  blocks:[
+    {type:"h2", text:"Lo esencial en una página"},
+    {type:"list", items:[
+      "La seguridad de la información protege confidencialidad, integridad y disponibilidad.",
+      "Toda la información de los socios es, salvo excepciones, confidencial.",
+      "Bloquea tu pantalla cada vez que te alejes de tu puesto, sin excepción.",
+      "Nunca compartas tu contraseña, ni siquiera con un compañero o tu jefatura.",
+      "Ninguna entidad legítima te pedirá tu contraseña. Si te la piden, es fraude.",
+      "Reporta siempre, aunque el error haya sido tuyo.",
+    ]},
+    {type:"h2", text:"Checklist diario del colaborador"},
+    {type:"checklist", items:[
+      "Bloqueo mi computadora al alejarme de mi puesto",
+      "Reviso remitente y enlaces antes de abrir un correo inusual",
+      "No dejo documentos de socios visibles en el escritorio",
+      "No comparto ni anoto mi contraseña en lugares visibles",
+      "Verifico la identidad de quien solicita información de una cuenta",
+      "No conecto dispositivos USB desconocidos a mi equipo",
+      "Reporto cualquier situación sospechosa por el canal oficial",
+      "Guardo bajo llave los documentos confidenciales al terminar mi jornada",
+    ]},
+    {type:"h2", text:"Consejos para recordar"},
+    {type:"list", items:[
+      "\"Piensa antes de hacer clic\": detente unos segundos ante cualquier correo o mensaje inusual.",
+      "\"Si genera urgencia, genera sospecha\": los ataques casi siempre presionan con plazos.",
+      "\"Bloquea como cierras tu casa\": bloquear tu computadora debe ser tan automático como cerrar la puerta.",
+      "\"Reportar es proteger, no delatar\".",
+    ]},
+  ]
+},
+{
+  id:"examen", group:"Cierre del curso", navLabel:"Examen final", type:"exam",
+  eyebrow:"Evaluación final",
+  title:"Examen final del curso",
+  subtitle:"20 preguntas que integran los cuatro módulos. Responde todas y presiona \"Calificar examen\" para ver tu resultado.",
+  questions:[
+    {question:"¿Cuáles son los tres atributos fundamentales que busca proteger la seguridad de la información?", options:["Velocidad, costo y calidad","Confidencialidad, integridad y disponibilidad","Hardware, software y redes","Prevención, detección y sanción"], correct:1, explanation:"Estos tres atributos son la base conceptual de toda la seguridad de la información."},
+    {question:"Un colaborador comparte información de un socio con un compañero sin relación con esa operación. ¿Qué atributo se compromete?", options:["Disponibilidad","Integridad","Confidencialidad","Ninguno, si trabaja en la misma Cooperativa"], correct:2, explanation:"Compartir información con alguien no autorizado compromete la confidencialidad."},
+    {question:"Una falla eléctrica prolongada impide acceder al sistema transaccional. Esto es una falla de:", options:["Confidencialidad","Integridad","Disponibilidad","Clasificación"], correct:2, explanation:"La disponibilidad garantiza el acceso a la información cuando se necesita."},
+    {question:"¿Cuál es la diferencia principal entre una amenaza y una vulnerabilidad?", options:["No existe diferencia","La amenaza es el agente con potencial de daño; la vulnerabilidad es la debilidad que aprovecha","La vulnerabilidad siempre es intencional","La amenaza solo puede ser tecnológica"], correct:1, explanation:"La amenaza es el \"quién o qué\"; la vulnerabilidad es la \"puerta abierta\" que permite el daño."},
+    {question:"¿Qué norma establece los requisitos para implementar un SGSI?", options:["ISO/IEC 27002:2022","NIST CSF","ISO/IEC 27001:2022","LOPDP"], correct:2, explanation:"ISO/IEC 27001:2022 define los requisitos del sistema de gestión."},
+    {question:"Las cuatro categorías de controles de ISO/IEC 27002:2022 son:", options:["Legales, operativos, financieros y comerciales","Organizacionales, de personas, físicos y tecnológicos","Nacionales, internacionales, públicos y privados","Preventivos, correctivos, detectivos y disuasivos"], correct:1, explanation:"Esta clasificación recuerda que la seguridad depende de controles de distinta naturaleza."},
+    {question:"Dentro del NIST CSF, la función que corresponde a restablecer servicios tras un incidente es:", options:["Identificar","Proteger","Detectar","Recuperar"], correct:3, explanation:"\"Recuperar\" corresponde a restablecer los servicios y aprender del incidente."},
+    {question:"¿En qué año se publicó en el Registro Oficial la LOPDP del Ecuador?", options:["2018","2021","2023","2025"], correct:1, explanation:"La LOPDP fue publicada el 26 de mayo de 2021; sus sanciones entraron en vigencia en 2023."},
+    {question:"Los derechos ARCO incluyen Acceso, Rectificación, Cancelación y:", options:["Oposición","Anonimización","Auditoría","Arbitraje"], correct:0, explanation:"ARCO corresponde a Acceso, Rectificación, Cancelación y Oposición."},
+    {question:"¿Qué entidad supervisa a las cooperativas de ahorro y crédito en Ecuador?", options:["La Superintendencia de Bancos","La SEPS","El Banco Central del Ecuador","El Servicio de Rentas Internas"], correct:1, explanation:"La SEPS es el organismo de control del sector financiero popular y solidario."},
+    {question:"Un correo urgente solicita \"confirmar tu contraseña\" mediante un enlace. Esto es un ejemplo de:", options:["Autenticación multifactor","Phishing","Control de acceso físico","Un control de ISO/IEC 27002"], correct:1, explanation:"Solicitar contraseñas mediante un enlace urgente es una señal clara de phishing."},
+    {question:"El malware que cifra archivos y exige un pago para liberarlos es:", options:["Spyware","Troyano","Ransomware","Gusano"], correct:2, explanation:"El ransomware bloquea el acceso mediante cifrado y exige un rescate."},
+    {question:"La variante de phishing realizada mediante SMS se llama:", options:["Vishing","Smishing","Spear phishing","Whaling"], correct:1, explanation:"Smishing combina \"SMS\" y \"phishing\"."},
+    {question:"¿Cuál es una buena práctica para crear contraseñas seguras?", options:["Usar el nombre de la Cooperativa y el año actual","Usar una frase larga y personal combinada con números y símbolos, única por sistema","Reutilizar la misma contraseña en todos los sistemas","Compartirla con un compañero de confianza"], correct:1, explanation:"Una contraseña segura es larga, difícil de adivinar, única por sistema y nunca compartida."},
+    {question:"Recibes una solicitud de MFA que no generaste. ¿Qué debes hacer?", options:["Aprobarla de inmediato","Rechazarla, cambiar tu contraseña y reportar el hecho","Ignorarla sin tomar acción","Reenviarla a un compañero"], correct:1, explanation:"Indica que alguien más tiene tu contraseña; debes rechazarla, cambiarla y reportarlo."},
+    {question:"Los datos personales de un socio normalmente se clasifican como:", options:["Pública","Interna","Confidencial","No clasificada"], correct:2, explanation:"Requieren un nivel de protección alto y acceso restringido."},
+    {question:"La política de \"escritorio y pantalla limpios\" tiene como objetivo principal:", options:["Mejorar la estética de las oficinas","Evitar que información confidencial quede expuesta a personas no autorizadas","Ahorrar papel y energía","Cumplir horarios de limpieza"], correct:1, explanation:"Su propósito central es evitar que documentos o pantallas queden visibles sin supervisión."},
+    {question:"Si haces clic accidentalmente en un enlace de phishing, la conducta correcta es:", options:["No decir nada","Reportarlo de inmediato y cambiar tu contraseña","Esperar unos días antes de reportar","Resolverlo por tu cuenta sin informar"], correct:1, explanation:"Reportar de inmediato permite contener el incidente antes de que el daño se extienda."},
+    {question:"¿Cuál es una consecuencia posible del incumplimiento para la Cooperativa?", options:["Reducción automática de tasas pasivas","Sanciones regulatorias, pérdidas económicas y daño reputacional","Aumento inmediato de socios","Ninguna si el incidente no se hace público"], correct:1, explanation:"Puede derivar en sanciones, pérdidas económicas y daño a la reputación institucional."},
+    {question:"La idea central que resume todo el curso es que la seguridad de la información es:", options:["Responsabilidad exclusiva de Tecnología","Un requisito burocrático sin relación con el trabajo diario","Una responsabilidad compartida por todos los colaboradores","Un tema que solo aplica a quienes manejan efectivo"], correct:2, explanation:"Cada colaborador, en cualquier puesto, contribuye a proteger o exponer la información de la institución."},
+  ]
+}
+);
+/* ##PAGES_INSERT_MARKER## */
+
+/* =========================================================
+   RENDER ENGINE
+   ========================================================= */
+function esc(s){ return s; } // content is authored trusted HTML-safe text
+
+function renderBlocks(blocks){
+  let html = "";
+  blocks.forEach(b=>{
+    switch(b.type){
+      case "h2": html += `<h2 class="block-h">${b.text}</h2>`; break;
+      case "h3": html += `<h3 class="block-h3">${b.text}</h3>`; break;
+      case "p": html += `<p class="block-p">${b.text}</p>`; break;
+      case "list": html += `<ul class="block-list">${b.items.map(i=>`<li>${i}</li>`).join("")}</ul>`; break;
+      case "definition":
+        html += `<div class="definition-card">
+          <div class="definition-term">${b.term}</div>
+          <div class="definition-body">${b.definition}</div>
+        </div>`;
+        if(b.points && b.points.length){
+          html += `<div class="definition-points"><ul>${b.points.map(p=>`<li>${p}</li>`).join("")}</ul></div>`;
+        }
+        break;
+      case "case":
+        html += `<div class="case-card">
+          <div class="case-label"><span class="case-icon">i</span>${b.label}</div>
+          <div class="case-text">${b.text}</div>
+        </div>`;
+        break;
+      case "tip":
+        html += `<div class="tip-card"><b>CONSEJO —</b> ${b.text}</div>`;
+        break;
+      case "table":
+        html += `<table class="data-table"><thead><tr>${b.headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>`;
+        b.rows.forEach(r=>{ html += `<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`; });
+        html += `</tbody></table>`;
+        break;
+      case "checklist":
+        html += `<ul class="checklist">${b.items.map(i=>`<li>${i}</li>`).join("")}</ul>`;
+        break;
+      case "grid2":
+        html += `<div class="grid-2">${b.cards.map(c=>`<div class="mini-card"><h4>${c.title}</h4><ul>${c.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("")}</div>`;
+        break;
+      case "quiz":
+        html += renderQuiz(b);
+        break;
+    }
+  });
+  return html;
+}
+
+let quizCounter = 0;
+function renderQuiz(b){
+  quizCounter++;
+  const quizId = `quiz_${quizCounter}`;
+  const qsHtml = b.questions.map((q,qi)=>{
+    const qId = `${quizId}_q${qi}`;
+    const letters = ["A","B","C","D"];
+    const opts = q.options.map((opt,oi)=>`
+      <button class="quiz-opt" data-quiz="${quizId}" data-q="${qi}" data-opt="${oi}" onclick="answerQuiz('${quizId}',${qi},${oi},${q.correct})">
+        <span class="opt-letter">${letters[oi]}</span><span>${opt}</span>
+      </button>`).join("");
+    return `<div class="quiz-q" id="${qId}">
+      <div class="quiz-qnum">Pregunta ${qi+1} de ${b.questions.length}</div>
+      <div class="quiz-question">${q.question}</div>
+      <div class="quiz-options">${opts}</div>
+      <div class="quiz-explain" id="${qId}_explain"><b>Explicación:</b> ${q.explanation}</div>
+    </div>`;
+  }).join("");
+  return `<div class="quiz-block" id="${quizId}" data-total="${b.questions.length}" data-correct="0" data-answered="0">
+    <div class="quiz-header">
+      <div class="quiz-title">${b.title || "Autoevaluación"}</div>
+      <div class="quiz-score" id="${quizId}_score">0 / ${b.questions.length} respondidas</div>
+    </div>
+    ${qsHtml}
+  </div>`;
+}
+
+function answerQuiz(quizId, qi, oi, correctIdx){
+  const qEl = document.getElementById(`${quizId}_q${qi}`);
+  if(qEl.dataset.answered === "1") return;
+  qEl.dataset.answered = "1";
+  const buttons = qEl.querySelectorAll(".quiz-opt");
+  buttons.forEach(btn=>{
+    btn.disabled = true;
+    const bOi = parseInt(btn.dataset.opt,10);
+    if(bOi === correctIdx) btn.classList.add("correct");
+    else if(bOi === oi) btn.classList.add("incorrect");
+  });
+  document.getElementById(`${qEl.id}_explain`).classList.add("show");
+
+  const quizEl = document.getElementById(quizId);
+  let answered = parseInt(quizEl.dataset.answered,10) + 1;
+  let correct = parseInt(quizEl.dataset.correct,10) + (oi===correctIdx ? 1 : 0);
+  quizEl.dataset.answered = answered;
+  quizEl.dataset.correct = correct;
+  const total = parseInt(quizEl.dataset.total,10);
+  document.getElementById(`${quizId}_score`).textContent = `${correct} / ${total} correctas · ${answered} / ${total} respondidas`;
+  markQuizDone(quizId, answered, total);
+}
+
+function markQuizDone(quizId, answered, total){
+  if(answered >= total){
+    const pageId = quizId.split("__")[0];
+  }
+}
+
+/* =========================================================
+   EXAM (final exam page has its own submit-based flow)
+   ========================================================= */
+function renderExam(page){
+  let html = `<div class="exam-toolbar">
+      <div style="font-size:13.5px;color:var(--muted);">20 preguntas · responde todas y presiona <b>Calificar examen</b></div>
+      <button class="btn" id="examSubmitBtn" onclick="submitExam()">Calificar examen</button>
+    </div>`;
+  html += `<div id="examResult" class="exam-result">
+      <div class="score-num" id="examScoreNum">0 / 20</div>
+      <div class="score-msg" id="examScoreMsg"></div>
+    </div>`;
+  const qsHtml = page.questions.map((q,qi)=>{
+    const letters = ["A","B","C","D"];
+    const opts = q.options.map((opt,oi)=>`
+      <button class="quiz-opt" data-q="${qi}" data-opt="${oi}" onclick="selectExamOption(${qi},${oi})">
+        <span class="opt-letter">${letters[oi]}</span><span>${opt}</span>
+      </button>`).join("");
+    return `<div class="quiz-q" id="exam_q${qi}" data-correct="${q.correct}" data-selected="-1">
+      <div class="quiz-qnum">Pregunta ${qi+1} de ${page.questions.length}</div>
+      <div class="quiz-question">${q.question}</div>
+      <div class="quiz-options">${opts}</div>
+      <div class="quiz-explain" id="exam_q${qi}_explain"><b>Explicación:</b> ${q.explanation}</div>
+    </div>`;
+  }).join("");
+  html += `<div class="quiz-block">${qsHtml}</div>`;
+  return html;
+}
+
+function selectExamOption(qi, oi){
+  const qEl = document.getElementById(`exam_q${qi}`);
+  if(qEl.dataset.locked === "1") return;
+  qEl.dataset.selected = oi;
+  qEl.querySelectorAll(".quiz-opt").forEach(btn=>{
+    btn.style.borderColor = (parseInt(btn.dataset.opt,10)===oi) ? "var(--gold)" : "var(--card-border)";
+    btn.style.background = (parseInt(btn.dataset.opt,10)===oi) ? "#FFF7EC" : "var(--white)";
+  });
+}
+
+function submitExam(){
+  const qEls = document.querySelectorAll('[id^="exam_q"]');
+  let total = 0, correct = 0, unanswered = 0;
+  qEls.forEach(qEl=>{
+    if(!qEl.id.match(/^exam_q\d+$/)) return;
+    total++;
+    qEl.dataset.locked = "1";
+    const sel = parseInt(qEl.dataset.selected,10);
+    const corr = parseInt(qEl.dataset.correct,10);
+    if(sel === -1) unanswered++;
+    if(sel === corr) correct++;
+    qEl.querySelectorAll(".quiz-opt").forEach(btn=>{
+      btn.disabled = true;
+      const bOi = parseInt(btn.dataset.opt,10);
+      btn.style.background = ""; btn.style.borderColor="";
+      if(bOi === corr) btn.classList.add("correct");
+      else if(bOi === sel) btn.classList.add("incorrect");
+    });
+    document.getElementById(`${qEl.id}_explain`).classList.add("show");
+  });
+  const pct = Math.round((correct/total)*100);
+  const resultEl = document.getElementById("examResult");
+  resultEl.classList.add("show");
+  document.getElementById("examScoreNum").textContent = `${correct} / ${total}`;
+  let msg = "";
+  if(unanswered>0) msg += `Dejaste ${unanswered} pregunta(s) sin responder (se contaron como incorrectas). `;
+  msg += pct>=70 ? "¡Aprobado! Alcanzaste el puntaje mínimo recomendado (70%)." : "No alcanzaste el puntaje mínimo recomendado (70%). Te sugerimos repasar los módulos y volver a intentarlo.";
+  document.getElementById("examScoreMsg").textContent = msg;
+  document.getElementById("examSubmitBtn").disabled = true;
+  document.getElementById("examSubmitBtn").textContent = "Examen calificado";
+  if (resultEl.scrollIntoView) resultEl.scrollIntoView({behavior:"smooth", block:"center"});
+  visited.add(currentPageId());
+  updateProgress();
+}
+
+/* =========================================================
+   NAVIGATION / APP SHELL
+   ========================================================= */
+var visited = new Set();
+var activePageId = null;
+
+function currentPageId(){ return activePageId; }
+
+function buildNav(){
+  const navList = document.getElementById("navList");
+  let html = "";
+  let lastGroup = null;
+  COURSE.pages.forEach(p=>{
+    if(p.group !== lastGroup){
+      html += `<div class="nav-group-title">${p.group}</div>`;
+      lastGroup = p.group;
+    }
+    html += `<div class="nav-item" id="nav_${p.id}" onclick="goTo('${p.id}')"><span class="nav-dot"></span>${p.navLabel}</div>`;
+  });
+  navList.innerHTML = html;
+}
+
+function renderPage(p){
+  let html = `<div class="page" id="page_${p.id}">`;
+  if(p.hero){
+    html += `<div class="cover-hero">
+      <div class="eyebrow">${p.eyebrow||""}</div>
+      <h1>${p.title}</h1>
+      ${p.subtitle ? `<p>${p.subtitle}</p>` : ""}
+    </div>`;
+  } else {
+    html += `<div class="eyebrow">${p.eyebrow||""}</div><h1>${p.title}</h1>`;
+    if(p.subtitle) html += `<p class="page-sub">${p.subtitle}</p>`;
+  }
+  if(p.type === "exam"){
+    html += renderExam(p);
+  } else if(p.blocks){
+    html += renderBlocks(p.blocks);
+  }
+  const idx = COURSE.pages.findIndex(x=>x.id===p.id);
+  const prev = COURSE.pages[idx-1];
+  const next = COURSE.pages[idx+1];
+  html += `<div class="nav-buttons">`;
+  html += prev ? `<button class="btn ghost" onclick="goTo('${prev.id}')">← ${prev.navLabel}</button>` : `<span></span>`;
+  html += next ? `<button class="btn" onclick="goTo('${next.id}')">${next.navLabel} →</button>` : `<span></span>`;
+  html += `</div>`;
+  html += `</div>`;
+  return html;
+}
+
+function buildContent(){
+  const content = document.getElementById("content");
+  content.innerHTML = COURSE.pages.map(renderPage).join("");
+}
+
+function goTo(id){
+  if(activePageId){
+    visited.add(activePageId);
+    document.getElementById(`page_${activePageId}`).classList.remove("active");
+    const navEl = document.getElementById(`nav_${activePageId}`);
+    if(navEl) navEl.classList.remove("active");
+  }
+  activePageId = id;
+  document.getElementById(`page_${id}`).classList.add("active");
+  const navEl = document.getElementById(`nav_${id}`);
+  if(navEl) navEl.classList.add("active");
+  window.scrollTo({top:0, behavior:"auto"});
+  updateProgress();
+  if(window.innerWidth <= 880){
+    document.getElementById("sidebar").classList.remove("open");
+  }
+}
+
+function updateProgress(){
+  visited.add(activePageId);
+  const pct = Math.round((visited.size / COURSE.pages.length) * 100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+  COURSE.pages.forEach(p=>{
+    const navEl = document.getElementById(`nav_${p.id}`);
+    if(navEl){
+      if(visited.has(p.id)) navEl.classList.add("done");
+      else navEl.classList.remove("done");
+    }
+  });
+}
+
+document.getElementById("mobileToggle").addEventListener("click", ()=>{
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+buildNav();
+buildContent();
+goTo(COURSE.pages[0].id);
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@ export interface Group {
   nombre: string;
   descripcion: string;
   activo: boolean;
+  from_ad: boolean;
   created_at: string;
   member_count: number;
   cursos_activos: number;

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import api from "../../../services/api";
 
 interface AuditLogEntry {
@@ -196,8 +196,8 @@ export function AuditLogTab() {
                     !!entry.ip;
 
                   return (
-                    <>
-                      <tr key={entry.id} className="hover:bg-accent/30 transition-colors">
+                    <Fragment key={entry.id}>
+                      <tr className="hover:bg-accent/30 transition-colors">
                         <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap font-mono">
                           {formatTs(entry.timestamp)}
                         </td>
@@ -286,7 +286,7 @@ export function AuditLogTab() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>

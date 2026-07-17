@@ -570,7 +570,7 @@ class CourseViewSet(GenericViewSet):
         }
         users = (
             AppUser.objects.filter(is_active=True)
-            .exclude(role="ADMIN")
+            .select_related("profile__grupo", "profile__area")
             .order_by("first_name", "last_name", "email")
         )
         result = [
@@ -580,10 +580,86 @@ class CourseViewSet(GenericViewSet):
                 "email": u.email,
                 "role": u.role,
                 "estado_inscripcion": enrolled_map.get(u.id),
+                "grupo_id": u.profile.grupo_id,
+                "grupo_nombre": u.profile.grupo.nombre if u.profile.grupo_id else None,
+                "area": u.profile.area.nombre if u.profile.area_id else None,
             }
             for u in users
         ]
         return Response(result)
+
+    @action(detail=True, methods=["post"], url_path="enroll-group")
+    def enroll_group(self, request: Request, pk: str | None = None) -> Response:
+        """Enroll all active users of one or more Groups into this course."""
+        if request.user.role not in ("ADMIN", "TRAINER"):
+            return Response({"detail": "Forbidden."}, status=403)
+        try:
+            course = Course.objects.get(pk=pk)
+        except Course.DoesNotExist:
+            return Response({"error": "Curso no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        if course.estado != Course.Estado.PUBLICADO:
+            return Response(
+                {"error": "Solo se puede asignar usuarios a cursos publicados."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        group_ids = request.data.get("group_ids", [])
+        if not isinstance(group_ids, list) or not group_ids:
+            return Response({"error": "Envía group_ids como lista."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.users.models import User as AppUser  # noqa: PLC0415
+        from apps.notifications.models import Notification  # noqa: PLC0415
+        from apps.notifications.services import notify_instructor_alumno_inscrito  # noqa: PLC0415
+        from apps.notifications.tasks import send_enrollment_email  # noqa: PLC0415
+
+        # Collect all active users across the selected groups
+        user_ids = list(
+            AppUser.objects.filter(
+                profile__grupo_id__in=group_ids,
+                is_active=True,
+            ).values_list("id", flat=True)
+        )
+
+        existing = set(
+            Enrollment.objects.filter(course=course, user_id__in=user_ids)
+            .values_list("user_id", flat=True)
+        )
+        new_ids = [uid for uid in user_ids if uid not in existing]
+        valid_users = AppUser.objects.filter(id__in=new_ids, is_active=True)
+
+        fecha_str = (
+            f" La fecha límite es el {course.fecha_limite.strftime('%d/%m/%Y')}."
+            if course.fecha_limite
+            else ""
+        )
+        instructor = course.created_by
+        created = 0
+        for user in valid_users:
+            enrollment = Enrollment.objects.create(user=user, course=course)
+            Notification.objects.create(
+                user=user,
+                tipo=Notification.Tipo.NUEVO_CURSO,
+                titulo=f"{course.titulo}",
+                mensaje=(
+                    f"Se te ha asignado este curso.{fecha_str}"
+                    f" Puedes comenzar cuando quieras."
+                ),
+                referencia_id=course.pk,
+                referencia_tipo="course",
+            )
+            if instructor and instructor.pk != request.user.pk:
+                notify_instructor_alumno_inscrito(instructor, user, enrollment)
+            send_enrollment_email.delay(user.pk, course.pk)
+            created += 1
+            log_event(
+                accion="ENROLLMENT_ADMIN_ASSIGN",
+                request=request,
+                entidad_tipo="Enrollment",
+                entidad_id=user.id,
+                entidad_nombre=f"{user.email} → {course.titulo}",
+                detalle={"course_id": course.pk, "assigned_by": request.user.email, "via_group": True},
+            )
+        return Response({"created": created, "skipped": len(existing)})
 
     @action(detail=True, methods=["post"], url_path="bulk-assign")
     def bulk_assign(self, request: Request, pk: str | None = None) -> Response:
@@ -617,6 +693,7 @@ class CourseViewSet(GenericViewSet):
             else ""
         )
         from apps.notifications.services import notify_instructor_alumno_inscrito  # noqa: PLC0415
+        from apps.notifications.tasks import send_enrollment_email  # noqa: PLC0415
 
         instructor = course.created_by
         created = 0
@@ -636,6 +713,8 @@ class CourseViewSet(GenericViewSet):
             # Notify instructor if the assigner is different from the course creator
             if instructor and instructor.pk != request.user.pk:
                 notify_instructor_alumno_inscrito(instructor, user, enrollment)
+            # Send email notification asynchronously
+            send_enrollment_email.delay(user.pk, course.pk)
             created += 1
             log_event(
                 accion="ENROLLMENT_ADMIN_ASSIGN",

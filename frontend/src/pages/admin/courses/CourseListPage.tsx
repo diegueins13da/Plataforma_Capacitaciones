@@ -7,7 +7,7 @@ import { CourseCreateModal } from "../../../components/shared/CourseCreateModal"
 import { CourseEditAdminModal } from "../../../components/shared/CourseEditAdminModal";
 import { CourseAssignUsersModal } from "../../../components/shared/CourseAssignUsersModal";
 import { ConfirmDeleteModal } from "../../../components/shared/ConfirmDeleteModal";
-import type { Area } from "../../../types/area";
+import type { Group } from "../../../types/groups";
 import type { CourseEstado, CourseListItem } from "../../../types/course";
 
 const ACTION_TIPS: Record<CourseEstado, string | null> = {
@@ -37,7 +37,7 @@ type SortKey = "titulo" | "estado" | "area_nombre" | "module_count" | "fecha_lim
 
 export default function CourseListPage() {
   const [courses, setCourses] = useState<CourseListItem[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -73,7 +73,7 @@ export default function CourseListPage() {
   }
 
   useEffect(() => {
-    configService.getAreas().then(setAreas).catch(() => void 0);
+    configService.getGroups().then(setAreas).catch(() => void 0);
   }, []);
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function CourseListPage() {
             onChange={(e) => setFilterArea(e.target.value ? parseInt(e.target.value) : "")}
             className={SELECT_CLS}
           >
-            <option value="">Todas las áreas</option>
+            <option value="">Todos los departamentos</option>
             {areas.map((a) => (
               <option key={a.id} value={a.id}>{a.nombre}</option>
             ))}
@@ -282,11 +282,6 @@ export default function CourseListPage() {
                             </button>
                           )}
                         </div>
-                        {ACTION_TIPS[course.estado] && (
-                          <p className="text-[10px] text-muted-foreground/60 mt-1 max-w-[140px] leading-tight">
-                            {ACTION_TIPS[course.estado]}
-                          </p>
-                        )}
                       </td>
                     </tr>
                   );

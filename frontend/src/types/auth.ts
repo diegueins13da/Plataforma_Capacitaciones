@@ -32,3 +32,14 @@ export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
 }
+
+export interface MfaChallengeResponse {
+  mfa_required: true;
+  mfa_token: string;
+  email_hint: string;
+}
+
+export interface MfaVerifyRequest {
+  mfa_token: string;
+  otp_code: string;
+}

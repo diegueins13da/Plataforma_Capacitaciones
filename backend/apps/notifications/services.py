@@ -149,7 +149,7 @@ def notify_instructor_alumno_inscrito(
         tipo=Notification.Tipo.ALUMNO_INSCRITO,
         titulo=course.titulo,
         mensaje=f"{alumno.get_full_name() or alumno.email} se ha inscrito en tu curso.",
-        referencia_id=course.pk,
+        referencia_id=enrollment.pk,
         referencia_tipo="course",
     )
 
@@ -168,7 +168,7 @@ def notify_instructor_alumno_completo(
         tipo=Notification.Tipo.ALUMNO_COMPLETO,
         titulo=course.titulo,
         mensaje=f"{alumno.get_full_name() or alumno.email} completó el curso al 100%.",
-        referencia_id=course.pk,
+        referencia_id=enrollment.pk,
         referencia_tipo="course",
     )
 
@@ -180,6 +180,8 @@ def notify_instructor_alumno_aprobado(
     if instructor.pk == alumno.pk:
         return None
     course = enrollment.course
+    if _already_sent(instructor, Notification.Tipo.ALUMNO_APROBADO, enrollment.pk):
+        return None
     return create_notification(
         user=instructor,
         tipo=Notification.Tipo.ALUMNO_APROBADO,
@@ -188,7 +190,7 @@ def notify_instructor_alumno_aprobado(
             f"{alumno.get_full_name() or alumno.email} aprobó la evaluación "
             f"con {calificacion:.0f}%."
         ),
-        referencia_id=course.pk,
+        referencia_id=enrollment.pk,
         referencia_tipo="course",
     )
 
@@ -200,6 +202,8 @@ def notify_instructor_alumno_reprobado(
     if instructor.pk == alumno.pk:
         return None
     course = enrollment.course
+    if _already_sent(instructor, Notification.Tipo.ALUMNO_REPROBADO, enrollment.pk):
+        return None
     return create_notification(
         user=instructor,
         tipo=Notification.Tipo.ALUMNO_REPROBADO,
@@ -208,7 +212,7 @@ def notify_instructor_alumno_reprobado(
             f"{alumno.get_full_name() or alumno.email} no aprobó la evaluación "
             f"({calificacion:.0f}%). Puede necesitar apoyo."
         ),
-        referencia_id=course.pk,
+        referencia_id=enrollment.pk,
         referencia_tipo="course",
     )
 

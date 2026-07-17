@@ -11,8 +11,8 @@ class CargoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cargo
-        fields = ["id", "nombre", "area", "area_nombre", "activo", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "nombre", "area", "area_nombre", "activo", "from_ad", "created_at"]
+        read_only_fields = ["id", "from_ad", "created_at"]
 
     def get_area_nombre(self, obj: Cargo) -> str | None:
         return obj.area.nombre if obj.area else None
@@ -23,8 +23,8 @@ class AreaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Area
-        fields = ["id", "nombre", "descripcion", "activo", "created_at", "user_count"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "nombre", "descripcion", "activo", "from_ad", "created_at", "user_count"]
+        read_only_fields = ["id", "from_ad", "created_at"]
 
     def get_user_count(self, obj: Area) -> int:
         return obj.user_profiles.count()
@@ -39,8 +39,8 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ["id", "nombre", "descripcion", "activo", "created_at", "member_count", "cursos_activos"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "nombre", "descripcion", "activo", "from_ad", "created_at", "member_count", "cursos_activos"]
+        read_only_fields = ["id", "from_ad", "created_at"]
 
     def get_member_count(self, obj: Group) -> int:
         return obj.members.count()
@@ -93,13 +93,14 @@ class UserListSerializer(serializers.ModelSerializer):
     grupo_nombre = serializers.SerializerMethodField()
     is_locked = serializers.SerializerMethodField()
     auth_source = serializers.SerializerMethodField()
+    mfa_enabled = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
             "role", "is_active", "is_superuser", "is_locked", "must_change_password",
-            "area", "cargo", "grupo_nombre", "auth_source",
+            "area", "cargo", "grupo_nombre", "auth_source", "mfa_enabled",
         ]
 
     def get_is_locked(self, obj: User) -> bool:
@@ -117,6 +118,10 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_auth_source(self, obj: User) -> str:
         profile = getattr(obj, "profile", None)
         return profile.auth_source if profile else "LOCAL"
+
+    def get_mfa_enabled(self, obj: User) -> bool:
+        profile = getattr(obj, "profile", None)
+        return bool(profile.mfa_enabled) if profile else False
 
     def get_full_name(self, obj: User) -> str:
         return obj.get_full_name()

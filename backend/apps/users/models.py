@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
@@ -10,6 +12,7 @@ class Area(models.Model):
     nombre = models.CharField(max_length=150, unique=True, verbose_name="nombre")
     descripcion = models.TextField(blank=True, verbose_name="descripción")
     activo = models.BooleanField(default=True, verbose_name="activo")
+    from_ad = models.BooleanField(default=False, verbose_name="origen AD", help_text="Sincronizado desde Active Directory. Solo lectura.")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
 
     class Meta:
@@ -55,6 +58,7 @@ class Group(models.Model):
     nombre = models.CharField(max_length=150, unique=True, verbose_name="nombre")
     descripcion = models.TextField(blank=True, verbose_name="descripción")
     activo = models.BooleanField(default=True, verbose_name="activo")
+    from_ad = models.BooleanField(default=False, verbose_name="origen AD", help_text="Sincronizado desde Active Directory. Solo lectura.")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
 
     class Meta:
@@ -80,6 +84,7 @@ class Cargo(models.Model):
         verbose_name="área",
     )
     activo = models.BooleanField(default=True, verbose_name="activo")
+    from_ad = models.BooleanField(default=False, verbose_name="origen AD", help_text="Sincronizado desde Active Directory. Solo lectura.")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="fecha de creación")
 
     class Meta:
@@ -134,6 +139,12 @@ class UserProfile(models.Model):
         verbose_name="origen de autenticación",
         help_text="LOCAL: contraseña local. LDAP: autentica contra Active Directory.",
     )
+    mfa_enabled = models.BooleanField(
+        default=False,
+        verbose_name="MFA habilitado",
+        help_text="Si True, el usuario debe verificar su identidad por correo al iniciar sesión. "
+                  "Los usuarios AD tienen este campo en True por defecto.",
+    )
     ldap_dn = models.TextField(
         blank=True,
         verbose_name="DN en el directorio LDAP",
@@ -147,6 +158,56 @@ class UserProfile(models.Model):
 
     def __str__(self) -> str:
         return f"Perfil de {self.user}"
+
+
+# ---------------------------------------------------------------------------
+# MFA
+# ---------------------------------------------------------------------------
+
+
+class MFAChallenge(models.Model):
+    """
+    One-time MFA challenge created after successful password authentication.
+    The OTP is never stored in plaintext — only its SHA-256 hash + per-challenge salt.
+    """
+
+    MAX_ATTEMPTS = 5          # Wrong codes before lockout
+    MAX_RESENDS = 3           # Resend requests per challenge
+    RESEND_COOLDOWN_SECONDS = 60
+    TTL_SECONDS = 600         # 10-minute validity window
+
+    user = models.ForeignKey(
+        "User",
+        on_delete=models.CASCADE,
+        related_name="mfa_challenges",
+        verbose_name="usuario",
+    )
+    # Opaque identifier sent to the frontend (never a JWT — no info leak)
+    token = models.UUIDField(
+        default=uuid.uuid4, unique=True, db_index=True, editable=False
+    )
+    otp_hash = models.CharField(max_length=64)   # SHA-256 hex of "otp:salt"
+    salt = models.UUIDField(default=uuid.uuid4, editable=False)  # per-challenge
+    attempts = models.PositiveSmallIntegerField(default=0)
+    is_used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    resend_count = models.PositiveSmallIntegerField(default=0)
+    last_resend_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "mfa_challenges"
+        verbose_name = "desafío MFA"
+        verbose_name_plural = "desafíos MFA"
+        indexes = [
+            models.Index(fields=["token"]),
+            models.Index(fields=["user", "is_used"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"MFA({self.user.email}, used={self.is_used})"
 
 
 # ---------------------------------------------------------------------------

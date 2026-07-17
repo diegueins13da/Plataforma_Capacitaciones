@@ -18,6 +18,7 @@ export interface AdminUser {
   cargo: string;
   grupo_nombre: string | null;
   auth_source: "LOCAL" | "LDAP";
+  mfa_enabled: boolean;
 }
 
 export interface LdapSyncResult {
@@ -27,6 +28,17 @@ export interface LdapSyncResult {
   skipped: number;
   errors: number;
   error_details: string[];
+}
+
+export interface CatalogSyncStats {
+  created: number;
+  deleted: number;
+}
+
+export interface CatalogSyncResult {
+  areas: CatalogSyncStats;
+  grupos: CatalogSyncStats;
+  cargos: CatalogSyncStats;
 }
 
 export interface CreateUserPayload {

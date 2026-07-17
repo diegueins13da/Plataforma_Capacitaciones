@@ -210,7 +210,7 @@ export default function NotificationsPage() {
 
       {/* Filter pills */}
       <div className="flex gap-2 flex-wrap">
-        {FILTERS.map((opt) => (
+        {FILTERS.filter((opt) => opt.label !== "Alumnos" || isInstructor).map((opt) => (
           <button
             key={opt.value}
             type="button"

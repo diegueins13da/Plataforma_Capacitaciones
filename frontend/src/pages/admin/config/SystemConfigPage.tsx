@@ -36,8 +36,8 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
 ];
 
 const CATALOGO_SUBTABS: { key: CatalogoSubTab; label: string; icon: string }[] = [
-  { key: "areas",  label: "Áreas",  icon: "ti-building" },
-  { key: "grupos", label: "Grupos", icon: "ti-users-group" },
+  { key: "areas",  label: "Áreas",        icon: "ti-building" },
+  { key: "grupos", label: "Departamentos", icon: "ti-users-group" },
   { key: "cargos", label: "Cargos", icon: "ti-briefcase" },
 ];
 
@@ -494,13 +494,13 @@ function GruposTab() {
     try {
       await usersService.deleteGroup(group.id);
       setGroups((prev) => prev.filter((g) => g.id !== group.id));
-      toast.success("Grupo eliminado.");
+      toast.success("Departamento eliminado.");
     } catch (err: unknown) {
       const resp = (err as { response?: { status: number } }).response;
       if (resp?.status === 400) {
-        setDeleteError("No se puede eliminar un grupo con miembros activos. Quita todos los miembros primero.");
+        setDeleteError("No se puede eliminar un departamento con miembros activos. Quita todos los miembros primero.");
       } else {
-        toast.error("No se pudo eliminar el grupo.");
+        toast.error("No se pudo eliminar el departamento.");
       }
     }
   };
@@ -509,9 +509,9 @@ function GruposTab() {
     try {
       const updated = await usersService.updateGroup(group.id, { activo: !group.activo });
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-      toast.success(`Grupo ${group.activo ? "desactivado" : "activado"}.`);
+      toast.success(`Departamento ${group.activo ? "desactivado" : "activado"}.`);
     } catch {
-      toast.error("No se pudo actualizar el grupo.");
+      toast.error("No se pudo actualizar el departamento.");
     }
   };
 
@@ -519,13 +519,13 @@ function GruposTab() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
-          Organiza usuarios en grupos para asignarles cursos.
+          Organiza usuarios en departamentos para asignarles cursos.
         </p>
         <button
           onClick={() => setFormModal({ open: true })}
           className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
-          + Nuevo grupo
+          + Nuevo departamento
         </button>
       </div>
 
@@ -541,48 +541,70 @@ function GruposTab() {
         </div>
       ) : groups.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground text-sm">
-          No hay grupos creados. Crea el primero para poder asignar usuarios.
+          No hay departamentos creados. Crea el primero para poder asignar usuarios.
         </div>
       ) : (
         <div className="divide-y divide-border">
           {groups.map((g) => (
             <div key={g.id} className="flex items-center gap-4 py-3">
               <div className="flex-1 min-w-0">
-                <span className={`text-sm font-medium ${g.activo ? "text-foreground" : "text-muted-foreground line-through"}`}>
-                  {g.nombre}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${g.activo ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                    {g.nombre}
+                  </span>
+                  {g.from_ad && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      <i className="ti ti-building-bank text-[9px]" /> AD
+                    </span>
+                  )}
+                </div>
                 {g.descripcion && (
                   <p className="text-xs text-muted-foreground mt-0.5 truncate">{g.descripcion}</p>
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
                 <span>{g.member_count} miembro(s)</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full ${g.activo ? "bg-emerald-500/10 text-emerald-400" : "bg-muted/40 text-muted-foreground"}`}
-                >
+                <span className={`px-2 py-0.5 rounded-full ${g.activo ? "bg-emerald-500/10 text-emerald-400" : "bg-muted/40 text-muted-foreground"}`}>
                   {g.activo ? "Activo" : "Inactivo"}
                 </span>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <Link
                   to="/admin/groups"
-                  className="text-xs text-indigo-400 hover:underline"
+                  title="Ver miembros"
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
                 >
-                  Miembros
+                  <i className="ti ti-users text-sm" />
                 </Link>
-                <button onClick={() => setFormModal({ open: true, group: g })} className="text-xs text-indigo-400 hover:underline">
-                  Editar
-                </button>
-                <button onClick={() => void handleToggle(g)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
-                  {g.activo ? "Desactivar" : "Activar"}
-                </button>
+                {!g.from_ad && (
+                  <button
+                    type="button"
+                    title="Editar"
+                    onClick={() => setFormModal({ open: true, group: g })}
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                  >
+                    <i className="ti ti-pencil text-sm" />
+                  </button>
+                )}
                 <button
-                  onClick={() => void handleDelete(g)}
-                  disabled={g.member_count > 0}
-                  className="text-xs text-red-400 hover:underline disabled:opacity-30 disabled:cursor-not-allowed"
+                  type="button"
+                  title={g.activo ? "Desactivar" : "Activar"}
+                  onClick={() => void handleToggle(g)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                 >
-                  Eliminar
+                  <i className={`ti ${g.activo ? "ti-eye-off" : "ti-eye"} text-sm`} />
                 </button>
+                {!g.from_ad && (
+                  <button
+                    type="button"
+                    title="Eliminar"
+                    onClick={() => void handleDelete(g)}
+                    disabled={g.member_count > 0}
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <i className="ti ti-trash text-sm" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -590,9 +612,9 @@ function GruposTab() {
       )}
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Para gestionar miembros de un grupo, usa la{" "}
+        Para gestionar miembros de un departamento, usa la{" "}
         <Link to="/admin/groups" className="text-indigo-400 hover:underline">
-          página dedicada de grupos
+          página dedicada de departamentos
         </Link>
         .
       </p>
@@ -796,33 +818,55 @@ function CargosTab({ areas }: CargosTabProps) {
               ) : (
                 <div className="flex items-center gap-4">
                   <div className="flex-1 min-w-0">
-                    <span className={`text-sm font-medium ${cargo.activo ? "text-foreground" : "text-muted-foreground line-through"}`}>
-                      {cargo.nombre}
-                    </span>
-                    {cargo.area_nombre && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-500/10 text-indigo-400">
-                        {cargo.area_nombre}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-sm font-medium ${cargo.activo ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                        {cargo.nombre}
                       </span>
-                    )}
+                      {cargo.area_nombre && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-500/10 text-indigo-400">
+                          {cargo.area_nombre}
+                        </span>
+                      )}
+                      {cargo.from_ad && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          <i className="ti ti-building-bank text-[9px]" /> AD
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${cargo.activo ? "bg-emerald-500/10 text-emerald-400" : "bg-muted/40 text-muted-foreground"}`}>
                     {cargo.activo ? "Activo" : "Inactivo"}
                   </span>
-                  <button
-                    onClick={() => { setEditingId(cargo.id); setEditNombre(cargo.nombre); setEditArea(cargo.area ?? ""); }}
-                    className="text-xs text-indigo-400 hover:underline shrink-0"
-                  >
-                    Editar
-                  </button>
-                  <button onClick={() => void handleToggle(cargo)} className="text-xs text-muted-foreground hover:text-foreground hover:underline shrink-0">
-                    {cargo.activo ? "Desactivar" : "Activar"}
-                  </button>
-                  <button
-                    onClick={() => void handleDelete(cargo)}
-                    className="text-xs text-red-400 hover:underline shrink-0"
-                  >
-                    Eliminar
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!cargo.from_ad && (
+                      <button
+                        type="button"
+                        title="Editar"
+                        onClick={() => { setEditingId(cargo.id); setEditNombre(cargo.nombre); setEditArea(cargo.area ?? ""); }}
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                      >
+                        <i className="ti ti-pencil text-sm" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      title={cargo.activo ? "Desactivar" : "Activar"}
+                      onClick={() => void handleToggle(cargo)}
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                    >
+                      <i className={`ti ${cargo.activo ? "ti-eye-off" : "ti-eye"} text-sm`} />
+                    </button>
+                    {!cargo.from_ad && (
+                      <button
+                        type="button"
+                        title="Eliminar"
+                        onClick={() => void handleDelete(cargo)}
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <i className="ti ti-trash text-sm" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1003,6 +1047,11 @@ function AreasTab({ areas, onRefresh }: AreasTabProps) {
                       <span className={`text-sm font-medium ${area.activo ? "text-foreground" : "text-muted-foreground line-through"}`}>
                         {area.nombre}
                       </span>
+                      {area.from_ad && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          <i className="ti ti-building-bank text-[9px]" /> AD
+                        </span>
+                      )}
                       {area.user_count > 0 && (
                         <span className="text-xs text-muted-foreground">{area.user_count} usuario(s)</span>
                       )}
@@ -1011,17 +1060,37 @@ function AreasTab({ areas, onRefresh }: AreasTabProps) {
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{area.descripcion}</p>
                     )}
                   </div>
-                  <button onClick={() => startEdit(area)} className="text-xs text-indigo-400 hover:underline shrink-0">Editar</button>
-                  <button onClick={() => void handleToggle(area)} className="text-xs text-muted-foreground hover:text-foreground hover:underline shrink-0">
-                    {area.activo ? "Desactivar" : "Activar"}
-                  </button>
-                  <button
-                    onClick={() => void handleDelete(area)}
-                    disabled={area.user_count > 0}
-                    className="text-xs text-red-400 hover:underline disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                  >
-                    Eliminar
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!area.from_ad && (
+                      <button
+                        type="button"
+                        title="Editar"
+                        onClick={() => startEdit(area)}
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                      >
+                        <i className="ti ti-pencil text-sm" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      title={area.activo ? "Desactivar" : "Activar"}
+                      onClick={() => void handleToggle(area)}
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                    >
+                      <i className={`ti ${area.activo ? "ti-eye-off" : "ti-eye"} text-sm`} />
+                    </button>
+                    {!area.from_ad && (
+                      <button
+                        type="button"
+                        title="Eliminar"
+                        onClick={() => void handleDelete(area)}
+                        disabled={area.user_count > 0}
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <i className="ti ti-trash text-sm" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1267,6 +1336,10 @@ export default function SystemConfigPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestEmailResult | null>(null);
 
+  // Catalog sync state
+  const [catalogSyncing, setCatalogSyncing] = useState(false);
+  const [catalogSyncResult, setCatalogSyncResult] = useState<import("../../../types/user").CatalogSyncResult | null>(null);
+
   async function loadData() {
     setLoading(true);
     try {
@@ -1320,6 +1393,28 @@ export default function SystemConfigPage() {
     });
   }
 
+  const isLdapEnabled = settings?.["LDAP"]?.find((s) => s.clave === "LDAP_ENABLED")?.valor === "true";
+
+  async function handleCatalogSync() {
+    setCatalogSyncing(true);
+    setCatalogSyncResult(null);
+    try {
+      const result = await usersService.catalogSync();
+      setCatalogSyncResult(result);
+      toast.success(
+        `Catálogos sincronizados: ${result.areas.created + result.grupos.created + result.cargos.created} creados, ` +
+        `${result.areas.deleted + result.grupos.deleted + result.cargos.deleted} eliminados.`
+      );
+      // Refresh areas list after sync
+      const freshAreas = await configService.getAreas();
+      setAreas(freshAreas);
+    } catch {
+      toast.error("Error al sincronizar catálogos desde AD.");
+    } finally {
+      setCatalogSyncing(false);
+    }
+  }
+
   const tabSettings = (activeTab !== "CATALOGO" && settings) ? (settings[activeTab as SettingCategory] ?? []) : [];
 
   return (
@@ -1362,6 +1457,55 @@ export default function SystemConfigPage() {
           />
         ) : activeTab === "CATALOGO" ? (
           <div>
+            {/* AD sync bar — visible only when LDAP is enabled */}
+            {isLdapEnabled && (
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/30 border border-border rounded-lg px-4 py-3 mb-5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sincronizar desde Active Directory</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Reconstruye Áreas, Grupos y Cargos con los valores de AD. Los registros ausentes en AD se eliminan.
+                    Sincronización automática: 01:00 UTC diario.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {catalogSyncResult && (
+                    <div className="text-xs text-muted-foreground flex gap-3">
+                      <span>
+                        <span className="font-medium text-foreground">{catalogSyncResult.areas.created}</span> áreas creadas·
+                        <span className="font-medium text-foreground">{catalogSyncResult.areas.deleted}</span> eliminadas
+                      </span>
+                      <span>
+                        <span className="font-medium text-foreground">{catalogSyncResult.grupos.created}</span> grupos creados·
+                        <span className="font-medium text-foreground">{catalogSyncResult.grupos.deleted}</span> eliminados
+                      </span>
+                      <span>
+                        <span className="font-medium text-foreground">{catalogSyncResult.cargos.created}</span> cargos creados·
+                        <span className="font-medium text-foreground">{catalogSyncResult.cargos.deleted}</span> eliminados
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void handleCatalogSync()}
+                    disabled={catalogSyncing}
+                    className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {catalogSyncing ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        Sincronizando…
+                      </>
+                    ) : (
+                      <>
+                        <i className="ti ti-refresh text-sm" />
+                        Sincronizar desde AD
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Sub-tab bar */}
             <div className="flex gap-1 bg-muted/30 rounded-lg p-1 mb-6">
               {CATALOGO_SUBTABS.map((st) => (

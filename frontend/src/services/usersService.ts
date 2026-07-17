@@ -20,12 +20,36 @@ export interface DashboardActivity {
   accion: string;
   timestamp: string;
   ip: string | null;
+  entidad_nombre?: string | null;
+  entidad_tipo?: string | null;
+}
+
+export interface DashboardCertificate {
+  id: string;
+  titulo: string;
+  fecha_emision: string;
+  fecha_vencimiento: string | null;
+}
+
+export interface DashboardCompletedCourse {
+  enrollment_id: number;
+  course_id: number;
+  titulo: string;
+  fecha_completado: string | null;
 }
 
 export interface DashboardData {
-  resumen: { en_progreso: number; completados: number; vencidos: number };
+  resumen: {
+    en_progreso: number;
+    completados: number;
+    vencidos: number;
+    certificados?: number;
+    certs_por_vencer?: number;
+  };
   cursos_activos: DashboardCourse[];
+  cursos_completados?: DashboardCompletedCourse[];
   proximos_vencimientos: DashboardCourse[];
+  certificados?: DashboardCertificate[];
   actividad_reciente: DashboardActivity[];
 }
 
@@ -43,6 +67,7 @@ import type {
   BulkImportValidRow,
   ChangeRolePayload,
   CreateUserPayload,
+  CatalogSyncResult,
   LdapSyncResult,
   UpdateUserPayload,
   UserFilters,
@@ -164,8 +189,18 @@ export const usersService = {
     await api.post(`/v1/users/${id}/reset-lockout/`);
   },
 
+  async toggleUserMfa(id: number): Promise<AdminUser> {
+    const res = await api.post<AdminUser>(`/v1/users/${id}/toggle-mfa/`);
+    return res.data;
+  },
+
   async ldapSync(): Promise<LdapSyncResult> {
     const res = await api.post<LdapSyncResult>("/v1/users/ldap-sync/");
+    return res.data;
+  },
+
+  async catalogSync(): Promise<CatalogSyncResult> {
+    const res = await api.post<CatalogSyncResult>("/v1/users/catalog-sync/");
     return res.data;
   },
 

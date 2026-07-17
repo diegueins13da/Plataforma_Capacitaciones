@@ -95,7 +95,7 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://${DEV_HOST:-localhost}:8000
 
 volumes:
   postgres_dev_data:

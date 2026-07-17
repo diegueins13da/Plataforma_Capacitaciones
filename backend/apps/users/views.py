@@ -213,11 +213,12 @@ class UserViewSet(viewsets.GenericViewSet):
         search = request.query_params.get("search")
         if search:
             from django.db.models import Q
-            qs = qs.filter(
-                Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-                | Q(email__icontains=search)
-            )
+            for term in search.strip().split():
+                qs = qs.filter(
+                    Q(first_name__icontains=term)
+                    | Q(last_name__icontains=term)
+                    | Q(email__icontains=term)
+                )
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(UserListSerializer(page, many=True).data)
@@ -294,6 +295,25 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response({"errors": msgs}, status=status.HTTP_400_BAD_REQUEST)
         return Response(UserListSerializer(updated).data)
 
+    @action(detail=True, methods=["post"], url_path="toggle-mfa")
+    def toggle_mfa(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        profile = user.profile
+        new_value = not profile.mfa_enabled
+        profile.mfa_enabled = new_value
+        profile.save(update_fields=["mfa_enabled"])
+        from apps.reports.audit import log_event
+        log_event(
+            accion="USER_MFA_TOGGLED",
+            actor=request.user,
+            ip=_get_client_ip(request),
+            entidad_tipo="User",
+            entidad_id=user.pk,
+            entidad_nombre=f"{user.get_full_name()} <{user.email}>",
+            detalle={"mfa_enabled": new_value},
+        )
+        return Response(UserListSerializer(user).data)
+
     @action(detail=True, methods=["post"], url_path="reset-lockout")
     def reset_lockout(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
@@ -352,6 +372,32 @@ class UserViewSet(viewsets.GenericViewSet):
         try:
             from apps.users.ldap_sync import run_ldap_sync
             result = run_ldap_sync(
+                admin_user=request.user,
+                ip=_get_client_ip(request),
+            )
+        except RuntimeError as exc:
+            return Response({"errors": [str(exc)]}, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="catalog-sync")
+    def catalog_sync(self, request):
+        """
+        POST /users/catalog-sync/
+        Rebuild Area / Group / Cargo catalogs from Active Directory values.
+        Entries absent from AD are deleted (dev-phase policy).
+        Returns created/deleted counts per catalog.
+        """
+        from apps.config.ldap import get_ldap_config
+        if not get_ldap_config().get("enabled"):
+            return Response(
+                {"errors": ["La integración LDAP no está habilitada. Actívala en Configuración → LDAP."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from apps.users.ldap_sync import run_catalog_sync
+            result = run_catalog_sync(
                 admin_user=request.user,
                 ip=_get_client_ip(request),
             )
@@ -595,7 +641,9 @@ class UserDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
-        from apps.courses.models import Enrollment  # noqa: PLC0415
+        from datetime import date as _date, timedelta as _timedelta  # noqa: PLC0415
+        import calendar as _calendar  # noqa: PLC0415
+        from apps.courses.models import Enrollment, Certificate  # noqa: PLC0415
         from apps.reports.models import AuditLog  # noqa: PLC0415
 
         enrollments = (
@@ -609,7 +657,6 @@ class UserDashboardView(APIView):
         vencidos = [e for e in enrollments if e.estado == Enrollment.Estado.VENCIDO]
 
         def enrollment_summary(e: Enrollment) -> dict:
-            from datetime import date as _date  # noqa: PLC0415
             fl = e.course.fecha_limite
             days_left = (fl - _date.today()).days if fl else None
             urgency = "verde"
@@ -629,10 +676,55 @@ class UserDashboardView(APIView):
                 "estado": e.estado,
             }
 
+        def _add_months(d: "_date", months: int) -> "_date":
+            m = d.month + months
+            y = d.year + (m - 1) // 12
+            m = (m - 1) % 12 + 1
+            day = min(d.day, _calendar.monthrange(y, m)[1])
+            return _date(y, m, day)
+
+        all_certs = list(
+            Certificate.objects
+            .select_related("course")
+            .filter(user=request.user)
+            .order_by("-fecha_emision")
+        )
+        today = _date.today()
+        in_90 = today + _timedelta(days=90)
+        certs_por_vencer = 0
+        recent_certs = []
+        for i, c in enumerate(all_certs):
+            meses = c.course.cert_expira_meses
+            fecha_venc = _add_months(c.fecha_emision.date(), meses) if meses else None
+            if fecha_venc and today <= fecha_venc <= in_90:
+                certs_por_vencer += 1
+            if i < 3:
+                recent_certs.append({
+                    "id": str(c.pk),
+                    "titulo": c.course.titulo,
+                    "fecha_emision": c.fecha_emision.date(),
+                    "fecha_vencimiento": fecha_venc,
+                })
+
+        completados_sorted = sorted(
+            completados,
+            key=lambda e: e.fecha_completado.timestamp() if e.fecha_completado else 0,
+            reverse=True,
+        )
+        recent_completados = [
+            {
+                "enrollment_id": e.pk,
+                "course_id": e.course_id,
+                "titulo": e.course.titulo,
+                "fecha_completado": e.fecha_completado.date() if e.fecha_completado else None,
+            }
+            for e in completados_sorted[:2]
+        ]
+
         recent_log = (
             AuditLog.objects.filter(user=request.user)
             .order_by("-timestamp")
-            .values("accion", "timestamp", "ip")[:5]
+            .values("accion", "timestamp", "ip", "entidad_nombre", "entidad_tipo")[:5]
         )
 
         return Response({
@@ -640,13 +732,17 @@ class UserDashboardView(APIView):
                 "en_progreso": len(en_progreso),
                 "completados": len(completados),
                 "vencidos": len(vencidos),
+                "certificados": len(all_certs),
+                "certs_por_vencer": certs_por_vencer,
             },
             "cursos_activos": [enrollment_summary(e) for e in en_progreso],
+            "cursos_completados": recent_completados,
             "proximos_vencimientos": [
                 enrollment_summary(e)
                 for e in en_progreso
                 if e.course.fecha_limite is not None
             ][:5],
+            "certificados": recent_certs,
             "actividad_reciente": list(recent_log),
         })
 

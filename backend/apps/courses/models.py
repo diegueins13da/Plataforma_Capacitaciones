@@ -27,12 +27,12 @@ class Course(models.Model):
         verbose_name="instructor",
     )
     area = models.ForeignKey(
-        "users.Area",
+        "users.Group",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="courses",
-        verbose_name="área",
+        related_name="courses_owner",
+        verbose_name="departamento",
     )
     audiencia_grupos = models.ManyToManyField(
         "users.Group",

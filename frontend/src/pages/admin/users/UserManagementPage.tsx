@@ -255,6 +255,7 @@ export default function UserManagementPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [mfaToggling, setMfaToggling] = useState<number | null>(null);
   const [ldapSyncing, setLdapSyncing] = useState(false);
   const [ldapResult, setLdapResult] = useState<LdapSyncResult | null>(null);
 
@@ -325,6 +326,20 @@ export default function UserManagementPage() {
       toast.success(`Bloqueo de ${user.full_name} eliminado.`);
     } catch {
       toast.error("No se pudo eliminar el bloqueo.");
+    }
+  };
+
+  const handleToggleMfa = async (user: AdminUser) => {
+    setMfaToggling(user.id);
+    try {
+      const updated = await usersService.toggleUserMfa(user.id);
+      setUsers((prev) => prev.map((u) => u.id === updated.id ? updated : u));
+      const state = updated.mfa_enabled ? "activado" : "desactivado";
+      toast.success(`MFA ${state} para ${user.full_name}.`);
+    } catch {
+      toast.error("No se pudo cambiar el estado de MFA.");
+    } finally {
+      setMfaToggling(null);
     }
   };
 
@@ -544,11 +559,11 @@ export default function UserManagementPage() {
                       </div>
                     </div>
                   </td>
-                  {/* Area */}
+                  {/* Area / Cargo */}
                   <td className="px-4 py-3 hidden md:table-cell">
-                    {user.area ? (
+                    {(user.area || user.cargo) ? (
                       <div>
-                        <p className="text-xs text-foreground">{user.area}</p>
+                        {user.area && <p className="text-xs text-foreground">{user.area}</p>}
                         {user.cargo && (
                           <p className="text-xs text-muted-foreground">{user.cargo}</p>
                         )}
@@ -652,6 +667,34 @@ export default function UserManagementPage() {
                           <i className="ti ti-lock-open text-sm" aria-hidden="true" />
                         </button>
                       )}
+
+                      {/* Toggle MFA */}
+                      <button
+                        type="button"
+                        onClick={() => void handleToggleMfa(user)}
+                        disabled={mfaToggling === user.id}
+                        title={user.mfa_enabled
+                          ? `MFA activo${user.auth_source === "LDAP" ? " (AD — activo por defecto)" : ""} · Clic para desactivar`
+                          : `MFA inactivo · Clic para activar`
+                        }
+                        className="w-8 h-8 inline-flex items-center justify-center rounded-lg transition-colors disabled:opacity-40"
+                        style={user.mfa_enabled
+                          ? { color: "#34d399", background: "rgba(16,185,129,0.08)" }
+                          : { color: "#64748b" }
+                        }
+                        onMouseOver={(e) => {
+                          if (!user.mfa_enabled) (e.currentTarget as HTMLElement).style.color = "#94a3b8";
+                        }}
+                        onMouseOut={(e) => {
+                          if (!user.mfa_enabled) (e.currentTarget as HTMLElement).style.color = "#64748b";
+                        }}
+                      >
+                        {mfaToggling === user.id ? (
+                          <i className="ti ti-loader-2 animate-spin text-sm" aria-hidden="true" />
+                        ) : (
+                          <i className={`ti ${user.mfa_enabled ? "ti-shield-check" : "ti-shield-off"} text-sm`} aria-hidden="true" />
+                        )}
+                      </button>
 
                       {/* Eliminar — confirmación en dos pasos */}
                       {pendingDeleteId === user.id ? (

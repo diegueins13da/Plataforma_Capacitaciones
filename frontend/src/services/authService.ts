@@ -4,14 +4,25 @@ import type {
   LoginRequest,
   LoginResponse,
   MeResponse,
+  MfaChallengeResponse,
+  MfaVerifyRequest,
   PasswordResetConfirm,
   PasswordResetRequest,
 } from "../types/auth";
 
 export const authService = {
-  async login(data: LoginRequest): Promise<LoginResponse> {
-    const res = await api.post<LoginResponse>("/v1/auth/login/", data);
+  async login(data: LoginRequest): Promise<LoginResponse | MfaChallengeResponse> {
+    const res = await api.post<LoginResponse | MfaChallengeResponse>("/v1/auth/login/", data);
     return res.data;
+  },
+
+  async verifyMfa(data: MfaVerifyRequest): Promise<LoginResponse> {
+    const res = await api.post<LoginResponse>("/v1/auth/mfa/verify/", data);
+    return res.data;
+  },
+
+  async resendMfa(mfa_token: string): Promise<void> {
+    await api.post("/v1/auth/mfa/resend/", { mfa_token });
   },
 
   async logout(refreshToken: string): Promise<void> {

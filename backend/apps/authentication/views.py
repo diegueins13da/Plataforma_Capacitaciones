@@ -11,12 +11,23 @@ class LoginRateThrottle(AnonRateThrottle):
     scope = "login"
 
 
+class MFAVerifyThrottle(AnonRateThrottle):
+    # 10 attempts/minute per IP — tight because brute-forcing a 6-digit OTP is the main risk
+    rate = "10/min"
+    scope = "mfa_verify"
+
+
+class MFAResendThrottle(AnonRateThrottle):
+    rate = "5/min"
+    scope = "mfa_resend"
+
+
 class PasswordResetThrottle(AnonRateThrottle):
     rate = "5/min"
     scope = "password_reset"
 
 from . import services
-from .services import LdapUserError
+from .services import LdapUserError, MFAError
 from .serializers import (
     ChangePasswordSerializer,
     LoginRequestSerializer,
@@ -51,7 +62,69 @@ def login(request):
             body["attempts_left"] = exc.attempts_left
         return Response(body, status=status.HTTP_401_UNAUTHORIZED)
 
+    # MFA challenge — return token + masked email, no JWT yet
+    if result.get("mfa_required"):
+        return Response({
+            "mfa_required": True,
+            "mfa_token": result["mfa_token"],
+            "email_hint": result["email_hint"],
+        })
+
     return Response(LoginResponseSerializer(result).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([MFAVerifyThrottle])
+def mfa_verify(request):
+    """Validate the OTP and return JWT tokens on success."""
+    mfa_token = request.data.get("mfa_token", "")
+    otp_code = request.data.get("otp_code", "").strip()
+
+    if not mfa_token or not otp_code:
+        return Response(
+            {"errors": {"non_field_errors": ["mfa_token y otp_code son requeridos."]}, "status": 400},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        result = services.verify_mfa(
+            mfa_token=mfa_token,
+            otp_code=otp_code,
+            ip=services.get_client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        )
+    except MFAError as exc:
+        return Response(
+            {"errors": {"non_field_errors": [str(exc)]}, "status": 401},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    return Response(LoginResponseSerializer(result).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([MFAResendThrottle])
+def mfa_resend(request):
+    """Generate and email a fresh OTP for an existing MFA challenge."""
+    mfa_token = request.data.get("mfa_token", "")
+
+    if not mfa_token:
+        return Response(
+            {"errors": {"non_field_errors": ["mfa_token es requerido."]}, "status": 400},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        services.resend_mfa(mfa_token=mfa_token, ip=services.get_client_ip(request))
+    except MFAError as exc:
+        return Response(
+            {"errors": {"non_field_errors": [str(exc)]}, "status": 400},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response({"detail": "Nuevo código enviado a tu correo."})
 
 
 @api_view(["POST"])

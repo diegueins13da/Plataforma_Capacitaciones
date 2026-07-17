@@ -19,12 +19,7 @@ DEBUG_TOOLBAR_CONFIG = {
 # Show all SQL queries in shell
 LOGGING["root"]["level"] = "DEBUG"  # noqa: F405
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Allow PDF modules to be embedded in iframes from the same origin
 X_FRAME_OPTIONS = "SAMEORIGIN"

@@ -68,6 +68,9 @@ export interface CourseEnrollmentUser {
   email: string;
   role: string;
   estado_inscripcion: string | null;
+  grupo_id: number | null;
+  grupo_nombre: string | null;
+  area: string | null;
 }
 
 const BASE = "/v1/courses";
@@ -235,6 +238,11 @@ export const coursesService = {
 
   async bulkAssignUsers(courseId: number, userIds: number[]): Promise<{ created: number; skipped: number }> {
     const res = await api.post<{ created: number; skipped: number }>(`${BASE}/${courseId}/bulk-assign/`, { user_ids: userIds });
+    return res.data;
+  },
+
+  async enrollGroup(courseId: number, groupIds: number[]): Promise<{ created: number; skipped: number }> {
+    const res = await api.post<{ created: number; skipped: number }>(`${BASE}/${courseId}/enroll-group/`, { group_ids: groupIds });
     return res.data;
   },
 };

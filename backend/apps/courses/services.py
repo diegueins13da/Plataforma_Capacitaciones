@@ -502,8 +502,26 @@ def complete_module(enrollment_id: int, module_id: int, user: "User") -> "Enroll
     enrollment.update_progress()
     enrollment.refresh_from_db()
 
-    # Notify course creator when a student completes the course
+    # When all modules are done, handle course-level completion
     if enrollment.estado == "COMPLETADO":
+        # Auto-issue certificate for courses without approved exam questions
+        from apps.assessments.models import Assessment  # noqa: PLC0415
+        try:
+            course_has_exam = (
+                Assessment.objects.filter(course=enrollment.course)
+                .filter(questions__aprobada_por_humano=True)
+                .exists()
+            )
+        except Exception:
+            course_has_exam = False
+        if not course_has_exam:
+            from apps.courses.models import Certificate  # noqa: PLC0415
+            Certificate.objects.get_or_create(
+                user=enrollment.user,
+                course=enrollment.course,
+                defaults={"enrollment": enrollment},
+            )
+
         instructor = enrollment.course.created_by
         if instructor and instructor.pk != enrollment.user.pk:
             from apps.notifications.services import notify_instructor_alumno_completo  # noqa: PLC0415

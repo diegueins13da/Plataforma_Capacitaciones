@@ -88,8 +88,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
     };
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
     setError("");
     const payload = buildPayload();
     if (!payload) return;
@@ -104,7 +103,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-4 space-y-4">
+    <div className="bg-background border border-border rounded-xl p-4 space-y-4">
       {/* Type selector */}
       <div>
         <label className="block text-xs font-medium text-muted-foreground mb-1">Tipo de pregunta</label>
@@ -133,7 +132,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           rows={2}
-          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           placeholder="Escribe la pregunta aquí..."
         />
       </div>
@@ -176,7 +175,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                   setOpciones(n);
                 }}
                 placeholder={`Opción ${i + 1}`}
-                className="flex-1 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+                className="flex-1 bg-background text-foreground border border-border rounded-lg px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
               {correctaIdx === i && (
                 <span className="text-xs text-emerald-400 font-medium shrink-0">Correcta</span>
@@ -228,7 +227,7 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
                   setOpciones(n);
                 }}
                 placeholder={`Opción ${i + 1}`}
-                className="flex-1 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
+                className="flex-1 bg-background text-foreground border border-border rounded-lg px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300"
               />
               {multiSelect[i] && (
                 <span className="text-xs text-emerald-400 font-medium shrink-0">Correcta</span>
@@ -273,13 +272,14 @@ export function QuestionForm({ initial, defaultOrden = 1, onSave, onCancel }: Qu
           Cancelar
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={() => void handleSubmit()}
           disabled={saving}
           className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-300"
         >
           {saving ? "Guardando…" : initial ? "Actualizar" : "Agregar pregunta"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
