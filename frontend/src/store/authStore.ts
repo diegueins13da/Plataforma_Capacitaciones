@@ -43,6 +43,8 @@ function applyLoginResponse(data: LoginResponse) {
       email: data.user.email,
       role: data.user.role,
       full_name: "",
+      first_name: "",
+      last_name: "",
       is_active: true,
       must_change_password: data.user.force_password_change,
     },

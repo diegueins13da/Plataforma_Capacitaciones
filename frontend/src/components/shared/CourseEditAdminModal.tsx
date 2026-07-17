@@ -136,7 +136,7 @@ export function CourseEditAdminModal({ courseId, onClose, onSaved }: Props) {
           titulo: c.titulo,
           descripcion: c.descripcion ?? "",
           tipo: c.tipo,
-          area: c.area ?? null,
+          area: c.area ?? undefined,
           fecha_limite: c.fecha_limite ?? "",
           version: c.version ?? "1.0",
           imagen_portada: c.imagen_portada ?? "",
