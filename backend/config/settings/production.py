@@ -11,8 +11,9 @@ SECURE_HSTS_PRELOAD = True
 # Behind an Nginx reverse proxy — proxy terminates TLS, so we trust X-Forwarded-Proto
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)  # noqa: F405
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# En LAN (HTTP) estas deben ser False; en producción con HTTPS deben ser True
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)  # noqa: F405
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)  # noqa: F405
 CSRF_COOKIE_HTTPONLY = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
