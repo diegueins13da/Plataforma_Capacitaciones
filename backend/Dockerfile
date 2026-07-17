@@ -49,7 +49,8 @@ ENV DJANGO_SETTINGS_MODULE=config.settings.production \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN python manage.py collectstatic --noinput
+# collectstatic se ejecuta en entrypoint.sh al iniciar el contenedor,
+# donde SECRET_KEY y DATABASE_URL ya están disponibles como variables de entorno.
 
 EXPOSE 8000
 

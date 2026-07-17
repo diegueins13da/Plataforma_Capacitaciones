@@ -19,6 +19,10 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 # ---- Production stage (T37) ----
 FROM base AS build
 
+# URL del backend inyectada en build-time por docker-compose.prod.yml
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 COPY . .
 
 RUN npm run build
