@@ -29,15 +29,15 @@ class Command(BaseCommand):
         import environ
         env = environ.Env()
 
-        email = env("ADMIN_EMAIL", default="admin@lms.local")
-        password = env("ADMIN_PASSWORD", default="Admin.2025!")
+        email = env("ADMIN_EMAIL", default="admin@empresa.com")
+        password = env("ADMIN_PASSWORD", default="Demo1234!")
 
         user = User.objects.create(
             email=email,
             username="admin",
             first_name="Administrador",
             last_name="LMS",
-            role=User.Role.SUPERADMIN,
+            role=User.Role.ADMIN,
             is_staff=True,
             is_superuser=True,
             is_active=True,
