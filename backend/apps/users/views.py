@@ -38,6 +38,7 @@ class AreaViewSet(viewsets.ModelViewSet):
 
     queryset = Area.objects.all().order_by("nombre")
     serializer_class = AreaSerializer
+    pagination_class = None
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
@@ -62,6 +63,7 @@ class CargoViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = CargoSerializer
+    pagination_class = None
 
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
@@ -94,6 +96,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = None
 
     def perform_create(self, serializer):
         serializer.save()
