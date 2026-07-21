@@ -7,9 +7,24 @@ so admins can change it from the UI without touching .env or restarting containe
 from __future__ import annotations
 
 import logging
+import re
 import time
 
 logger = logging.getLogger(__name__)
+
+
+def _catalog_filter(sync_filter: str) -> str:
+    """
+    Derive a broader filter for catalog discovery by removing (mail=*).
+
+    The catalog sync only reads department/company/title attributes —
+    it doesn't need users to have email. Removing (mail=*) ensures that
+    departments whose members lack email are still included in the catalog.
+    """
+    cleaned = re.sub(r"\(mail=\*\)", "", sync_filter)
+    # If the result is an empty (&) or (|), collapse it
+    cleaned = re.sub(r"\(&\s*\)", "(&(objectClass=user))", cleaned)
+    return cleaned or sync_filter
 
 
 # ---------------------------------------------------------------------------
@@ -31,6 +46,9 @@ def get_ldap_config() -> dict:
         "bind_password": raw.get("LDAP_BIND_PASSWORD", ""),
         "base_dn": raw.get("LDAP_BASE_DN", ""),
         "sync_filter": raw.get("LDAP_SYNC_FILTER", "(&(objectClass=person)(mail=*))"),
+        "catalog_filter": _catalog_filter(
+            raw.get("LDAP_SYNC_FILTER", "(&(objectClass=person)(mail=*))")
+        ),
         "start_tls": raw.get("LDAP_START_TLS", False),
     }
 

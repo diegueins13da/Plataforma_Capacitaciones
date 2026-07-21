@@ -152,7 +152,7 @@ def run_catalog_sync(
         raw_results = conn.search_s(
             ldap_cfg["base_dn"],
             _ldap.SCOPE_SUBTREE,
-            ldap_cfg["sync_filter"],
+            ldap_cfg["catalog_filter"],
             ["company", "department", "title"],
         )
     except _ldap.LDAPError as exc:
