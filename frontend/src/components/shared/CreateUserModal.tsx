@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
+import { configService } from "../../services/configService";
 import { usersService } from "../../services/usersService";
+import type { Area } from "../../types/area";
+import type { Cargo } from "../../types/cargo";
 import type { AdminUser, UserRole } from "../../types/user";
 import type { Group } from "../../types/groups";
 
@@ -38,11 +42,33 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { role: "USUARIO" },
   });
+
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [selectedAreaId, setSelectedAreaId] = useState<number | "">("");
+
+  useEffect(() => {
+    configService.getAreas().then((list) => setAreas(list.filter((a) => a.activo))).catch(() => void 0);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedAreaId) { setCargos([]); return; }
+    configService.getCargos(Number(selectedAreaId)).then((list) => setCargos(list.filter((c) => c.activo))).catch(() => void 0);
+  }, [selectedAreaId]);
+
+  const handleAreaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value ? Number(e.target.value) : "";
+    setSelectedAreaId(id);
+    const found = areas.find((a) => a.id === Number(e.target.value));
+    setValue("area", found?.nombre ?? "");
+    setValue("cargo", "");
+  };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -204,13 +230,18 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
               <label htmlFor="area" className={labelCls}>Área</label>
               <div className="relative">
                 <i className="ti ti-building absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-base pointer-events-none" aria-hidden="true" />
-                <input
+                <select
                   id="area"
-                  type="text"
-                  placeholder="Ej. Operaciones"
-                  className={inputCls}
-                  {...register("area")}
-                />
+                  value={selectedAreaId}
+                  onChange={handleAreaChange}
+                  className={`${inputCls} appearance-none pr-8`}
+                >
+                  <option value="">Sin área</option>
+                  {areas.map((a) => (
+                    <option key={a.id} value={a.id}>{a.nombre}</option>
+                  ))}
+                </select>
+                <i className="ti ti-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none" aria-hidden="true" />
               </div>
             </div>
           </div>
@@ -220,13 +251,20 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
             <label htmlFor="cargo" className={labelCls}>Cargo</label>
             <div className="relative">
               <i className="ti ti-briefcase absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-base pointer-events-none" aria-hidden="true" />
-              <input
+              <select
                 id="cargo"
-                type="text"
-                placeholder="Ej. Analista de sistemas"
-                className={inputCls}
+                className={`${inputCls} appearance-none pr-8`}
+                disabled={!selectedAreaId}
                 {...register("cargo")}
-              />
+              >
+                <option value="">
+                  {selectedAreaId ? "Sin cargo" : "Selecciona un área primero"}
+                </option>
+                {cargos.map((c) => (
+                  <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                ))}
+              </select>
+              <i className="ti ti-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none" aria-hidden="true" />
             </div>
           </div>
 
