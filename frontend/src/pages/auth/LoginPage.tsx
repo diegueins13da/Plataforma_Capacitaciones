@@ -221,27 +221,22 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-3 relative z-10">
             {branding.LOGO_URL ? (
-              <img src={branding.LOGO_URL} alt={branding.COMPANY_NAME} className="h-9 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+              <img src={branding.LOGO_URL} alt={branding.COMPANY_NAME} className="h-10 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
             ) : (
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)", boxShadow: "0 0 20px rgba(79,70,229,0.4)" }}>
                 <i className="ti ti-certificate text-white text-lg" aria-hidden="true" />
               </div>
             )}
-            <p className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>{branding.SYSTEM_NAME}</p>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center relative z-10 py-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shrink-0" style={{ background: "rgba(79,70,229,0.12)", border: "1px solid rgba(79,70,229,0.2)" }}>
-              <i className="ti ti-book text-2xl" style={{ color: "#818cf8" }} aria-hidden="true" />
-            </div>
-            <p className="text-4xl font-black leading-[1.1] mb-4" style={{ color: "#f1f5f9", letterSpacing: "-0.04em" }}>
-              {branding.SYSTEM_NAME}<br />
+          <div className="flex-1 flex flex-col justify-center relative z-10 py-8">
+            <p className="text-5xl font-black leading-[1.1] mb-6" style={{ color: "#f1f5f9", letterSpacing: "-0.04em" }}>
               <span style={{ background: "linear-gradient(90deg, #818cf8, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                Plataforma de Formación
+                Plataforma de<br />Formación
               </span>
             </p>
-            <div style={{ width: 36, height: 2, background: "#4F46E5", borderRadius: 2, marginBottom: 18 }} />
-            <p className="text-base mb-4" style={{ color: "#64748b", lineHeight: 1.8 }}>
+            <div style={{ width: 44, height: 2, background: "#4F46E5", borderRadius: 2, marginBottom: 22 }} />
+            <p className="text-base mb-6" style={{ color: "#64748b", lineHeight: 1.8 }}>
               Capacítate, evalúate y certifícate. Todo lo que necesitas para impulsar tu desarrollo profesional en un solo lugar.
             </p>
             <div className="flex flex-wrap gap-2">
