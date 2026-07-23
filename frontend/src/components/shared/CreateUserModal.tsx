@@ -97,7 +97,7 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
   };
 
   const inputCls =
-    "w-full h-10 rounded-xl border border-slate-700 bg-background pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300";
+    "w-full h-10 rounded-xl border border-slate-700 bg-[#1e293b] pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300";
 
   const labelCls = "block text-xs font-medium mb-1.5 text-slate-500";
 

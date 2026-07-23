@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useTheme } from "../../context/ThemeContext";
@@ -178,6 +178,7 @@ export function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const trainerMode = useTrainerModeStore((s) => s.mode);
   const { appName, fetchBranding } = useBrandingStore();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => { void fetchBranding(); }, [fetchBranding]);
 
@@ -218,6 +219,7 @@ export function Sidebar() {
   }
 
   return (
+    <>
     <aside
       className={[
         "group shrink-0 flex flex-col items-center min-h-screen gap-0.5",
@@ -289,7 +291,7 @@ export function Sidebar() {
         <SidebarButton
           icon="ti-logout"
           label="Cerrar sesión"
-          onClick={() => void handleLogout()}
+          onClick={() => setShowLogoutConfirm(true)}
         />
 
         {/* Avatar + user info */}
@@ -325,5 +327,57 @@ export function Sidebar() {
         </NavLink>
       </div>
     </aside>
+
+      {/* ── Logout confirmation modal ─────────────────────────────────────── */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: "rgba(2,6,23,0.75)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+          >
+            <div className="p-6 space-y-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto"
+                style={{ background: "rgba(239,68,68,0.12)" }}>
+                <i className="ti ti-logout text-2xl" style={{ color: "#f87171" }} aria-hidden="true" />
+              </div>
+              <div className="text-center space-y-1.5">
+                <h3 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>
+                  ¿Cerrar sesión?
+                </h3>
+                <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+                  Se cerrará tu sesión actual. Tendrás que volver a iniciar sesión para acceder.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 px-6 pb-6">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-2.5 text-sm rounded-xl transition-colors"
+                style={{
+                  border: "1px solid var(--border)",
+                  color: "var(--muted-foreground)",
+                  background: "transparent",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl text-white transition-colors active:scale-[0.98]"
+                style={{ background: "#dc2626" }}
+              >
+                <i className="ti ti-logout mr-1.5" aria-hidden="true" />
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

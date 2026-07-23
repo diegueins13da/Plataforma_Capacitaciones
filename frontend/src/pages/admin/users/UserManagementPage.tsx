@@ -635,8 +635,18 @@ export default function UserManagementPage() {
                         <i className="ti ti-pencil text-sm" aria-hidden="true" />
                       </button>
 
-                      {/* Activar / Desactivar */}
-                      {user.is_active ? (
+                      {/* Activar / Desactivar — deshabilitado para usuarios AD */}
+                      {user.auth_source === "LDAP" ? (
+                        <button
+                          type="button"
+                          disabled
+                          title="Gestionado por Active Directory — el estado se controla desde el Sync AD"
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-lg opacity-30 cursor-not-allowed"
+                          style={{ color: "#64748b" }}
+                        >
+                          <i className="ti ti-user-off text-sm" aria-hidden="true" />
+                        </button>
+                      ) : user.is_active ? (
                         <button
                           type="button"
                           onClick={() => void handleDeactivate(user)}
