@@ -1,5 +1,4 @@
 import { useLocation } from "react-router-dom";
-import { useTheme } from "../../context/ThemeContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 const BREADCRUMB_LABELS: Record<string, string> = {
@@ -41,16 +40,28 @@ function useBreadcrumbs(): string[] {
 
 export function Header() {
   const crumbs = useBreadcrumbs();
-  const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="h-14 border-b border-border bg-background flex items-center justify-between px-6 shrink-0">
+    <header className="h-14 border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <nav aria-label="Navegación" className="flex items-center gap-1.5 min-w-0">
         {crumbs.map((crumb, i) => (
-          <span key={i} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-border">/</span>}
-            <span className={i === crumbs.length - 1 ? "text-foreground font-medium" : ""}>
+          <span key={i} className="flex items-center gap-1.5 min-w-0">
+            {i > 0 && (
+              <i
+                className="ti ti-chevron-right text-[10px] flex-shrink-0"
+                style={{ color: "hsl(var(--border))" }}
+                aria-hidden="true"
+              />
+            )}
+            <span
+              className={[
+                "text-sm truncate",
+                i === crumbs.length - 1
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground",
+              ].join(" ")}
+            >
               {crumb}
             </span>
           </span>
@@ -58,18 +69,7 @@ export function Header() {
       </nav>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-          onClick={toggleTheme}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-        >
-          <i
-            className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"} text-base`}
-            aria-hidden="true"
-          />
-        </button>
+      <div className="flex items-center gap-1 flex-shrink-0">
         <NotificationDropdown />
       </div>
     </header>

@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { configService } from "../../../services/configService";
+import { useBrandingStore } from "../../../store/brandingStore";
 import { usersService } from "../../../services/usersService";
 import type { Area } from "../../../types/area";
 import type { Cargo } from "../../../types/cargo";
@@ -26,13 +27,13 @@ import type { Group } from "../../../types/groups";
 type TabKey = SettingCategory | "CATALOGO";
 type CatalogoSubTab = "areas" | "grupos" | "cargos";
 
-const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: "SMTP", label: "Correo electrónico", icon: "📧" },
-  { key: "BRANDING", label: "Identidad visual", icon: "🎨" },
-  { key: "SEGURIDAD", label: "Seguridad", icon: "🔒" },
-  { key: "NOTIF", label: "Notificaciones", icon: "🔔" },
-  { key: "LDAP", label: "LDAP / AD", icon: "🏛️" },
-  { key: "CATALOGO", label: "Catálogo", icon: "🏢" },
+const TABS: { key: TabKey; label: string; icon: string; color: string }[] = [
+  { key: "SMTP",      label: "Correo electrónico", icon: "ti-mail",        color: "#38bdf8" },
+  { key: "BRANDING",  label: "Identidad visual",   icon: "ti-palette",     color: "#a78bfa" },
+  { key: "SEGURIDAD", label: "Seguridad",           icon: "ti-shield-lock", color: "#fb923c" },
+  { key: "NOTIF",     label: "Notificaciones",      icon: "ti-bell",        color: "#34d399" },
+  { key: "LDAP",      label: "LDAP / AD",           icon: "ti-server",      color: "#60a5fa" },
+  { key: "CATALOGO",  label: "Catálogo",            icon: "ti-building",    color: "#818cf8" },
 ];
 
 const CATALOGO_SUBTABS: { key: CatalogoSubTab; label: string; icon: string }[] = [
@@ -1327,6 +1328,7 @@ interface TestEmailResult {
 export default function SystemConfigPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("SMTP");
   const [catalogoSubTab, setCatalogoSubTab] = useState<CatalogoSubTab>("areas");
+  const { setAppName: setBrandingAppName } = useBrandingStore();
   const [settings, setSettings] = useState<GroupedSettings | null>(null);
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1383,6 +1385,7 @@ export default function SystemConfigPage() {
 
   async function handleSaveSetting(clave: string, valor: string) {
     const updated = await configService.updateSetting(clave, valor);
+    if (clave === "SYSTEM_NAME") setBrandingAppName(valor);
     setSettings((prev) => {
       if (!prev) return prev;
       const next = { ...prev };
@@ -1426,26 +1429,40 @@ export default function SystemConfigPage() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-muted/40 rounded-lg p-1 mb-6 overflow-x-auto">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === t.key
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Main layout: left nav + content */}
+      <div className="flex gap-5 items-start">
 
-      {/* Content */}
-      <div className="bg-card rounded-xl border border-border p-6">
+        {/* ── Left category nav ─────────────────────────────── */}
+        <nav className="w-52 shrink-0 flex flex-col gap-0.5 bg-card rounded-xl border border-border p-2 card-elevated">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTab(t.key)}
+              className={[
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
+                "transition-all duration-200",
+                activeTab === t.key
+                  ? "bg-accent/60 text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/40",
+              ].join(" ")}
+            >
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: activeTab === t.key ? `${t.color}25` : "hsl(var(--muted))" }}
+              >
+                <i
+                  className={`ti ${t.icon} text-[14px]`}
+                  style={{ color: activeTab === t.key ? t.color : "hsl(var(--muted-foreground))" }}
+                />
+              </div>
+              <span className="leading-tight">{t.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* ── Content panel ─────────────────────────────────── */}
+        <div className="flex-1 min-w-0 bg-card rounded-xl border border-border p-6 card-elevated">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
@@ -1614,6 +1631,7 @@ export default function SystemConfigPage() {
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
