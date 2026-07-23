@@ -15,6 +15,11 @@ export const configService = {
     return res.data;
   },
 
+  async getPublicBranding(): Promise<Record<string, string>> {
+    const res = await api.get<Record<string, string>>("/v1/config/public/");
+    return res.data;
+  },
+
   async updateSetting(clave: string, valor: string): Promise<SystemSetting> {
     const res = await api.patch<SystemSetting>(`/v1/config/${clave}/`, { valor });
     return res.data;

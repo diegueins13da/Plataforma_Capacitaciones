@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================================
 # update.sh — Actualiza el LMS con la última versión de GitHub
-# Ejecuta desde /opt/lms (o donde hayas clonado el repo)
+# Ejecuta desde el directorio donde clonaste el repo.
 # =============================================================================
 
 set -e
@@ -20,13 +20,18 @@ info "Descargando cambios desde GitHub ..."
 git pull origin master
 
 info "Reconstruyendo imágenes ..."
-docker compose -f docker-compose.prod.yml build
+docker compose build
 
 info "Aplicando cambios (sin tiempo de caída) ..."
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 
-info "Aplicando migraciones de base de datos ..."
-docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
+info "Esperando que el backend esté listo ..."
+ATTEMPTS=0
+until docker compose exec -T backend python manage.py check --database default >/dev/null 2>&1; do
+  ATTEMPTS=$((ATTEMPTS + 1))
+  [ $ATTEMPTS -ge 20 ] && { echo "Timeout. Revisa: docker compose logs backend"; exit 1; }
+  sleep 3
+done
 
 success "Actualización completada."
-docker compose -f docker-compose.prod.yml ps
+docker compose ps
