@@ -20,9 +20,9 @@ const schema = z.object({
   first_name: z.string().min(1, "El nombre es obligatorio.").max(150),
   last_name: z.string().min(1, "El apellido es obligatorio.").max(150),
   role: z.enum(["ADMIN", "TRAINER", "USUARIO"] as const),
-  area: z.string().max(150).optional(),
-  cargo: z.string().max(150).optional(),
-  grupo_id: z.number().nullable().optional(),
+  area: z.string({ required_error: "El área es obligatoria." }).min(1, "El área es obligatoria.").max(150),
+  cargo: z.string().min(1, "El cargo es obligatorio.").max(150),
+  grupo_id: z.coerce.number().min(1, "El grupo es obligatorio."),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -79,7 +79,7 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
         role: data.role as UserRole,
         area: data.area,
         cargo: data.cargo,
-        grupo_id: data.grupo_id ?? null,
+        grupo_id: data.grupo_id,
       });
       onCreated(user);
       toast.success("Usuario creado. Se ha enviado un correo con la contraseña temporal.");
@@ -227,7 +227,7 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
               </div>
             </div>
             <div>
-              <label htmlFor="area" className={labelCls}>Área</label>
+              <label htmlFor="area" className={labelCls}>Área <span className="text-red-400">*</span></label>
               <div className="relative">
                 <i className="ti ti-building absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-base pointer-events-none" aria-hidden="true" />
                 <select
@@ -243,12 +243,15 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
                 </select>
                 <i className="ti ti-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none" aria-hidden="true" />
               </div>
+              {errors.area && (
+                <p className="text-xs text-red-400 mt-1">{errors.area.message}</p>
+              )}
             </div>
           </div>
 
           {/* Cargo */}
           <div>
-            <label htmlFor="cargo" className={labelCls}>Cargo</label>
+            <label htmlFor="cargo" className={labelCls}>Cargo <span className="text-red-400">*</span></label>
             <div className="relative">
               <i className="ti ti-briefcase absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-base pointer-events-none" aria-hidden="true" />
               <select
@@ -266,30 +269,32 @@ export function CreateUserModal({ groups, onClose, onCreated }: CreateUserModalP
               </select>
               <i className="ti ti-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none" aria-hidden="true" />
             </div>
+            {errors.cargo && (
+              <p className="text-xs text-red-400 mt-1">{errors.cargo.message}</p>
+            )}
           </div>
 
           {/* Group */}
-          {groups.length > 0 && (
-            <div>
-              <label htmlFor="grupo_id" className={labelCls}>Grupo</label>
-              <div className="relative">
-                <i className="ti ti-users-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-base pointer-events-none" aria-hidden="true" />
-                <select
-                  id="grupo_id"
-                  className={`${inputCls} appearance-none pr-8`}
-                  {...register("grupo_id", {
-                    setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
-                  })}
-                >
-                  <option value="">Sin grupo</option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>{g.nombre}</option>
-                  ))}
-                </select>
-                <i className="ti ti-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none" aria-hidden="true" />
-              </div>
+          <div>
+            <label htmlFor="grupo_id" className={labelCls}>Grupo <span className="text-red-400">*</span></label>
+            <div className="relative">
+              <i className="ti ti-users-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-base pointer-events-none" aria-hidden="true" />
+              <select
+                id="grupo_id"
+                className={`${inputCls} appearance-none pr-8`}
+                {...register("grupo_id")}
+              >
+                <option value="">Selecciona un grupo</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.nombre}</option>
+                ))}
+              </select>
+              <i className="ti ti-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none" aria-hidden="true" />
             </div>
-          )}
+            {errors.grupo_id && (
+              <p className="text-xs text-red-400 mt-1">{errors.grupo_id.message}</p>
+            )}
+          </div>
 
           {/* Footer */}
           <div
