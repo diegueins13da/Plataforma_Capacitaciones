@@ -194,7 +194,7 @@ export default function LoginPage() {
   return (
     <div
       className="flex h-screen overflow-hidden items-center justify-center p-6"
-      style={{ background: "#020617", fontFamily: "'Inter',sans-serif" }}
+      style={{ background: "#F1F5F9", fontFamily: "'Inter',sans-serif" }}
     >
       <div
         className="flex w-full overflow-hidden"
