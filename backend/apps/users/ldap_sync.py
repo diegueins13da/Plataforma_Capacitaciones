@@ -165,20 +165,26 @@ def run_catalog_sync(
         except Exception:
             pass
 
-    # Collect unique non-empty values from AD
+    # Collect unique non-empty values from AD + area↔cargo co-occurrence
     ad_areas: set[str] = set()
     ad_grupos: set[str] = set()
     ad_cargos: set[str] = set()
+    cargo_to_areas: dict[str, set[str]] = {}  # title → set of company names
 
     for _dn, attrs in raw_results:
         if not attrs or not isinstance(attrs, dict):
             continue
-        if v := _decode(attrs, "company"):
-            ad_areas.add(v)
-        if v := _decode(attrs, "department"):
-            ad_grupos.add(v)
-        if v := _decode(attrs, "title"):
-            ad_cargos.add(v)
+        company = _decode(attrs, "company")
+        department = _decode(attrs, "department")
+        title = _decode(attrs, "title")
+        if company:
+            ad_areas.add(company)
+        if department:
+            ad_grupos.add(department)
+        if title:
+            ad_cargos.add(title)
+        if company and title:
+            cargo_to_areas.setdefault(title, set()).add(company)
 
     # ── Areas (company) ───────────────────────────────────────────────────────
     deleted_areas = Area.objects.exclude(nombre__in=ad_areas).delete()
@@ -205,14 +211,35 @@ def run_catalog_sync(
     # ── Cargos (title) ────────────────────────────────────────────────────────
     deleted_cargos = Cargo.objects.exclude(nombre__in=ad_cargos).delete()
     result["cargos"]["deleted"] = deleted_cargos[0]
+
+    # Pre-fetch area objects to avoid N+1 queries
+    areas_by_name: dict[str, Area] = {
+        a.nombre: a for a in Area.objects.filter(nombre__in=ad_areas)
+    }
+
     for nombre in ad_cargos:
+        # Link cargo to its area only when it maps unambiguously to one area
+        linked_area_names = cargo_to_areas.get(nombre, set())
+        linked_area = (
+            areas_by_name.get(next(iter(linked_area_names)))
+            if len(linked_area_names) == 1
+            else None
+        )
+
         obj = Cargo.objects.filter(nombre=nombre).first()
         if obj is None:
-            Cargo.objects.create(nombre=nombre, area=None, from_ad=True)
+            Cargo.objects.create(nombre=nombre, area=linked_area, from_ad=True)
             result["cargos"]["created"] += 1
-        elif not obj.from_ad:
-            obj.from_ad = True
-            obj.save(update_fields=["from_ad"])
+        else:
+            updates: list[str] = []
+            if not obj.from_ad:
+                obj.from_ad = True
+                updates.append("from_ad")
+            if obj.area is None and linked_area is not None:
+                obj.area = linked_area
+                updates.append("area")
+            if updates:
+                obj.save(update_fields=updates)
 
     log_event(
         accion="CATALOG_SYNC",
